@@ -1,7 +1,6 @@
 <script setup>
 import { Head, useForm, usePage, router } from '@inertiajs/vue3';
-import { computed, watch, ref } from 'vue';
-import debounce from 'lodash/debounce';
+import { computed, ref } from 'vue';
 
 // Componentes
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
@@ -26,7 +25,6 @@ function handleCitySelected(cityData) {
     searchForm.city = cityData.name;
 }
 
-// --- Lógica para el panel colapsable ---
 const manualFiltersVisible = ref(false);
 const geolocationStatus = ref('');
 
@@ -38,6 +36,7 @@ const searchForm = useForm({
     experience_level: props.filters.experience_level || '',
 });
 
+// FUNCIÓN SIMPLIFICADA: Ahora solo se llama al pulsar el botón "Aplicar"
 const submitManualFilters = () => {
     router.get(route('discover.index'), searchForm.data(), {
         preserveState: true,
@@ -46,67 +45,41 @@ const submitManualFilters = () => {
     });
 };
 
-// --- Watchers que ya sabemos que funcionan ---
-watch(() => searchForm.search, debounce(submitManualFilters, 500));
-watch(() => searchForm.city, debounce(submitManualFilters, 500));
-watch(() => searchForm.interests, submitManualFilters, { deep: true });
-watch(() => searchForm.availability_general, submitManualFilters, { deep: true });
-watch(() => searchForm.experience_level, submitManualFilters);
-
-const experienceOptions = [
-    { value: '', label: 'Cualquiera' },
-    { value: 'Principiante', label: 'Principiante' },
-    { value: 'Intermedio', label: 'Intermedio' },
-    { value: 'Avanzado', label: 'Avanzado' }
-];
-
-
-// --- Lógica de Filtros (Rápidos y Manuales) ---
-const filtrosActivos = computed(() => usePage().props.filters);
-const quickFilterActive = computed(() => !!filtrosActivos.value.filtro_rapido);
-const isGeolocationSearch = computed(() => !!filtrosActivos.value.lat);
-
+// FUNCIÓN SIMPLIFICADA Y ROBUSTA
 function searchNearby() {
-    if (window.isSecureContext === false) {
-        geolocationStatus.value = 'Error: La geolocalización requiere una conexión segura (HTTPS).';
-        alert('Error: La geolocalización requiere una conexión segura (HTTPS) o localhost.');
-        return;
-    }
     if (!navigator.geolocation) {
         geolocationStatus.value = "Tu navegador no soporta geolocalización.";
         return;
     }
-
-    geolocationStatus.value = "Solicitando permiso de ubicación...";
+    geolocationStatus.value = "Solicitando permiso...";
 
     const success = (position) => {
         geolocationStatus.value = "¡Ubicación encontrada! Buscando...";
-        searchForm.reset();
+        // Enviamos la petición y YA ESTÁ. Sin resetear formularios ni nada que pueda causar conflictos.
         router.get(route('discover.index'), {
             lat: position.coords.latitude,
             lon: position.coords.longitude
         }, {
-            preserveState: true,
-            replace: true,
+            replace: true, // Sin preserveState para asegurar el refresco
             onFinish: () => { geolocationStatus.value = ''; }
         });
     };
 
     const error = (err) => {
-        console.error(`[GEOLOCALIZACIÓN] ERROR(${err.code}): ${err.message}`);
-        if (err.code === 1) { // PERMISSION_DENIED
-            geolocationStatus.value = 'Permiso denegado. Revisa la configuración de tu navegador.';
-        } else {
-            geolocationStatus.value = 'No se pudo obtener la ubicación. Inténtalo de nuevo.';
-        }
+        geolocationStatus.value = 'No se pudo obtener la ubicación.';
+        console.error(`ERROR DE GEOLOCALIZACIÓN (${err.code}): ${err.message}`);
     };
 
     navigator.geolocation.getCurrentPosition(success, error, { timeout: 10000 });
 }
 
+// El resto de funciones no cambian
+const filtrosActivos = computed(() => usePage().props.filters);
+const quickFilterActive = computed(() => !!filtrosActivos.value.filtro_rapido);
+const isGeolocationSearch = computed(() => !!filtrosActivos.value.lat);
+
 function clearAllFilters() {
-    searchForm.reset();
-    router.get(route('discover.index'), {}, { preserveState: true, replace: true });
+    router.get(route('discover.index'), {}, { replace: true });
 }
 
 function toggleManualFilters() {
@@ -116,14 +89,10 @@ function toggleManualFilters() {
 }
 
 function applyQuickFilter(nombreFiltro) {
-    manualFiltersVisible.value = false;
-    searchForm.reset();
     const filtroActual = filtrosActivos.value.filtro_rapido;
     const nuevoFiltro = filtroActual === nombreFiltro ? null : nombreFiltro;
-    router.get(route('discover.index'), { filtro_rapido: nuevoFiltro }, { preserveState: true, replace: true });
+    router.get(route('discover.index'), { filtro_rapido: nuevoFiltro }, { replace: true });
 }
-
-function resetManualFilters() { searchForm.reset(); }
 </script>
 
 <template>
@@ -155,7 +124,7 @@ function resetManualFilters() { searchForm.reset(); }
                         Buscar Cerca de Mí
                     </button>
                     <p v-if="geolocationStatus" class="text-sm text-gray-600">{{ geolocationStatus }}</p>
-                    <button v-if="quickFilterActive || isGeolocationSearch" @click="clearAllFilters" class="ml-auto text-sm text-indigo-600 hover:underline">Mostrar todos</button>
+                    <button v-if="quickFilterActive || isGeolocationSearch" @click="clearAllFilters" class="ml-auto text-sm text-indigo-600 hover:underline">Mostrar todos los GymPals</button>
                 </div>
 
                 <!-- Divisoria y resto de filtros -->

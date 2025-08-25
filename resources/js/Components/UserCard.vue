@@ -43,6 +43,10 @@ function getInterestName(id) {
         <p v-if="user.username" class="text-sm text-gray-500">@{{ user.username }}</p>
         <p v-if="user.location_city" class="text-xs text-gray-500 mt-1">{{ user.location_city }}</p>
 
+        <p v-if="user.distance !== undefined" class="text-xs font-semibold text-indigo-600 mt-1">
+            📍 A {{ Math.round(user.distance) }} km de ti
+        </p>
+
         <!-- Score de afinidad visual (solo la barra) -->
         <div v-if="user.affinity_score !== undefined" class="w-full mt-3 mb-1">
             <div class="flex items-center justify-between mb-1">
