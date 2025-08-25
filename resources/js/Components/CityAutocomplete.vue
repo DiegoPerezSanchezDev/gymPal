@@ -1,0 +1,91 @@
+<script setup>
+import { ref, watch } from 'vue';
+import debounce from 'lodash/debounce';
+
+// --- PROPS Y EMITS ---
+const props = defineProps({
+    modelValue: { type: String, default: '' }, // Para v-model con el nombre de la ciudad
+    apiKey: { type: String, required: true }  // La clave de API que le pasaremos
+});
+const emit = defineEmits(['update:modelValue', 'city-selected']); // 'city-selected' enviará el objeto completo
+
+// --- ESTADO INTERNO DEL COMPONENTE ---
+const rootEl = ref(null); // Ref para detectar clics fuera
+const searchQuery = ref(props.modelValue); // El texto que el usuario escribe
+const suggestions = ref([]);
+const isLoading = ref(false);
+const isOpen = ref(false);
+
+// --- LÓGICA DE API ---
+// Llama a Geoapify, pero solo 300ms después de que el usuario deja de teclear
+const fetchSuggestions = debounce(async () => {
+    if (searchQuery.value.length < 3) {
+        suggestions.value = [];
+        isOpen.value = false;
+        return;
+    }
+    isLoading.value = true;
+    try {
+        const response = await fetch(`https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(searchQuery.value)}&type=city&format=json&limit=5&apiKey=${props.apiKey}`);
+        const data = await response.json();
+        suggestions.value = data.results || [];
+        isOpen.value = suggestions.value.length > 0;
+    } catch (error) {
+        console.error('Error al obtener sugerencias de ciudad:', error);
+    } finally {
+        isLoading.value = false;
+    }
+}, 300);
+
+// Cuando el usuario escribe, actualizamos el v-model y buscamos sugerencias
+watch(searchQuery, (newValue) => {
+    emit('update:modelValue', newValue);
+    fetchSuggestions();
+});
+
+// Cuando el usuario selecciona una ciudad de la lista
+function selectSuggestion(suggestion) {
+    const formattedCity = suggestion.city ? `${suggestion.city}, ${suggestion.country}` : suggestion.name;
+    searchQuery.value = formattedCity;
+    isOpen.value = false;
+    // Emitimos un objeto completo con todos los datos al componente padre
+    emit('city-selected', {
+        name: formattedCity,
+        lat: suggestion.lat,
+        lon: suggestion.lon
+    });
+}
+
+// Lógica para cerrar el dropdown si se hace clic fuera
+const handleClickOutside = (event) => {
+if (rootEl.value && !rootEl.value.contains(event.target)) {
+    isOpen.value = false;
+}
+};
+watch(isOpen, (isShown) => {
+if (isShown) { document.addEventListener('click', handleClickOutside); } 
+else { document.removeEventListener('click', handleClickOutside); }
+});
+</script>
+
+<template>
+    <div ref="rootEl" class="relative">
+        <input
+            type="text"
+            v-model="searchQuery"
+            class="block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+            placeholder="Empieza a escribir una ciudad..."
+            autocomplete="off"
+        />
+        <div v-if="isOpen && (suggestions.length > 0 || isLoading)" class="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg">
+            <div v-if="isLoading" class="px-4 py-2 text-sm text-gray-500">Buscando...</div>
+            <ul v-else>
+                <li v-for="suggestion in suggestions" :key="suggestion.place_id" class="border-b last:border-b-0">
+                    <button type="button" class="w-full text-left px-4 py-2 text-sm hover:bg-indigo-50" @click="selectSuggestion(suggestion)">
+                        {{ suggestion.formatted }}
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+</template>

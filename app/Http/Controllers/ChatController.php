@@ -1,0 +1,185 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\User;
+use App\Models\Conversation; // Importa el modelo Conversation
+use Inertia\Inertia;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str; 
+use Illuminate\Support\Facades\DB; 
+use Illuminate\Support\Facades\Log;
+
+class ChatController extends Controller
+{
+    /**
+     * Muestra la lista de conversaciones del usuario autenticado.
+     */
+    public function index()
+    {
+        $currentUser = Auth::user();
+
+        // Obtener las conversaciones del usuario actual
+        // Cargar también los participantes de cada conversación y el último mensaje
+        $conversations = $currentUser->conversations() // Usa la relación definida en el modelo User
+            ->with([
+                // Cargar los participantes de la conversación, EXCLUYENDO al usuario actual
+                'users' => function ($query) use ($currentUser) {
+                    $query->where('users.id', '!=', $currentUser->id)
+                          ->select(['users.id', 'users.name', 'users.username', 'users.profile_picture_url']); // Selecciona solo los campos necesarios
+                },
+                // Cargar el último mensaje de la conversación
+                'latestMessage' => function ($query) {
+                    $query->select(['conversation_id', 'user_id', 'body', 'created_at']) // Campos necesarios del mensaje
+                          ->with(['user:id,name']); // Cargar el remitente del último mensaje (solo id y name)
+                }
+            ])
+            // Ordenar las conversaciones por la fecha del último mensaje (si tienes 'last_message_at' en 'conversations')
+            // o por la fecha de creación/actualización de la tabla pivote o la conversación misma.
+            // Si no tienes last_message_at, podrías ordenar por created_at o updated_at de la conversación.
+            ->orderByDesc('conversations.last_message_at') // O 'conversations.updated_at'
+            ->paginate(15); // Paginar las conversaciones
+
+        // Transformar las conversaciones para el frontend si es necesario
+        // Por ejemplo, determinar el "nombre" o "avatar" de la conversación (para chats 1-a-1, será el del otro usuario)
+        $conversations->through(function ($conversation) use ($currentUser) {
+            $otherUser = $conversation->users->first(); // En un chat 1-a-1, users solo tendrá al otro usuario
+            return [
+                'id' => $conversation->id,
+                'chat_title' => $otherUser ? $otherUser->name : 'Chat Desconocido',
+                'chat_avatar' => $otherUser ? ($otherUser->profile_picture_url ?: 'https://ui-avatars.com/api/?name='.urlencode($otherUser->name).'&background=random&color=fff') : 'https://ui-avatars.com/api/?name=G+P&background=random&color=fff',
+                'other_user_username' => $otherUser ? $otherUser->username : null, // Para el enlace al chat individual
+                'last_message_body' => $conversation->latestMessage ? Str::limit($conversation->latestMessage->body, 30) : 'No hay mensajes...',
+                'last_message_sender' => $conversation->latestMessage && $conversation->latestMessage->user ? ($conversation->latestMessage->user_id === $currentUser->id ? 'Tú' : $conversation->latestMessage->user->name) : '',
+                'last_message_at_human' => $conversation->latestMessage ? $conversation->latestMessage->created_at->diffForHumans() : ($conversation->updated_at ? $conversation->updated_at->diffForHumans() : ''),
+                'unread_count' => 0, // Implementar lógica de no leídos después
+            ];
+        });
+
+
+        return Inertia::render('Chat/Index', [
+            'title' => 'Mis Conversaciones',
+            'conversations' => $conversations,
+            'isLoginPage' => false,
+            'isRegisterPage' => false,
+        ]);
+    }
+
+    public function show(User $user) // $otherUser es el perfil que se visita/con quien se quiere chatear
+{
+    if (!$user->exists) {
+        // Loguear esto es importante para saber que está pasando
+        Log::warning("ChatController@show: Se intentó acceder al chat con un usuario que no existe en la BD (ID de la URL probablemente inválido). Debería ser un 404 por RBM.");
+        abort(404, 'Usuario no encontrado.'); // Forzar un 404
+    }
+
+    $currentUser = Auth::user();
+
+    if ($currentUser->id === $user->id) {
+        return redirect()->route('chat.index')->with('error_toast', 'No puedes chatear contigo mismo.');
+    }
+
+    // Intentar encontrar una conversación existente entre estos dos usuarios y nadie más.
+    $conversation = Conversation::query()
+        // Asegurar que el currentUser participa
+        ->whereHas('users', function ($q) use ($currentUser) {
+            $q->where('users.id', $currentUser->id);
+        })
+        // Asegurar que el otherUser participa
+        ->whereHas('users', function ($q) use ($user) {
+            $q->where('users.id', $user->id);
+        })
+        // Asegurar que la conversación tenga EXACTAMENTE 2 participantes
+        ->withCount('users')
+        ->having('users_count', '=', 2) // Usamos HAVING para filtrar por el resultado de una función agregada (COUNT)
+        ->first();
+
+        if (!$conversation) {
+            // Crear una nueva conversación si no existe una exclusiva entre ellos
+            // Usar una transacción para asegurar la atomicidad
+            $conversation = DB::transaction(function () use ($currentUser, $user) {
+                // ----- DEBUG -----
+                if (!$currentUser) {
+                    Log::error('ChatController@show: $currentUser es NULL dentro de la transacción. Revisa middleware auth.');
+                    // Considera lanzar una excepción o redirigir si esto ocurre,
+                    // aunque el middleware 'auth' debería prevenirlo.
+                    // Por ahora, para depurar, podemos detener:
+                    dd('ERROR FATAL: $currentUser es NULL dentro de la transacción. Revisa middleware auth.');
+                }
+                if (!$user || !$user->exists) { // $otherUser->exists para confirmar que es un modelo persistido
+                    Log::error('ChatController@show: $user es NULL o no existe en la DB. Revisa Route Model Binding o middlewares.');
+                    // El RBM debería haber lanzado 404, esto sería muy raro.
+                    dd('ERROR FATAL: $user es NULL o no existe en la DB. Revisa Route Model Binding o middlewares.', $user);
+                }
+                
+                Log::info("ChatController@show DEBUG: Intentando crear conversación. CurrentUser ID: " . $user->id . ", OtherUser ID: " . $user->id);
+                // ----- /DEBUG -----
+    
+                // Asegúrate de que 'last_message_at' sea fillable en el modelo Conversation
+                // o usa forceCreate si estás seguro de los atributos.
+                $newConversation = Conversation::create(['last_message_at' => now()]); 
+                Log::info("ChatController@show DEBUG: Nueva conversación creada con ID: " . $newConversation->id);
+                
+                $idsToAttach = [$currentUser->id, $user->id];
+                Log::info("ChatController@show DEBUG: IDs para adjuntar: " . print_r($idsToAttach, true));
+                
+                // ----- DEBUG MÁS PROFUNDO -----
+                if (in_array(null, $idsToAttach, true)) {
+                    Log::error('ChatController@show: ¡ALERTA! Uno de los IDs es NULL antes de attach(). IDs: ' . print_r($idsToAttach, true));
+                    Log::error('ChatController@show: CurrentUser Object: ' . print_r($currentUser->toArray(), true)); // Loguear el objeto completo puede ser mucho, usa ->id si es suficiente
+                    Log::error('ChatController@show: OtherUser Object: ' . print_r($user->toArray(), true));
+                    Log::error('ChatController@show: NewConversation Object: ' . print_r($newConversation->toArray(), true));
+                    dd('¡ALERTA! Uno de los IDs es NULL antes de attach()', $idsToAttach, $currentUser, $user, $newConversation);
+                }
+                // ----- /DEBUG MÁS PROFUNDO -----
+    
+                $newConversation->users()->attach($idsToAttach); // Esta sería la línea 96
+                Log::info("ChatController@show DEBUG: Usuarios adjuntados a la conversación ID " . $newConversation->id);
+                
+                return $newConversation;
+            });
+    }
+
+    // Marcar mensajes como leídos (si el usuario actual no es el remitente)
+    $conversation->messages()
+        ->where('user_id', $user->id)
+        ->whereNull('read_at')
+        ->update(['read_at' => now()]);
+
+    $messages = $conversation->messages()
+        ->with('user:id,name,username,profile_picture_url')
+        ->latest() // Ordena por created_at DESC (más recientes primero)
+        ->paginate(25);
+
+    return Inertia::render('Chat/Show', [
+        'title' => 'Chat con ' . $user->name,
+        'chatWithUser' => $user->only(['id', 'name', 'username', 'profile_picture_url']),
+        'conversationId' => $conversation->id,
+        'messages' => $messages, //
+    ]);
+}
+
+    // Método para guardar un nuevo mensaje (se llamaría vía POST desde Chat/Show.vue)
+    public function storeMessage(Request $request, Conversation $conversation)
+    {
+        $validated = $request->validate(['body' => 'required|string|max:2000']);
+        $currentUser = Auth::user();
+
+        if (!$conversation->users()->where('user_id', $currentUser->id)->exists()) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
+        $message = $conversation->messages()->create([
+            'user_id' => $currentUser->id,
+            'body' => $validated['body'],
+        ]);
+
+        $conversation->update(['last_message_at' => now()]); // Actualiza el timestamp
+
+        // event(new NewMessageSent($message->load('user:id,name,profile_picture_url'))); // Para broadcasting
+
+        // Devolver el mensaje con su usuario cargado para el frontend
+        return response()->json($message->load('user:id,name,username,profile_picture_url'));
+    }
+}
