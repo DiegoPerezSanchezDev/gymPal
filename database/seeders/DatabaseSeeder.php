@@ -36,6 +36,12 @@ class DatabaseSeeder extends Seeder
         $this->call([
             MessageSeeder::class,            // Necesita Conversations
         ]);
+
+        //Bloque 4
+
+        $this->call([
+            TestUsersSeeder::class,
+        ]);
         
     }
 }
