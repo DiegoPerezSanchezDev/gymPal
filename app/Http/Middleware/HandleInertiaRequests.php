@@ -44,7 +44,7 @@ class HandleInertiaRequests extends Middleware
                     'location_city' => $user->location_city,
                     'availability_general' => $user->availability_general, // Asume que esto es un atributo directo o ya procesado
                     'experience_level' => $user->experience_level,
-                    
+                    'looking_for_interest_id' => $user->looking_for_interest_id,
                     // Cargar la relación fitnessInterests si el usuario existe
                     'fitness_interests' => $user->loadMissing('fitnessInterests')->fitnessInterests
                 ] : null,

@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 // Podrías necesitar importar el modelo Post si no está en el mismo namespace y lo usas en otro lugar.
 // use App\Models\Post;
 
@@ -37,7 +38,7 @@ class User extends Authenticatable // Implementa MustVerifyEmail si es necesario
         'looking_for_interest_id',  // Para el filtro "Buscando Compañero"
         'latitude',                 // Para geolocalización
         'longitude',                // Para geolocalización
-        'availability_general',     // Asegúrate de que este ya estaba
+        'availability_general',   
     ];
 
     /**
@@ -63,6 +64,11 @@ class User extends Authenticatable // Implementa MustVerifyEmail si es necesario
             // Si 'availability_general' se guarda como JSON en la BD:
             'availability_general' => 'array',
         ];
+    }
+
+    public function lookingForInterest(): BelongsTo
+    {
+        return $this->belongsTo(FitnessInterest::class, 'looking_for_interest_id');
     }
 
     /* protected $appends = ['fitnessInterests']; */
@@ -113,10 +119,17 @@ class User extends Authenticatable // Implementa MustVerifyEmail si es necesario
     return $this->belongsToMany(Conversation::class);
 }
 
-    public function fitnessInterests(): BelongsToMany
-    {
-        return $this->belongsToMany(FitnessInterest::class, 'fitness_interest_user')->withTimestamps();
-    }
+public function fitnessInterests(): BelongsToMany
+{
+    return $this->belongsToMany(
+        FitnessInterest::class,    // 1. Modelo con el que nos relacionamos
+        'fitness_interest_user', // 2. Nombre de la TABLA PIVOTE
+        'user_id',                 // 3. Nombre de la CLAVE FORÁNEA de ESTE modelo (User) en la tabla pivote
+        'fitness_interest_id',   // 4. Nombre de la CLAVE FORÁNEA del OTRO modelo en la tabla pivote
+        'id',                      // 5. Nombre de la CLAVE PRIMARIA de ESTE modelo (User)
+        'id'                       // 6. Nombre de la CLAVE PRIMARIA del OTRO modelo (FitnessInterest)
+    )->withTimestamps();
+}
 
     // --- OTRAS RELACIONES POTENCIALES PARA GYMPAL (A FUTURO) ---
 

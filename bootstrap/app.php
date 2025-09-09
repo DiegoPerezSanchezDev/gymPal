@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use App\Http\Middleware\UpdateUserActivity;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,7 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         // Añadimos nuestro nuevo middleware al final del grupo 'web'.
         $middleware->append(\App\Http\Middleware\UpdateUserActivity::class);
-
+        $middleware->web(append: [
+            UpdateUserActivity::class,
+        ]);
         //
     })
     ->withExceptions(function (Exceptions $exceptions) {

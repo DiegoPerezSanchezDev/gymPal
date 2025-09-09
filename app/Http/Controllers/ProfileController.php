@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Log; // Para logging
 use Inertia\Inertia;
 use App\Models\User;
-// use Inertia\Response; // No es necesario si usas el type hint \Inertia\Response
+use Illuminate\Validation\Rule; 
 
 class ProfileController extends Controller
 {
@@ -56,14 +56,9 @@ class ProfileController extends Controller
         $user->save();
 
         // Guardar intereses deportivos (relación muchos a muchos)
-        if (isset($data['interests'])) {
-            $user->fitnessInterests()->sync($data['interests']);
-        }else {
-            // Si no se envía ningún interés, los desvinculamos todos
-            $user->fitnessInterests()->detach();
-        }
+        $user->fitnessInterests()->sync($validatedData['interests'] ?? []);
 
-        return Redirect::route('profile.show.public', ['user' => $request->user()->username])
+        return Redirect::route('profile.show.public', ['user' => $user->username])
             ->with('success_toast', 'Perfil actualizado correctamente.');
     }
 
@@ -93,73 +88,54 @@ class ProfileController extends Controller
      */
     public function showPublic(User $user): \Inertia\Response // $user es inyectado por Route Model Binding
     {
-        // Cargar posts paginados
-        $posts = $user->posts()->paginate(9);
+       // Usamos loadMissing para cargar relaciones solo si no han sido cargadas ya.
+        $user->loadMissing(['fitnessInterests', 'posts', 'followers', 'following']);
 
-        $isFollowing = false;
-        $isOwnProfile = false;
-        $followersCount = 0;
-        $followingCount = 0;
+        $authenticatedUser = Auth::user();
 
-        // Cargar la relación fitnessInterests para acceder a ella
-        // Si 'fitnessInterests' es un atributo JSON en el modelo User, no necesitas load().
-        // Si es una relación BelongsToMany, sí.
-        if (method_exists($user, 'fitnessInterests')) {
-            $user->load('fitnessInterests');
-            $fitnessInterestsData = $user->fitnessInterests ? $user->fitnessInterests->pluck('name')->all() : [];
-        } else {
-            // Si fitness_interests es un atributo (ej: JSON casteado a array)
-            $fitnessInterestsData = $user->fitness_interests ?? [];
-        }
-
-
-        if (Auth::check()) {
-            $authenticatedUser = Auth::user();
-            $isOwnProfile = $authenticatedUser->id === $user->id;
-
-            if (!$isOwnProfile) {
-                if (method_exists($authenticatedUser, 'isFollowing')) {
-                    $isFollowing = $authenticatedUser->isFollowing($user);
-                } else {
-                    Log::warning('ProfileController@showPublic: El método isFollowing() no existe en el modelo User del usuario autenticado.');
-                }
-            }
-        }
-
-        // Contadores de seguidores/seguidos (solo si los métodos existen)
-        if (method_exists($user, 'followers')) {
-            $followersCount = $user->followers()->count();
-        }
-        if (method_exists($user, 'following')) {
-            $followingCount = $user->following()->count();
-        }
-
-        // Preparar los datos del perfil del usuario a mostrar
-        $profileUserData = [
+        return Inertia::render('Profile/ShowPublic', [
+            'title' => 'Perfil de ' . ($user->display_name ?: $user->name),
+            'profileUser' => [
             'id' => $user->id,
             'name' => $user->name,
             'username' => $user->username,
             'display_name' => $user->display_name,
             'bio' => $user->bio,
-            'profile_picture_url' => $user->profile_picture_url, // Considera un accesor para URL completa o placeholder
+            'profile_picture_url' => $user->profile_picture_url,
             'location_city' => $user->location_city,
-            'availability_general' => $user->availability_general,
+            'availability_general' => $user->availability_general, // Laravel ya lo convierte a array
             'experience_level' => $user->experience_level,
             'created_at' => $user->created_at,
-            'posts_count' => $user->posts()->count(),
-            'followers_count' => $followersCount,
-            'following_count' => $followingCount,
-            'fitness_interests' => $fitnessInterestsData,
-        ];
-
-        return Inertia::render('Profile/ShowPublic', [
-            'title' => 'Perfil de ' . ($profileUserData['display_name'] ?: $profileUserData['name']),
-            'profileUser' => $profileUserData,
-            'posts' => $posts,
-            'isFollowing' => $isFollowing,
-            'isOwnProfile' => $isOwnProfile,
-            'isLoginPage' => false,
-            'isRegisterPage' => false,
+            'posts_count' => $user->posts->count(),
+            'followers_count' => $user->followers->count(),
+            'following_count' => $user->following->count(),
+               'fitness_interests' => $user->fitnessInterests->pluck('name'), // Forma limpia de obtener solo los nombres
+            ],
+            'posts' => $user->posts()->paginate(9),
+            'isFollowing' => $authenticatedUser ? $authenticatedUser->isFollowing($user) : false,
+            'isOwnProfile' => $authenticatedUser ? $authenticatedUser->id === $user->id : false,
         ]);
     }
+
+    public function updateLookingForInterest(Request $request): \Illuminate\Http\JsonResponse
+    {
+        //Validamos los datos que nos llegan.
+        $validated = $request->validate([
+            'interest_id' => ['required', 'integer', Rule::exists('fitness_interests', 'id')],
+        ]);
+
+        //Obtenemos el usuario autenticado.
+        $user = $request->user();
+
+        //Actualizamos el campo específico.
+        $user->looking_for_interest_id = $validated['interest_id'];
+
+        //Guardamos los cambios en la base de datos.
+        $user->save();
+
+        //Devolvemos una respuesta JSON para confirmar que todo ha ido bien.
+        return response()->json(['message' => 'Interest updated successfully.']);
+    }
+
+
 }

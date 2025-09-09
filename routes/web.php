@@ -66,16 +66,19 @@ Route::middleware('auth')->group(function () {
         ->name('chat.messages.store');
 
         // En routes/web.php (dentro del middleware 'auth' si es necesario)
-Route::get('/debug-user-lookup/{user:username}', function (\App\Models\User $user) {
-    return response()->json([
-        'message' => 'User lookup test',
-        'user_exists' => $user->exists,
-        'user_id' => $user->id,
-        'user_username' => $user->username,
-        'user_attributes' => $user->toArray(),
-        'route_parameter_value' => request()->route('user')
-    ]);
-});
+    Route::get('/debug-user-lookup/{user:username}', function (\App\Models\User $user) {
+        return response()->json([
+            'message' => 'User lookup test',
+            'user_exists' => $user->exists,
+            'user_id' => $user->id,
+            'user_username' => $user->username,
+            'user_attributes' => $user->toArray(),
+            'route_parameter_value' => request()->route('user')
+        ]);
+    });
+
+    //Ruta para actualizar dinámicamente el interés de búsqueda del usuario.
+    Route::patch('/profile/looking-for', [ProfileController::class, 'updateLookingForInterest'])->name('profile.updateLookingFor');
 
     // RUTAS PARA LIKES (ejemplo para PostCard.vue)
     // Route::post('/posts/{post}/like', [LikeController::class, 'toggle'])->name('posts.like');
