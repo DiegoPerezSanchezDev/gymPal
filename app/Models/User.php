@@ -131,7 +131,21 @@ public function fitnessInterests(): BelongsToMany
     )->withTimestamps();
 }
 
-    // --- OTRAS RELACIONES POTENCIALES PARA GYMPAL (A FUTURO) ---
+    /**
+ * Solicitudes de conexión que este usuario ha ENVIADO a otros.
+ */
+public function sentConnections()
+{
+    return $this->hasMany(\App\Models\Connection::class, 'sender_id');
+}
+
+/**
+ * Solicitudes de conexión que este usuario ha RECIBIDO de otros.
+ */
+public function receivedConnections()
+{
+    return $this->hasMany(\App\Models\Connection::class, 'receiver_id');
+}
 
 
 }

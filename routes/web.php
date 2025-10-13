@@ -8,6 +8,7 @@ use App\Http\Controllers\FollowController;
 use App\Http\Controllers\ChatController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ConnectionController;
 use Inertia\Inertia;
 
 Route::get('/', function () {
@@ -80,8 +81,18 @@ Route::middleware('auth')->group(function () {
     //Ruta para actualizar dinámicamente el interés de búsqueda del usuario.
     Route::patch('/profile/looking-for', [ProfileController::class, 'updateLookingForInterest'])->name('profile.updateLookingFor');
 
-    // RUTAS PARA LIKES (ejemplo para PostCard.vue)
-    // Route::post('/posts/{post}/like', [LikeController::class, 'toggle'])->name('posts.like');
+    // Para ENVIAR una nueva solicitud de conexión a un usuario
+    Route::post('/connections/{user}', [ConnectionController::class, 'store'])->name('connections.store');
+    
+    // Para ACEPTAR una solicitud que hemos recibido
+    // Nota: Le pasamos el ID de la 'connection', no del usuario
+    Route::patch('/connections/{connection}/accept', [ConnectionController::class, 'accept'])->name('connections.accept');
+
+    // Para RECHAZAR una solicitud que hemos recibido
+    Route::patch('/connections/{connection}/reject', [ConnectionController::class, 'reject'])->name('connections.reject');
+
+    // Para ELIMINAR una conexión que ya teníamos (romper amistad)
+    Route::delete('/connections/{connection}', [ConnectionController::class, 'destroy'])->name('connections.destroy');
 
 });
 
