@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class DiscoverController extends Controller
 {
@@ -16,17 +17,16 @@ class DiscoverController extends Controller
     {
         // 1. DATOS DEL USUARIO ACTUAL
         // Aseguramos la carga de intereses del usuario actual.
-        $usuarioActual = Auth::user() ? User::with('fitnessInterests')->find(Auth::id()) : null;
+        $usuarioActual = Auth::user() ? User::with('fitnessInterests')->findOrFail(Auth::id()) : null;
 
-        // 2. QUERY BUILDER PRINCIPAL
-        // Es CRÍTICO cargar las relaciones 'fitnessInterests' y 'lookingForInterest'
-        // para que la vista de Vue pueda acceder a ellas.
+        // 2. QUERY BUILDER PRINCIPAL - INICIAMOS LA CONSULTA
+        // Aplicamos aquí las condiciones que deben cumplirse SIEMPRE.
         $usersQuery = User::query()->with(['fitnessInterests', 'lookingForInterest']);
 
         if ($usuarioActual) {
-            $usersQuery->where('id', '!=', $usuarioActual->id);
+            $usersQuery->where('users.id', '!=', $usuarioActual->id);
         }
-
+        
         // Variable para controlar el estado de los filtros
         $appliedSpecificFilter = false;
         $searchedInterestId = $request->input('interest_id', null);
@@ -138,8 +138,8 @@ class DiscoverController extends Controller
             if (!$appliedSpecificFilter && !$filtrosManualesAplicados) {
                 if ($usuarioActual && $usuarioActual->location_city) {
                     $usersQuery->selectRaw("users.*, CASE WHEN location_city = ? THEN 1 ELSE 0 END AS is_in_my_city", [$usuarioActual->location_city])
-                               ->orderBy('is_in_my_city', 'desc')
-                               ->orderBy('last_activity_at', 'desc');
+                            ->orderBy('is_in_my_city', 'desc')
+                            ->orderBy('last_activity_at', 'desc');
                 } else {
                     $usersQuery->orderBy('last_activity_at', 'desc');
                 }
@@ -153,19 +153,19 @@ class DiscoverController extends Controller
             
             if (!$usuarioActual) {
                 $user->affinity_score = 0;
-                $user->common_interests = [];
+                $user->common_interests_ids = [];
                 $user->common_availability = [];
                 return $user;
             }
 
-            $interesesUsuarioActual = $usuarioActual->fitnessInterests->pluck('id')->toArray();
+            $interesesUsuarioActualIds = $usuarioActual->fitnessInterests->pluck('id');
             $disponibilidadUsuarioActual = (array) $usuarioActual->availability_general;
             $ciudadUsuarioActual = $usuarioActual->location_city;
 
-            $userInterests = $user->fitnessInterests->pluck('id')->toArray();
+            $userInterestsIds = $user->fitnessInterests->pluck('id');
 
-            $interesesComunes = array_intersect($interesesUsuarioActual, $userInterests);
-            $scoreIntereses = count($interesesUsuarioActual) > 0 ? (count($interesesComunes) / count($interesesUsuarioActual)) * 40 : 0;
+            $interesesComunesIds = $interesesUsuarioActualIds->intersect($userInterestsIds);
+            $scoreIntereses = $interesesUsuarioActualIds->count() > 0 ? ($interesesComunesIds->count() / $interesesUsuarioActualIds->count()) * 40 : 0;
 
             $disponibilidadComun = array_intersect($disponibilidadUsuarioActual, (array) $user->availability_general);
             $scoreDisponibilidad = count($disponibilidadUsuarioActual) > 0 ? (count($disponibilidadComun) / count($disponibilidadUsuarioActual)) * 20 : 0;
@@ -173,11 +173,14 @@ class DiscoverController extends Controller
             $scoreCiudad = ($ciudadUsuarioActual && $user->location_city && strtolower($ciudadUsuarioActual) === strtolower($user->location_city)) ? 40 : 0;
 
             $user->affinity_score = round($scoreIntereses + $scoreDisponibilidad + $scoreCiudad);
-            $user->common_interests = array_values($interesesComunes);
             $user->common_availability = array_values($disponibilidadComun);
+
+            $user->common_interests_ids = $interesesComunesIds->values()->all();
 
             return $user;
         })->withQueryString();
+
+        Log::info('Datos FINALES enviados a Inertia:', $users->toArray());
 
         // 5. RENDERIZADO DE LA VISTA INERTIA
         return Inertia::render('Discover', [
