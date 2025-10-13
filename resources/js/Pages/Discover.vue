@@ -1,6 +1,7 @@
 <script setup>
 import { Head, useForm, usePage, router } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
+import axios from 'axios';
 
 // Componentes
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
@@ -12,13 +13,13 @@ import CityAutocomplete from '@/Components/CityAutocomplete.vue';
 import SelectInput from '@/Components/SelectInput.vue';
 
 const geoapifyKey = usePage().props.geoapify_key;
-
 const props = defineProps({
     users: Object,
     sugerencias: Array,
     filters: Object,
     title: String,
     interests: Array,
+    searchedInterestId: [String, Number, null],
 });
 
 function handleCitySelected(cityData) {
@@ -36,7 +37,6 @@ const searchForm = useForm({
     experience_level: props.filters.experience_level || '',
 });
 
-// FUNCIÓN SIMPLIFICADA: Ahora solo se llama al pulsar el botón "Aplicar"
 const submitManualFilters = () => {
     router.get(route('discover.index'), searchForm.data(), {
         preserveState: true,
@@ -45,7 +45,6 @@ const submitManualFilters = () => {
     });
 };
 
-// FUNCIÓN SIMPLIFICADA Y ROBUSTA
 function searchNearby() {
     if (!navigator.geolocation) {
         geolocationStatus.value = "Tu navegador no soporta geolocalización.";
@@ -55,12 +54,11 @@ function searchNearby() {
 
     const success = (position) => {
         geolocationStatus.value = "¡Ubicación encontrada! Buscando...";
-        // Enviamos la petición y YA ESTÁ. Sin resetear formularios ni nada que pueda causar conflictos.
         router.get(route('discover.index'), {
             lat: position.coords.latitude,
             lon: position.coords.longitude
         }, {
-            replace: true, // Sin preserveState para asegurar el refresco
+            replace: true,
             onFinish: () => { geolocationStatus.value = ''; }
         });
     };
@@ -73,7 +71,42 @@ function searchNearby() {
     navigator.geolocation.getCurrentPosition(success, error, { timeout: 10000 });
 }
 
-// El resto de funciones no cambian
+// --- LÓGICA PARA "BUSCANDO COMPAÑERO" ---
+const defaultUserInterestId = computed(() => usePage().props.auth.user?.looking_for_interest_id);
+// Usamos props.searchedInterestId directamente, ya que lo estamos pasando desde el controlador
+const selectedInterestId = ref(props.searchedInterestId);
+
+// Watch #1: Se encarga de SINCRONIZAR el 'ref' con los props de la página
+watch(() => props.searchedInterestId, (newFilterId) => {
+    selectedInterestId.value = newFilterId || defaultUserInterestId.value || null;
+}, { immediate: true });
+
+// Watch #2: VERSIÓN CORREGIDA con Inertia.get
+watch(selectedInterestId, (newId, oldId) => {
+    if (oldId !== undefined && newId !== oldId) {
+        
+        saveInterestPreference(newId);
+
+        router.get(route('discover.index'), {
+            filtro_rapido: 'buscando_companero',
+            interest_id: newId
+        }, {
+            replace: true,
+            preserveScroll: true,
+            preserveState: true,
+        });
+    }
+});
+
+function saveInterestPreference(interestId) {
+    if (!interestId) return;
+    axios.patch(route('profile.updateLookingFor'), {
+        interest_id: interestId
+    }).catch(error => {
+        console.error("Error al guardar la preferencia de interés:", error);
+    });
+}
+
 const filtrosActivos = computed(() => usePage().props.filters);
 const quickFilterActive = computed(() => !!filtrosActivos.value.filtro_rapido);
 const isGeolocationSearch = computed(() => !!filtrosActivos.value.lat);
@@ -82,16 +115,30 @@ function clearAllFilters() {
     router.get(route('discover.index'), {}, { replace: true });
 }
 
+function applyQuickFilter(nombreFiltro) {
+    if (nombreFiltro === 'buscando_companero') {
+        const interestToSearch = defaultUserInterestId.value || null;
+        if (!interestToSearch) {
+            alert('¡Por favor, selecciona un deporte en tu perfil para usar este filtro!');
+            return;
+        }
+        router.get(route('discover.index'), {
+            filtro_rapido: nombreFiltro,
+            interest_id: interestToSearch
+        }, {
+            replace: true,
+        });
+        return;
+    }
+    const filtroActual = filtrosActivos.value.filtro_rapido;
+    const nuevoFiltro = filtroActual === nombreFiltro ? null : nombreFiltro;
+    router.get(route('discover.index'), { filtro_rapido: nuevoFiltro }, { replace: true });
+}
+
 function toggleManualFilters() {
     if (!quickFilterActive.value && !isGeolocationSearch.value) {
         manualFiltersVisible.value = !manualFiltersVisible.value;
     }
-}
-
-function applyQuickFilter(nombreFiltro) {
-    const filtroActual = filtrosActivos.value.filtro_rapido;
-    const nuevoFiltro = filtroActual === nombreFiltro ? null : nombreFiltro;
-    router.get(route('discover.index'), { filtro_rapido: nuevoFiltro }, { replace: true });
 }
 </script>
 
@@ -99,7 +146,6 @@ function applyQuickFilter(nombreFiltro) {
     <Head :title="title || 'Conectar'" />
 
     <AuthenticatedLayout>
-        <!-- Encabezado -->
         <div class="flex flex-col items-center justify-center pt-8 mb-8">
             <h2 class="text-3xl font-extrabold text-indigo-700 tracking-tight">Conectar</h2>
             <p class="text-lg text-gray-600 max-w-xl text-center">Encuentra compañeros para entrenar y haz nuevos amigos.</p>
@@ -107,27 +153,19 @@ function applyQuickFilter(nombreFiltro) {
 
         <div class="container mx-auto px-2 sm:px-4 pb-8">
             
-            <!-- Bloque de Sugerencias -->
             <div v-if="sugerencias && sugerencias.length > 0" class="mb-10">
-                <h2 class="text-2xl font-bold text-gray-800 mb-4 px-2 sm:px-0">Personas que podrían interesarte</h2>
-                <div class="flex overflow-x-auto space-x-4 pb-4 pl-2 sm:pl-0">
-                    <div v-for="user in sugerencias" :key="'suggestion-' + user.id" class="flex-shrink-0 w-72"><UserCard :user="user" /></div>
                 </div>
-            </div>
 
-            <!-- Panel de Filtros -->
             <div class="bg-white p-4 rounded-lg shadow-md mb-6">
-                <!-- Fila de Geolocalización y Limpieza -->
                 <div class="flex flex-col sm:flex-row gap-4 items-center pb-4">
                     <button @click="searchNearby" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-indigo-600 text-white font-bold rounded-md shadow-lg hover:bg-indigo-700 transition transform hover:scale-105">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                         Buscar Cerca de Mí
                     </button>
                     <p v-if="geolocationStatus" class="text-sm text-gray-600">{{ geolocationStatus }}</p>
-                    <button v-if="quickFilterActive || isGeolocationSearch" @click="clearAllFilters" class="ml-auto text-sm text-indigo-600 hover:underline">Mostrar todos los GymPals</button>
+                    <button v-if="quickFilterActive || isGeolocationSearch" @click="clearAllFilters" class="ml-auto text-sm text-indigo-600 hover:underline">Mostrar todos</button>
                 </div>
 
-                <!-- Divisoria y resto de filtros -->
                 <div class="border-t border-gray-200">
                     <div class="flex flex-wrap items-center gap-4 pt-4">
                         <button @click="applyQuickFilter('mas_activos')" :class="['px-3 py-1.5 text-sm font-semibold rounded-full border-2 transition', filtrosActivos.filtro_rapido === 'mas_activos' ? 'bg-indigo-600 text-white border-indigo-700 shadow-md' : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-100']">🔥 Más Activos</button>
@@ -141,7 +179,7 @@ function applyQuickFilter(nombreFiltro) {
                             <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 12H6"></path></svg>
                             Búsqueda Manual Avanzada
                         </button>
-                        <button v-if="manualFiltersVisible" @click="resetManualFilters" class="text-xs text-gray-500 hover:text-red-600 hover:underline">Limpiar filtros</button>
+                        <button v-if="manualFiltersVisible" @click="searchForm.reset()" class="text-xs text-gray-500 hover:text-red-600 hover:underline">Limpiar filtros</button>
                     </div>
 
                     <transition enter-active-class="transition ease-out duration-300" enter-from-class="opacity-0 -translate-y-2" enter-to-class="opacity-100 translate-y-0" leave-active-class="transition ease-in duration-200" leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 -translate-y-2">
@@ -157,18 +195,8 @@ function applyQuickFilter(nombreFiltro) {
                                         <CityAutocomplete v-model="searchForm.city" :api-key="geoapifyKey" @city-selected="handleCitySelected" class="mt-2"/>
                                     </div>
                                     <div>
-                                        <label for="experience_level" class="block text-sm font-medium leading-6 text-gray-900">Nivel</label>
-                                        <div class="relative mt-2">
-                                            <select v-model="searchForm.experience_level" id="experience_level" class="block w-full appearance-none rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
-                                                <option value="">Cualquiera</option>
-                                                <option value="Principiante">Principiante</option>
-                                                <option value="Intermedio">Intermedio</option>
-                                                <option value="Avanzado">Avanzado</option>
-                                            </select>
-                                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
-                                                <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>
-                                            </div>
-                                        </div>
+                                        <label class="block text-sm font-medium leading-6 text-gray-900">Nivel</label>
+                                        <SelectInput class="mt-2" v-model="searchForm.experience_level" :options="[{ value: '', label: 'Cualquiera' }, { value: 'Principiante', label: 'Principiante' }, { value: 'Intermedio', label: 'Intermedio' }, { value: 'Avanzado', label: 'Avanzado' }]" />
                                     </div>
                                     <div class="col-span-1 md:col-span-full">
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Disponibilidad</label>
@@ -179,16 +207,35 @@ function applyQuickFilter(nombreFiltro) {
                                         <TagsInput v-model="searchForm.interests" :interests="interests" />
                                     </div>
                                 </div>
+                                <div class="mt-6 flex justify-end">
+                                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white font-bold rounded-md shadow-sm hover:bg-indigo-700">
+                                        Aplicar Filtros
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     </transition>
                 </div>
             </div>
 
-            <!-- Lista de usuarios y paginación -->
+            <div v-if="filtrosActivos.filtro_rapido === 'buscando_companero'" 
+                class="bg-indigo-50 border-l-4 border-indigo-500 p-4 rounded-md mb-6 shadow-sm">
+                <div class="flex flex-col items-center gap-y-2">
+                    <label for="interest-select" class="block text-sm font-semibold text-indigo-800">Buscando compañeros para:</label>
+                    <select id="interest-select" v-model="selectedInterestId"
+                            class="block w-full max-w-xs rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        <option v-if="!selectedInterestId" :value="null" disabled>Selecciona un deporte</option>
+                        <option v-for="interest in interests" :key="interest.id" :value="interest.id">
+                            {{ interest.name }}
+                        </option>
+                    </select>
+                </div>
+            </div>
+
+
             <div v-if="users.data && users.data.length > 0">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    <UserCard v-for="user in users.data" :key="user.id" :user="user" />
+                    <UserCard v-for="user in users.data" :key="user.id" :user="user"  :active-filter="filtrosActivos.filtro_rapido" :searched-interest-id="props.searchedInterestId" />
                 </div>
                 <Pagination :links="users.links" class="mt-6" />
             </div>
