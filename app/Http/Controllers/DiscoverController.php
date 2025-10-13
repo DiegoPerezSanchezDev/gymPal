@@ -19,6 +19,14 @@ class DiscoverController extends Controller
         // Aseguramos la carga de intereses del usuario actual.
         $usuarioActual = Auth::user() ? User::with('fitnessInterests')->findOrFail(Auth::id()) : null;
 
+        $myConnections = collect();
+        if ($usuarioActual) {
+            // Obtenemos TODAS las conexiones relevantes (enviadas y recibidas) y las indexamos por el ID del OTRO usuario
+            $sent = \App\Models\Connection::where('sender_id', $usuarioActual->id)->get()->keyBy('receiver_id');
+            $received = \App\Models\Connection::where('receiver_id', $usuarioActual->id)->get()->keyBy('sender_id');
+            $myConnections = $sent->union($received);
+        }
+
         // 2. QUERY BUILDER PRINCIPAL - INICIAMOS LA CONSULTA
         // Aplicamos aquí las condiciones que deben cumplirse SIEMPRE.
         $usersQuery = User::query()->with(['fitnessInterests', 'lookingForInterest']);
@@ -147,7 +155,7 @@ class DiscoverController extends Controller
         }
 
         // 4. PAGINACIÓN Y POST-PROCESAMIENTO: CÁLCULO DE AFINIDAD
-        $users = $usersQuery->paginate(15)->through(function ($user) use ($usuarioActual) {
+        $users = $usersQuery->paginate(15)->through(function ($user) use ($usuarioActual, $myConnections) {
             // Carga explícita de la relación para evitar problemas de serialización en Inertia.
             $user->load('fitnessInterests', 'lookingForInterest');
             
@@ -177,10 +185,19 @@ class DiscoverController extends Controller
 
             $user->common_interests_ids = $interesesComunesIds->values()->all();
 
+            $user->connection_status = 'none'; // Estado por defecto
+            if ($myConnections->has($user->id)) {
+                $connection = $myConnections->get($user->id);
+                if ($connection->status === 'pending') {
+                    // Si la conexión está pendiente, necesitamos saber si la envié yo o me la enviaron a mí
+                    $user->connection_status = ($connection->sender_id === $usuarioActual->id) ? 'sent' : 'received';
+                } else {
+                    $user->connection_status = $connection->status;
+                }
+            }
+
             return $user;
         })->withQueryString();
-
-        Log::info('Datos FINALES enviados a Inertia:', $users->toArray());
 
         // 5. RENDERIZADO DE LA VISTA INERTIA
         return Inertia::render('Discover', [

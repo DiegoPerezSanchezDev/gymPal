@@ -1,7 +1,7 @@
-<!-- UserCard.vue - VERSIÓN FINAL CORREGIDA -->
 <script setup>
 import { Link } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed , ref } from 'vue';
+import axios from 'axios';
 
 const props = defineProps({
     user: {
@@ -18,8 +18,6 @@ const props = defineProps({
     }
 });
 
-// --- ¡AQUÍ ESTÁ LA CORRECCIÓN CLAVE! ---
-// Los datos de Laravel llegan en snake_case (fitness_interests), no en camelCase.
 const fitnessInterests = computed(() => Array.isArray(props.user.fitness_interests) ? props.user.fitness_interests : []);
 const commonInterestIds = computed(() => Array.isArray(props.user.common_interests_ids) ? props.user.common_interests_ids : []);
 
@@ -28,6 +26,25 @@ const isMatchingInterestSearch = computed(() => {
         props.user.looking_for_interest &&
         String(props.user.looking_for_interest.id) === String(props.searchedInterestId);
 });
+
+const connectionStatus = ref(props.user.connection_status || 'none');
+const isLoading = ref(false);
+
+// El método que se ejecutará al hacer clic en el botón
+async function sendConnectionRequest() {
+    isLoading.value = true;
+    try {
+        const response = await axios.post(route('connections.store', props.user.id));
+        if (response.status === 201) {
+            // Si tiene éxito, actualizamos el estado a 'sent'
+            connectionStatus.value = 'sent';
+        }
+    } catch (error) {
+        console.error("Error al enviar la solicitud:", error);
+    } finally {
+        isLoading.value = false;
+    }
+}
 </script>
 
 <template>
@@ -101,14 +118,44 @@ const isMatchingInterestSearch = computed(() => {
             </div>
         </div>
 
-        <div class="mt-4 flex gap-2 w-full justify-center">
+        <div class="mt-4 flex gap-2 w-full">
             <Link :href="route('profile.show.public', { user: user.username })"
-                class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+                class="inline-flex items-center justify-center w-1/2 px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
                 Ver Perfil
             </Link>
-            <button type="button" class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-green-400 to-pink-500">
-                Conectar
-            </button>
+            
+            <!-- Contenedor del Botón de Conexión Dinámico -->
+            <div class="w-1/2">
+                
+                <!-- ESTADO 1: No hay conexión. Se puede enviar solicitud. -->
+                <button v-if="connectionStatus === 'none'"
+                        @click="sendConnectionRequest"
+                        :disabled="isLoading"
+                        class="inline-flex items-center justify-center w-full px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-green-400 to-pink-500 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span v-if="!isLoading">Conectar</span>
+                    <span v-else>Enviando...</span>
+                </button>
+
+                <!-- Yo envié la solicitud y está pendiente. -->
+                <button v-else-if="connectionStatus === 'sent'" disabled
+                    class="inline-flex items-center justify-center w-full h-full px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-gray-100 bg-gradient-to-r from-gray-400 to-gray-500 cursor-not-allowed opacity-80">
+                Solicitud Enviada
+                </button>
+
+                <!-- Conectado-->
+                <button v-else-if="connectionStatus === 'accepted'" disabled
+                        class="inline-flex items-center justify-center w-full h-full px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-pink-500 to-green-500 cursor-not-allowed">
+                    ✓ Conectado
+                </button>
+
+                <!-- Responder -->
+                <Link v-else-if="connectionStatus === 'received'" 
+                    :href="route('connections.index')"
+                    class="inline-flex items-center justify-center w-full h-full px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-pink-500 to-orange-500 hover:brightness-110 transition-all">
+                    Responder
+                </Link>
+                
+            </div>
         </div>
     </div>
 </template>
