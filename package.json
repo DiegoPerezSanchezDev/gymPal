@@ -23,6 +23,7 @@
     },
     "dependencies": {
         "@heroicons/vue": "^2.2.0",
-        "alpinejs": "^3.14.9"
+        "alpinejs": "^3.14.9",
+        "lodash.debounce": "^4.0.8"
     }
 }

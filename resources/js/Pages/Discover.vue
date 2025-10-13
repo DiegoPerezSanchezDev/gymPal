@@ -2,6 +2,7 @@
 import { Head, useForm, usePage, router } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import axios from 'axios';
+import debounce from 'lodash.debounce';
 
 // Componentes
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
@@ -81,23 +82,29 @@ watch(() => props.searchedInterestId, (newFilterId) => {
     selectedInterestId.value = newFilterId || defaultUserInterestId.value || null;
 }, { immediate: true });
 
-// Watch #2: VERSIÓN CORREGIDA con Inertia.get
+const performSearch = (interestId) => {
+    saveInterestPreference(interestId);
+
+    router.get(route('discover.index'), {
+        filtro_rapido: 'buscando_companero',
+        interest_id: interestId
+    }, {
+        replace: true,
+        preserveScroll: true,
+        preserveState: true,
+    });
+};
+
+const debouncedSearch = debounce(performSearch, 500);
+
 watch(selectedInterestId, (newId, oldId) => {
     if (oldId !== undefined && newId !== oldId) {
-        
-        saveInterestPreference(newId);
-
-        router.get(route('discover.index'), {
-            filtro_rapido: 'buscando_companero',
-            interest_id: newId
-        }, {
-            replace: true,
-            preserveScroll: true,
-            preserveState: true,
-        });
+        debouncedSearch(newId);
     }
 });
 
+
+// La función 'saveInterestPreference' se mantiene exactamente igual.
 function saveInterestPreference(interestId) {
     if (!interestId) return;
     axios.patch(route('profile.updateLookingFor'), {

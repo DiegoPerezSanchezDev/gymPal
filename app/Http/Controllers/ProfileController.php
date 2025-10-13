@@ -56,7 +56,7 @@ class ProfileController extends Controller
         $user->save();
 
         // Guardar intereses deportivos (relación muchos a muchos)
-        $user->fitnessInterests()->sync($validatedData['interests'] ?? []);
+        $user->fitnessInterests()->sync($data['interests'] ?? []);
 
         return Redirect::route('profile.show.public', ['user' => $user->username])
             ->with('success_toast', 'Perfil actualizado correctamente.');

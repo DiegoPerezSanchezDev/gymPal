@@ -49,7 +49,6 @@ class ProfileUpdateRequest extends FormRequest
 
             // Valida que la disponibilidad sea un array. Cada elemento no debe superar los 50 caracteres.
             'availability_general' => ['nullable', 'array'],
-            'availability_general.*' => ['string', 'max:50'],
 
             // Valida que 'interests' sea un array.
             'interests' => ['nullable', 'array'],
