@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use App\Models\Connection;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -56,6 +57,14 @@ class HandleInertiaRequests extends Middleware
                 'warning_toast' => fn () => $request->session()->get('warning_toast'),
             ],
             'geoapify_key' => config('services.geoapify.key'),
+            'pendingRequestsCount' => function () use ($user) {
+                if ($user) {
+                    return Connection::where('receiver_id', $user->id)
+                                    ->where('status', 'pending')
+                                    ->count();
+                }
+                return 0;
+            },
         ]);
     }
 }

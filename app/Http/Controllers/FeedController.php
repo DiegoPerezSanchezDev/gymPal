@@ -9,24 +9,13 @@ class FeedController extends Controller
 {
     public function index()
     {
-        $simulatedAuthData = [
-            'user' => (object) [
-                'id' => 999,
-                'name' => 'Usuario de Prueba',
-                'email' => 'test@gympal.com',
-            ]
-        ];
-        /* if (auth()->check()) { // Si hay un usuario real, sobreescribir
-            $simulatedAuthData = ['user' => auth()->user()];
-        } */
-    
-    
+        // Aquí es donde harás la consulta para obtener los posts reales.
+        // Por ahora, lo dejamos como un array vacío para que no falle.
+        $posts = []; 
+        
         return Inertia::render('Feed', [
-            /* 'posts' => $samplePosts, */
-            'title' => 'GymPal Feed',
-            'auth' => $simulatedAuthData, // Pasas 'auth' directamente
-            'isLoginPage' => false,
-            'isRegisterPage' => false,
+            'posts' => $posts,
+            'title' => 'Tu Feed',
         ]);
     }
 }
