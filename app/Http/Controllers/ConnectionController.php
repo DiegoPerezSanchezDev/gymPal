@@ -113,5 +113,16 @@ class ConnectionController extends Controller
         return redirect()->back()->with('success', 'Solicitud rechazada.');
     }
 
-    // Aquí irán los otros métodos: destroy...
+    public function destroy(Connection $connection)
+    {
+        abort_if(
+            $connection->sender_id !== Auth::id() && $connection->receiver_id !== Auth::id(),
+            403,
+            'No tienes permiso para realizar esta acción.'
+        );
+
+        $connection->delete();
+
+        return redirect()->back()->with('success', 'Conexión eliminada correctamente.');
+    }
 }

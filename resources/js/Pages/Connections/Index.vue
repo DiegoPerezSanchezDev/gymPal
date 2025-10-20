@@ -9,31 +9,40 @@ const props = defineProps({
 });
 
 // Guardará el ID de la solicitud que se está procesando.
-const processingRequestId = ref(null);
+const processingId = ref(null);
 
 function acceptRequest(connectionId) {
     processingRequestId.value = connectionId;
     router.patch(route('connections.accept', connectionId), {}, {
         preserveScroll: true,
         onFinish: () => {
-            processingRequestId.value = null; 
+            processingId.value = null; 
         }
     });
 }
 
 function rejectRequest(connectionId) {
-    processingRequestId.value = connectionId;
+    processingId.value = connectionId;
     router.patch(route('connections.reject', connectionId), {}, {
         preserveScroll: true,
         onFinish: () => {
-            processingRequestId.value = null; 
+            processingId.value = null; 
         }
     });
 }
 
 function disconnectUser(connectionId) {
-    // Lógica para el botón desconectar irá aquí.
-    console.log(`Desconectar la conexión ${connectionId}`);
+    if (confirm('¿Estás seguro de que quieres eliminar esta conexión?')) {
+        router.delete(route('connections.destroy', connectionId), {
+            preserveScroll: true,
+            onStart: () => {
+                processingId.value = connectionId;
+            },
+            onFinish: () => {
+                processingId.value = null;
+            },
+        });
+    }
 }
 </script>
 
@@ -49,7 +58,7 @@ function disconnectUser(connectionId) {
 
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 pb-12 space-y-12">
 
-            <!-- SECCIÓN DE SOLICITUDES PENDIENTES (DISEÑO MÓVIL CORREGIDO) -->
+            <!-- SECCIÓN DE SOLICITUDES PENDIENTES -->
             <div class="bg-white overflow-hidden shadow-md rounded-lg">
                 <div class="p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-3">
@@ -67,7 +76,7 @@ function disconnectUser(connectionId) {
                         <li v-for="request in pendingRequests" :key="request.id"
                             class="flex items-center justify-between p-3 rounded-md hover:bg-gray-50 transition-colors">
                             
-                            <!-- Info del Usuario (Izquierda) -->
+                            <!-- Info del Usuario -->
                             <Link :href="route('profile.show.public', { user: request.sender.username })" class="flex items-center gap-4 min-w-0">
                                 <img :src="request.sender.profile_picture_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(request.sender.name) + '&background=random&color=fff'"
                                     :alt="request.sender.name"
@@ -78,7 +87,7 @@ function disconnectUser(connectionId) {
                                 </div>
                             </Link>
 
-                            <!-- Contenedor de botones (Derecha) -->
+                            <!-- Contenedor de botones -->
                             <div class="flex items-center gap-2 flex-shrink-0 ml-4">
                                 <button @click="rejectRequest(request.id)" 
                                         :disabled="processingRequestId === request.id"
@@ -97,7 +106,7 @@ function disconnectUser(connectionId) {
                 </div>
             </div>
 
-            <!-- SECCIÓN DE MIS GYMPALS (DISEÑO MÓVIL CORREGIDO) -->
+            <!-- SECCIÓN DE MIS GYMPALS -->
             <div class="bg-white overflow-hidden shadow-md rounded-lg">
                 <div class="p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-3">
@@ -118,7 +127,7 @@ function disconnectUser(connectionId) {
                         <li v-for="pal in gymPals" :key="pal.id"
                             class="flex items-center justify-between p-3 rounded-md hover:bg-gray-50 transition-colors">
                             
-                            <!-- Info del Usuario (Izquierda) -->
+                            <!-- Info del Usuario -->
                             <Link :href="route('profile.show.public', { user: pal.username })" class="flex items-center gap-4 min-w-0">
                                 <img :src="pal.profile_picture_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(pal.name) + '&background=random&color=fff'"
                                     :alt="pal.name"
@@ -131,7 +140,9 @@ function disconnectUser(connectionId) {
 
                             <!-- Contenedor de botones (Derecha) -->
                             <div class="flex items-center gap-2 flex-shrink-0 ml-4">
-                                <button @click="disconnectUser(pal.connection_id)" class="px-3 py-1.5 text-xs font-medium rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300 transition">
+                                <button @click="disconnectUser(pal.connection_id)" 
+                                        :disabled="processingId === pal.connection_id"
+                                        class="px-3 py-1.5 text-xs font-medium rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300 transition disabled:opacity-50">
                                     Desconectar
                                 </button>
                                 <Link :href="route('chat.show', { user: pal.username })" class="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-gradient-to-r from-pink-500 to-orange-500 hover:brightness-110 shadow-sm transition-all">
