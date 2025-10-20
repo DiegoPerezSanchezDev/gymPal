@@ -1,297 +1,160 @@
-// resources/js/Layouts/AuthenticatedLayout.vue
 <script setup>
-import { ref } from "vue";
-import { Link, Head, usePage } from "@inertiajs/vue3"; // Importa Link para la navegación de Inertia
+import { ref, computed } from 'vue';
+import { Link, Head, usePage } from '@inertiajs/vue3';
 import ThemeSwitcher from '@/Components/ThemeSwitcher.vue';
-// Importa tu logo o usa texto
-// import ApplicationLogo from '@/Components/ApplicationLogo.vue'; // Si tienes un componente logo
-const authUser = usePage().props.auth.user;
-const sidebarOpen = ref(false); // Para el menú hamburguesa
+import ApplicationLogo from '@/Components/ApplicationLogo.vue';
+import Dropdown from '@/Components/Dropdown.vue';
+import DropdownLink from '@/Components/DropdownLink.vue';
+
+const sidebarOpen = ref(false);
+
+const page = usePage();
+const authUser = computed(() => page.props.auth.user);
+const pendingRequestsCount = computed(() => page.props.pendingRequestsCount);
+
 </script>
 
 <template>
-    <div class="min-h-screen flex flex-col bg-gray-100">
-        <!-- Fondo de página gris claro -->
-        <Head :title="$page.props.title" />
+    <div class="min-h-screen bg-gray-100">
+        <Head :title="page.props.title || 'GymPal'" />
 
-        <!-- Barra Superior Principal (Móvil) -->
-        <header
-            v-if="$page.props.auth.user"
-            class="bg-white shadow-sm sticky top-0 z-40 md:hidden"
-        >
+        <nav v-if="authUser" class="bg-white border-b border-gray-100 sticky top-0 z-40">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex items-center justify-between h-16">
-                    <!-- Lado Izquierdo: Icono Menú Hamburguesa -->
+                <div class="flex justify-between h-16">
+                    <div class="flex">
+                        <div class="shrink-0 flex items-center">
+                            <Link :href="route('feed.index')">
+                                <ApplicationLogo class="block h-9 w-auto fill-current text-gray-800" />
+                            </Link>
+                        </div>
+                        <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
+                            <Link :href="route('feed.index')" class="nav-link" :class="{ 'active': route().current('feed.index') }">
+                                Feed
+                            </Link>
+                            <Link :href="route('discover.index')" class="nav-link" :class="{ 'active': route().current('discover.index') }">
+                                Descubrir
+                            </Link>
+                            <Link :href="route('connections.index')" class="nav-link relative" :class="{ 'active': route().current('connections.index') }">
+                                <span>Conexiones</span>
+                                <span v-if="pendingRequestsCount > 0" class="notification-dot-desktop"></span>
+                            </Link>
+                        </div>
+                    </div>
+
                     <div class="flex items-center">
-                        <button
-                            @click="sidebarOpen = !sidebarOpen"
-                            class="text-gray-500 focus:outline-none hover:text-indigo-600 p-2 -ml-2"
-                        >
-                            <svg
-                                class="h-6 w-6"
-                                stroke="currentColor"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M4 6h16M4 12h16M4 18h16"
-                                />
-                            </svg>
-                        </button>
-                    </div>
-                    <!-- Centro: Logo -->
-                    <div class="flex-shrink-0">
-                        <Link :href="route('feed.index')">
-                            <span class="text-xl font-bold text-indigo-600"
-                                >GymPal</span
-                            >
-                        </Link>
-                    </div>
-                    <!-- Lado Derecho: Iconos de Acción -->
-                    <div class="flex items-center space-x-2">
-                        <Link
-                            :href="route('posts.create')"
-                            title="Nuevo Post"
-                            class="text-gray-500 hover:text-indigo-600 p-1 rounded-full"
-                        >
-                            <svg
-                                class="h-7 w-7"
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke-width="1.5"
-                                stroke="currentColor"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
-                            </svg>
-                        </Link>
-                        <slot name="header_actions" />
+                        <div class="hidden sm:flex sm:items-center sm:ml-6">
+                            <Dropdown align="right" width="48">
+                                <template #trigger>
+                                    <button class="flex items-center text-sm font-medium text-gray-500 hover:text-gray-700 focus:outline-none transition duration-150 ease-in-out">
+                                        <img :src="authUser.profile_picture_url" class="h-8 w-8 rounded-full object-cover mr-2" :alt="authUser.name">
+                                        <span>{{ authUser.name }}</span>
+                                        <svg class="ml-2 -mr-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                                    </button>
+                                </template>
+                                <template #content>
+                                    <DropdownLink :href="route('profile.show.public', { user: authUser.username })">Mi Perfil</DropdownLink>
+                                    <DropdownLink :href="route('profile.edit')">Editar Perfil</DropdownLink>
+                                    <DropdownLink :href="route('logout')" method="post" as="button">Cerrar Sesión</DropdownLink>
+                                </template>
+                            </Dropdown>
+                        </div>
+                        <div class="-mr-2 flex items-center sm:hidden">
+                            <button @click="sidebarOpen = !sidebarOpen" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition">
+                                <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path :class="{'hidden': sidebarOpen, 'inline-flex': ! sidebarOpen }" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /><path :class="{'hidden': ! sidebarOpen, 'inline-flex': sidebarOpen }" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </header>
 
-        <!-- Sidebar (Menú Lateral) -->
-        <div
-            v-if="$page.props.auth.user"
-            v-show="sidebarOpen"
-            @click.away="sidebarOpen = false"
-            class="fixed inset-y-0 left-0 w-64 bg-white shadow-lg z-50 md:hidden transition-transform duration-300 ease-out"
-            :class="{
-                '-translate-x-full': !sidebarOpen,
-                'translate-x-0': sidebarOpen,
-            }"
-        >
-            <div class="p-4">
-                <h2 class="text-lg font-semibold text-gray-800 mb-4">
-                    Menú GymPal
-                </h2>
-                <nav class="flex flex-col space-y-1">
-                    <Link
-                        :href="route('profile.edit')"
-                        @click="sidebarOpen = false"
-                        class="text-gray-700 hover:bg-gray-100 hover:text-indigo-600 p-2 rounded-md"
-                        >Editar Perfil</Link
-                    >
-                    <Link
-                        href="#"
-                        @click="sidebarOpen = false"
-                        class="text-gray-700 hover:bg-gray-100 hover:text-indigo-600 p-2 rounded-md"
-                        >Ajustes (Futuro)</Link
-                    >
-                    <div class="p-2 flex items-center justify-between">
-                <span class="text-gray-700 dark:text-gray-300">Modo Oscuro</span>
-                <ThemeSwitcher/>
-            </div>
-                <slot name="header_actions" />
-                    <Link
-                        :href="route('logout')"
-                        method="post"
-                        as="button"
-                        @click="sidebarOpen = false"
-                        class="text-left w-full text-gray-700 hover:bg-gray-100 hover:text-indigo-600 p-2 rounded-md"
-                    >
-                        Cerrar Sesión
+            <div :class="{'block': sidebarOpen, 'hidden': !sidebarOpen}" class="sm:hidden">
+                <div class="pt-2 pb-3 space-y-1">
+                    <Link :href="route('feed.index')" class="sidebar-link" :class="{'active': route().current('feed.index')}" @click="sidebarOpen = false">Feed</Link>
+                    <Link :href="route('discover.index')" class="sidebar-link" :class="{'active': route().current('discover.index')}" @click="sidebarOpen = false">Descubrir</Link>
+                    <Link :href="route('connections.index')" class="sidebar-link flex justify-between items-center" :class="{'active': route().current('connections.index')}" @click="sidebarOpen = false">
+                        <span>Mis Conexiones</span>
+                        <span v-if="pendingRequestsCount > 0" class="notification-badge">{{ pendingRequestsCount }}</span>
                     </Link>
-                </nav>
-            </div>
-        </div>
-        <!-- Overlay para el sidebar -->
-        <div
-            v-if="$page.props.auth.user && sidebarOpen"
-            @click="sidebarOpen = false"
-            class="fixed inset-0 bg-black bg-opacity-25 z-40 md:hidden transition-opacity duration-300"
-            :class="{ 'opacity-0': !sidebarOpen, 'opacity-100': sidebarOpen }"
-        ></div>
-
-        <main
-            class="flex-grow"
-            :class="{
-                'pt-16 md:pt-0':
-                    $page.props.auth.user &&
-                    !$page.props.isLoginPage &&
-                    !$page.props.isRegisterPage,
-            }"
-        >
-            <slot />
-        </main>
-
-        <!-- Barra de Navegación Inferior -->
-        <nav
-            v-if="$page.props.auth.user"
-            class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg md:hidden z-50"
-        >
-            <div class="max-w-7xl mx-auto px-1 sm:px-6 lg:px-8">
-                <div class="relative flex items-center justify-around h-16">
-                    <!-- Icono Inicio -->
-                    <Link
-                        :href="route('feed.index')"
-                        title="Inicio"
-                        class="flex-grow flex flex-col items-center justify-center text-center px-1"
-                        :class="
-                            route().current('feed.index') ||
-                            route().current('dashboard')
-                                ? 'text-indigo-600'
-                                : 'text-gray-500 hover:text-indigo-500'
-                        "
-                    >
-                        <svg
-                            class="h-6 w-6"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke-width="1.5"
-                            stroke="currentColor"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M2.25 12l8.954-8.955a1.125 1.125 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h7.5"
-                            />
-                        </svg>
-                        <span class="text-xs mt-1">Inicio</span>
-                    </Link>
-                    <!-- Icono Descubrir -->
-                    <Link
-                        :href="route('discover.index')"
-                        title="Descubrir"
-                        class="flex-grow flex flex-col items-center justify-center text-center px-1"
-                        :class="
-                            route().current('discover.index')
-                                ? 'text-indigo-600'
-                                : 'text-gray-500 hover:text-indigo-500'
-                        "
-                    >
-                        <svg
-                            class="h-6 w-6"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke-width="1.5"
-                            stroke="currentColor"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-                            />
-                        </svg>
-                        <span class="text-xs mt-1">Conectar</span>
-                    </Link>
-                    <!-- Icono Nuevo Post -->
-                    <Link
-                        :href="route('posts.create')"
-                        title="Nuevo"
-                        class="flex-grow flex flex-col items-center justify-center text-center px-1 -mt-1"
-                    >
-                        <span
-                            class="inline-block p-1 bg-indigo-600 rounded-full shadow-md"
-                        >
-                            <svg
-                                class="h-7 w-7 text-white"
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke-width="2"
-                                stroke="currentColor"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M12 4.5v15m7.5-7.5h-15"
-                                />
-                            </svg>
-                        </span>
-                        <span
-                            class="text-xs mt-1 sr-only"
-                            :class="
-                                route().current('posts.create')
-                                    ? 'text-indigo-600'
-                                    : 'text-gray-500 hover:text-indigo-500'
-                            "
-                            >Nuevo</span
-                        >
-                    </Link>
-                    <!-- Icono Chat -->
-                    <Link
-                        :href="route('chat.index')"
-                        title="Chat"
-                        class="flex-grow flex flex-col items-center justify-center text-center px-1"
-                        :class="
-                            route().current('chat.index')
-                                ? 'text-indigo-600'
-                                : 'text-gray-500 hover:text-indigo-500'
-                        "
-                    >
-                        <svg
-                            class="h-6 w-6"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke-width="1.5"
-                            stroke="currentColor"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3.68-3.091a1.256 1.256 0 00-.86-.317H7.812a2.25 2.25 0 01-2.25-2.25V6.982c0-1.242 1.008-2.25 2.25-2.25h8.574a2.25 2.25 0 012.25 2.25v1.529z"
-                            />
-                        </svg>
-                        <span class="text-xs mt-1">Chat</span>
-                    </Link>
-                    <!-- Icono Perfil -->
-                    <Link
-                        :href="$page.props.auth.user ? route('profile.show.public', { user: $page.props.auth.user.username }) : '#'"
-                        title="Perfil"
-                        class="flex-grow flex flex-col items-center justify-center text-center px-1"
-                        :class="route().current('profile.show.public') ? 'text-indigo-600' : 'text-gray-500 hover:text-indigo-500'"
-                    >
-                        <svg
-                            class="h-6 w-6"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke-width="1.5"
-                            stroke="currentColor"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"
-                            />
-                        </svg>
-                        <span class="text-xs mt-1">Perfil</span>
-                    </Link>
+                </div>
+                <div class="pt-4 pb-1 border-t border-gray-200">
+                    <div class="px-4">
+                        <div class="font-medium text-base text-gray-800">{{ authUser.name }}</div>
+                        <div class="font-medium text-sm text-gray-500">{{ authUser.email }}</div>
+                    </div>
+                    <div class="mt-3 space-y-1">
+                        <Link :href="route('profile.show.public', { user: authUser.username })" class="sidebar-link" @click="sidebarOpen = false">Mi Perfil</Link>
+                        <Link :href="route('profile.edit')" class="sidebar-link" @click="sidebarOpen = false">Editar Perfil</Link>
+                        <div class="sidebar-link flex items-center justify-between">
+                             <span>Modo Oscuro</span>
+                             <ThemeSwitcher/>
+                        </div>
+                        <Link :href="route('logout')" method="post" as="button" class="sidebar-link w-full text-left">Cerrar Sesión</Link>
+                    </div>
                 </div>
             </div>
         </nav>
-        <div v-if="$page.props.auth.user" class="pb-16 md:pb-0"></div>
+
+        <main class="flex-grow">
+            <slot />
+        </main>
+
+        <div v-if="authUser" class="pb-16 md:pb-0"></div>
+        <nav v-if="authUser" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg md:hidden z-30">
+            <div class="flex items-center justify-around h-16">
+                <Link :href="route('feed.index')" title="Inicio" class="bottom-nav-link" :class="{'active': route().current('feed.index')}">
+                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                    <span class="text-xs mt-1">Inicio</span>
+                </Link>
+                <Link :href="route('discover.index')" title="Descubrir" class="bottom-nav-link" :class="{'active': route().current('discover.index')}">
+                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    <span class="text-xs mt-1">Descubrir</span>
+                </Link>
+                <Link :href="route('posts.create')" title="Nuevo Post" class="bottom-nav-link -mt-1">
+                    <span class="inline-block p-3 bg-indigo-600 rounded-full shadow-md"><svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg></span>
+                </Link>
+                <Link :href="route('connections.index')" title="Conexiones" class="bottom-nav-link relative" :class="{'active': route().current('connections.index')}">
+                    <span v-if="pendingRequestsCount > 0" class="notification-dot-mobile"></span>
+                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197M15 11a4 4 0 110-5.292M12 4.354a4 4 0 010 5.292" /></svg>
+                    <span class="text-xs mt-1">Conexiones</span>
+                </Link>
+                 <Link :href="route('chat.index')" title="Chat" class="bottom-nav-link" :class="{'active': route().current('chat.index')}">
+                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                    <span class="text-xs mt-1">Chat</span>
+                </Link>
+            </div>
+        </nav>
     </div>
 </template>
+
+<style scoped>
+.nav-link {
+    @apply inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-700 focus:border-gray-300 transition duration-150 ease-in-out;
+}
+.nav-link.active {
+    @apply border-indigo-400 text-gray-900 focus:border-indigo-700;
+}
+
+.sidebar-link {
+    @apply block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:text-gray-800 focus:bg-gray-50 focus:border-gray-300 transition duration-150 ease-in-out;
+}
+.sidebar-link.active {
+    @apply border-indigo-400 text-indigo-700 bg-indigo-50;
+}
+
+.bottom-nav-link {
+    @apply flex-grow flex flex-col items-center justify-center text-center px-1 text-gray-500 hover:text-indigo-600 transition-colors duration-200;
+}
+.bottom-nav-link.active {
+    @apply text-indigo-600;
+}
+
+.notification-dot-desktop {
+    @apply absolute top-1/2 right-0 block h-2 w-2 -mt-2 -mr-1 transform translate-x-1/2 -translate-y-1/2 rounded-full bg-red-500 ring-2 ring-white;
+}
+.notification-dot-mobile {
+    @apply absolute top-1 right-1/2 mr-[-20px] block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white;
+}
+.notification-badge {
+    @apply px-2 py-0.5 bg-indigo-600 text-white text-xs font-semibold rounded-full;
+}
+</style>

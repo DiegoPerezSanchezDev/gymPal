@@ -63,9 +63,9 @@ const setActiveTab = (tabName) => {
         <div class="container mx-auto px-2 sm:px-4 py-4 md:py-8">
             <h2 v-if="title" class="text-2xl font-semibold text-gray-800 mb-4 hidden md:block">{{ title }}</h2>
 
-            <div v-if="displayedPosts && displayedPosts.length > 0">
+            <div v-if="posts && posts.length > 0">
                 <div class="space-y-4">
-                    <PostCard v-for="postItem in displayedPosts" :key="postItem.id" :post="postItem" />
+                    <PostCard v-for="postItem in posts" :key="postItem.id" :post="postItem" />
                 </div>
             </div>
             <div v-else class="text-center py-10">

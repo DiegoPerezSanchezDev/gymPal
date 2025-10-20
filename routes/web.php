@@ -83,15 +83,18 @@ Route::middleware('auth')->group(function () {
 
     // Para ENVIAR una nueva solicitud de conexión a un usuario
     Route::post('/connections/{user}', [ConnectionController::class, 'store'])->name('connections.store');
+
+    // Para VER la página principal de "Mis Conexiones"
+    Route::get('/connections', [ConnectionController::class, 'index'])->name('connections.index');
     
     // Para ACEPTAR una solicitud que hemos recibido
-    // Nota: Le pasamos el ID de la 'connection', no del usuario
+    //Le pasamos el ID de la 'connection'
     Route::patch('/connections/{connection}/accept', [ConnectionController::class, 'accept'])->name('connections.accept');
 
     // Para RECHAZAR una solicitud que hemos recibido
     Route::patch('/connections/{connection}/reject', [ConnectionController::class, 'reject'])->name('connections.reject');
 
-    // Para ELIMINAR una conexión que ya teníamos (romper amistad)
+    // Para ELIMINAR una conexión que ya teníamos
     Route::delete('/connections/{connection}', [ConnectionController::class, 'destroy'])->name('connections.destroy');
 
 });
