@@ -153,7 +153,7 @@ function toggleManualFilters() {
     <Head :title="title || 'Conectar'" />
 
     <AuthenticatedLayout>
-        <div class="flex flex-col items-center justify-center pt-8 mb-8">
+        <div class="flex flex-col items-center justify-center mb-8">
             <h2 class="text-3xl font-extrabold text-indigo-700 tracking-tight">Conectar</h2>
             <p class="text-lg text-gray-600 max-w-xl text-center">Encuentra compañeros para entrenar y haz nuevos amigos.</p>
         </div>
