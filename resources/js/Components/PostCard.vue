@@ -1,50 +1,63 @@
 // resources/js/Components/PostCard.vue
 <script setup>
-import { defineProps, ref } from "vue";
-import { Link } from "@inertiajs/vue3"; // Si necesitas enlaces dentro de la tarjeta
+import { computed, ref, onMounted, watch } from "vue";
+import { Link } from "@inertiajs/vue3";
+import axios from 'axios';
 
 const props = defineProps({
     post: {
         type: Object,
         required: true,
-        default: () => ({
-            // Valores por defecto para que no rompa si algo falta
-            id: null,
-            user_avatar: "https://via.placeholder.com/40",
-            user_name: "Usuario GymPal",
-            user_username: "gympaluser", // Asumiendo que tendrás un username para el enlace al perfil
-            created_at_human: "Hace un momento",
-            content:
-            "¡Un gran día para entrenar y conectar con nuevos GymPals!",
-            image_url: null,
-            likes_count: 0,
-            comments_count: 0,
-            is_liked_by_user: false, // Para saber si el usuario actual le dio like
-        }),
     },
 });
 
-const isLiked = ref(props.post.is_liked_by_user);
-const localLikesCount = ref(props.post.likes_count);
+// Propiedad computada para formatear la fecha de forma legible
+const formattedDate = computed(() => {
+    return new Date(props.post.created_at).toLocaleString('es-ES', {
+        day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit'
+    });
+});
+
+const isLiked = ref(false);
+const localLikesCount = ref(0);
+const isProcessingLike = ref(false);
+
+// Función para inicializar valores
+const initializeValues = () => {
+    isLiked.value = props.post.is_liked || false;
+    localLikesCount.value = props.post.likes_count || 0;
+};
+
+// Inicializar valores cuando el componente se monta
+onMounted(() => {
+    initializeValues();
+});
+
+// Reaccionar a cambios en las props
+watch(() => props.post, () => {
+    initializeValues();
+}, { deep: true });
 
 const toggleLike = async () => {
-    // Aquí iría la lógica para enviar la petición de like/unlike al backend
-    // Ejemplo (necesitarás una ruta y controlador para esto):
-    // try {
-    //     const response = await axios.post(route('posts.like', props.post.id));
-    //     isLiked.value = response.data.is_liked;
-    //     localLikesCount.value = response.data.likes_count;
-    // } catch (error) {
-    //     console.error('Error al dar like:', error);
-    //     // Revertir el estado visual si falla
-    //     isLiked.value = !isLiked.value;
-    //     localLikesCount.value += isLiked.value ? 1 : -1;
-    // }
-
-    // Simulación por ahora:
+    if (isProcessingLike.value) return;
+    isProcessingLike.value = true;
+    const originalIsLiked = isLiked.value;
+    
     isLiked.value = !isLiked.value;
     localLikesCount.value += isLiked.value ? 1 : -1;
-    console.log(`Post ${props.post.id} liked: ${isLiked.value}`);
+
+    try {
+        const response = await axios.post(route('posts.like.toggle', props.post.id));
+        isLiked.value = response.data.is_liked;
+        localLikesCount.value = response.data.likes_count;
+
+    } catch (error) {
+        console.error("Error al dar like:", error);
+        isLiked.value = originalIsLiked;
+        localLikesCount.value += originalIsLiked ? 1 : -1;
+    } finally {
+        isProcessingLike.value = false;
+    }
 };
 
 const openComments = () => {
@@ -56,95 +69,61 @@ const openComments = () => {
 </script>
 
 <template>
-    <div class="bg-white shadow-md rounded-lg p-4">
-        <div class="flex items-center mb-3">
-            <Link
-                :href="
-                    route('profile.show.public', { user: post.user_username })
-                "
-            >
-                <img
-                    :src="post.user_avatar"
-                    alt="User Avatar"
-                    class="w-10 h-10 rounded-full mr-3 hover:opacity-80 transition-opacity"
-                />
-            </Link>
-            <div>
-                <Link
-                    :href="
-                        route('profile.show.public', {
-                            user: post.user_username,
-                        })
-                    "
-                    class="font-semibold text-gray-900 hover:underline"
-                >
-                    {{ post.user_name }}
+    <div class="bg-white shadow-lg rounded-xl max-w-xl mx-auto border border-gray-200/80">
+        
+        <!-- ================== Encabezado del Post ================== -->
+        <div class="p-4 flex items-center justify-between">
+            <div class="flex items-center">
+                <Link :href="route('profile.show.public', { user: post.user.username })">
+                    <img
+                        :src="post.user.profile_picture_url || 'https://ui-avatars.com/api/?name=' + post.user.name + '&background=random'"
+                        alt="Avatar del usuario"
+                        class="w-11 h-11 rounded-full object-cover ring-2 ring-gray-100"
+                    />
                 </Link>
-                <p class="text-xs text-gray-500">{{ post.created_at_human }}</p>
+                <div class="ml-3">
+                    <Link :href="route('profile.show.public', { user: post.user.username })" class="font-bold text-sm text-gray-800 hover:underline">
+                        {{ post.user.name }}
+                    </Link>
+                    <p class="text-xs text-gray-500">{{ formattedDate }}</p>
+                </div>
             </div>
-            <!-- Puedes añadir un menú de opciones del post aquí (ej: ... tres puntos) -->
+            <button class="text-gray-400 hover:text-gray-600">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" /></svg>
+            </button>
         </div>
 
-        <p class="text-gray-700 mb-3 whitespace-pre-line">{{ post.content }}</p>
+        <!-- ================== Contenido del Post ================== -->
+        <p v-if="post.content" class="px-5 pb-4 text-gray-700 whitespace-pre-line text-[15px] leading-relaxed">
+            {{ post.content }}
+        </p>
 
-        <img
-            v-if="post.image_url"
-            :src="post.image_url"
-            alt="Post Image"
-            class="rounded-lg w-full max-h-[70vh] object-contain mb-3 cursor-pointer"
-            @click="() => console.log('Abrir imagen en modal')"
-        />
-        <div class="flex justify-start space-x-4 text-gray-500">
-            <button
-                @click="toggleLike"
-                class="flex items-center focus:outline-none group"
-                :class="
-                    isLiked
-                        ? 'text-red-500'
-                        : 'text-gray-500 hover:text-red-500'
-                "
+        <div v-if="post.image_path" class="bg-gray-100 max-h-[70vh] overflow-hidden">
+            <img :src="'/storage/' + post.image_path" alt="Imagen de la publicación" class="w-full h-full object-cover"/>
+        </div>
+        
+        <!-- ================== Acciones del Post ================== -->
+        <div class="px-2 py-1 flex justify-around items-center border-t border-gray-100">
+            
+            <button 
+                @click="toggleLike" 
+                :disabled="isProcessingLike"
+                class="action-button group disabled:opacity-70 disabled:cursor-not-allowed" 
+                :class="{ 'text-red-500': isLiked, 'text-gray-500 hover:text-red-500': !isLiked }"
             >
-                <svg
-                    class="w-5 h-5 mr-1 transition-transform duration-150 ease-in-out"
-                    :class="{
-                        'transform scale-125 fill-red-500': isLiked,
-                        'group-hover:scale-110': !isLiked,
-                    }"
-                    :fill="isLiked ? 'currentColor' : 'none'"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                >
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                    ></path>
-                </svg>
-                <span>{{ localLikesCount }}</span>
+                <svg class="w-7 h-7 transition-transform" :class="{'transform scale-110 fill-red-500': isLiked, 'group-hover:scale-110': !isLiked}" :fill="isLiked ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.5l1.318-1.182a4.5 4.5 0 116.364 6.364L12 21l-7.682-7.682a4.5 4.5 0 010-6.364z"></path></svg>
+                <span class="text-sm font-semibold ml-1">{{ localLikesCount }}</span>
             </button>
-            <button
-                @click="openComments"
-                class="flex items-center text-gray-500 hover:text-blue-500 focus:outline-none group"
-            >
-                <svg
-                    class="w-5 h-5 mr-1 transition-transform duration-150 ease-in-out group-hover:scale-110"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                >
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                    ></path>
-                </svg>
-                <span>{{ post.comments_count }}</span>
+            
+            <button class="action-button group text-gray-500 hover:text-indigo-500">
+                <svg class="w-7 h-7 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                <span class="text-sm font-semibold ml-1">{{ post.comments_count || 0 }}</span>
             </button>
-            <!-- Puedes añadir un botón de Compartir aquí -->
+            
+            <button class="action-button group text-gray-500 hover:text-green-500">
+                <svg class="w-7 h-7 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342A8.963 8.963 0 018 12.001c0-1.01.198-1.968.563-2.835m7.899 5.578A8.963 8.963 0 0116 12.001c0-1.01.198-1.968.563-2.835m0 5.67a8.965 8.965 0 01-7.899 0m7.899 0l-1.42 1.42m-5.058-8.54l1.42-1.42" /></svg>
+                <span class="text-sm font-semibold ml-1">Compartir</span>
+            </button>
         </div>
     </div>
 </template>
@@ -152,6 +131,9 @@ const openComments = () => {
 <style scoped>
 /* Estilos específicos si los necesitas */
 .whitespace-pre-line {
-    white-space: pre-line; /* Para que los saltos de línea en el contenido se respeten */
+    white-space: pre-line; 
+}
+.action-button {
+    @apply flex items-center justify-center w-full px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none hover:bg-gray-100;
 }
 </style>

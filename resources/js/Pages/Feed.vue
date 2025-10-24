@@ -2,20 +2,44 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PostCard from '@/Components/PostCard.vue';
-import { Head, Link } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
-defineProps({
-    posts: Array,
-    title: String
+const props = defineProps({
+    posts: Object,
+    title: String,
+    activeTab: String, 
 });
 
-const activeTab = ref('siguiendo');
+// Variable reactiva para almacenar la lista de todos los posts
+const allPosts = ref(props.posts.data);
 
+// Variable para controlar la URL de la siguiente página
+let nextPageUrl = ref(props.posts.next_page_url);
 
-const setActiveTab = (tabName) => {
-    activeTab.value = tabName;
-};
+function setActiveTab(tabName) {
+    router.get(route('feed.index'), { tab: tabName }, {
+        preserveState: true,
+        preserveScroll: true,
+        onSuccess: (page) => {
+            allPosts.value = page.props.posts.data;
+            nextPageUrl.value = page.props.posts.next_page_url;
+        }
+    });
+}
+
+function loadMorePosts() {
+    if (!nextPageUrl.value) return;
+
+    router.get(nextPageUrl.value, {}, {
+        preserveState: true,
+        preserveScroll: true,
+        onSuccess: (page) => {
+            allPosts.value = [...allPosts.value, ...page.props.posts.data];
+            nextPageUrl.value = page.props.posts.next_page_url;
+        },
+    });
+}
 </script>
 
 <template>
@@ -37,21 +61,21 @@ const setActiveTab = (tabName) => {
                     <button @click="setActiveTab('siguiendo')"
                             :class="[
                                 'flex-1 group inline-flex items-center justify-center py-3 px-1 text-center border-b-2 font-medium text-sm whitespace-nowrap',
-                                activeTab === 'siguiendo' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                props.activeTab === 'siguiendo' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                             ]">
                         Siguiendo
                     </button>
                     <button @click="setActiveTab('populares')"
                             :class="[
                                 'flex-1 group inline-flex items-center justify-center py-3 px-1 text-center border-b-2 font-medium text-sm whitespace-nowrap',
-                                activeTab === 'populares' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                props.activeTab === 'populares' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                             ]">
                         Populares
                     </button>
                     <button @click="setActiveTab('cerca')"
                             :class="[
                                 'flex-1 group inline-flex items-center justify-center py-3 px-1 text-center border-b-2 font-medium text-sm whitespace-nowrap',
-                                activeTab === 'cerca' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                props.activeTab === 'cerca' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                             ]">
                         Cerca
                     </button>
@@ -61,26 +85,29 @@ const setActiveTab = (tabName) => {
 
         <!-- Contenido del Feed -->
         <div class="container mx-auto px-2 sm:px-4 py-4 md:py-8">
-            <h2 v-if="title" class="text-2xl font-semibold text-gray-800 mb-4 hidden md:block">{{ title }}</h2>
+            <h2 v-if="title" class="text-2xl font-bold text-gray-800 mb-6 hidden md:block text-center">{{ title }}</h2>
 
-            <div v-if="posts && posts.length > 0">
-                <div class="space-y-4">
-                    <PostCard v-for="postItem in posts" :key="postItem.id" :post="postItem" />
+            <!-- Lista de Posts -->
+            <div v-if="allPosts.length > 0">
+                <div class="space-y-6">
+                    <PostCard v-for="postItem in allPosts" :key="postItem.id" :post="postItem" />
+                </div>
+
+                <!-- Botón para Cargar Más -->
+                <div v-if="nextPageUrl" class="text-center mt-8">
+                    <button @click="loadMorePosts" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors">
+                        Cargar más
+                    </button>
                 </div>
             </div>
-            <div v-else class="text-center py-10">
-                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                </svg>
-                <h3 class="mt-2 text-sm font-medium text-gray-900">No hay publicaciones todavía</h3>
-                <p class="mt-1 text-sm text-gray-500">
-                    Cuando sigas a gente o se creen publicaciones, aparecerán aquí.
-                </p>
+            
+            <!-- Estado Vacío -->
+            <div v-else class="text-center py-10 max-w-lg mx-auto">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">Tu feed está un poco silencioso</h3>
+                <p class="mt-1 text-sm text-gray-500">Crea tu primera publicación o conecta con otros GymPals para ver su contenido aquí.</p>
                 <div class="mt-6">
-                    <Link :href="route('posts.create')" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                        <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-                        </svg>
+                    <Link :href="route('posts.create')" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none">
                         Crear Primera Publicación
                     </Link>
                 </div>

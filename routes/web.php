@@ -6,6 +6,7 @@ use App\Http\Controllers\PostController;
 use App\Http\Controllers\DiscoverController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\PostLikeController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ConnectionController;
@@ -96,6 +97,9 @@ Route::middleware('auth')->group(function () {
 
     // Para ELIMINAR una conexión que ya teníamos
     Route::delete('/connections/{connection}', [ConnectionController::class, 'destroy'])->name('connections.destroy');
+
+    // Para dar like a un Post
+    Route::post('/posts/{post}/like', [PostLikeController::class, 'toggleLike'])->name('posts.like.toggle');
 
 });
 
