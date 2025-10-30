@@ -84,6 +84,11 @@ class User extends Authenticatable
         return $this->belongsToMany(Post::class, 'post_like', 'user_id', 'post_id');
     }
 
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
+
     // --- RELACIONES DE CONEXIONES ---
 
     public function sentConnections(): HasMany

@@ -65,4 +65,18 @@ class PostController extends Controller
                                              // return back()->with('success_toast', '¡Publicación creada!');
 }
 
+    public function show(Post $post)
+    {
+        $post->load(['user', 'comments.user']);
+        return \Inertia\Inertia::render('Posts/Show', ['post' => $post]);
+    }
+
+    public function getLikers(Post $post)
+    {
+        $likers = $post->likers()
+            ->select('users.id', 'users.name', 'users.username', 'users.profile_picture_url')
+            ->paginate(20);
+
+        return response()->json($likers);
+    }
 }

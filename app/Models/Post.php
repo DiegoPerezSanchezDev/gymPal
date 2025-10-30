@@ -32,11 +32,23 @@ class Post extends Model
         return $this->belongsToMany(User::class, 'post_like', 'post_id', 'user_id');
     }
 
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    public function latestComments()
+    {
+        return $this->hasMany(Comment::class)->latest('created_at')->take(2);
+    }
+
 
     public function getLikesCountAttribute(): int
     {
-        // Usar directamente la columna de la base de datos (más eficiente)
-        return $this->attributes['likes_count'] ?? 0;
+        // Si viene de withCount('likers as likes_count'), úsalo; si no, fallback
+        return $this->attributes['likes_count']
+            ?? $this->attributes['likers_count']
+            ?? 0;
     }
 
     public function getIsLikedAttribute(): bool
