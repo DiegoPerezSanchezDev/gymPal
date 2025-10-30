@@ -30,13 +30,8 @@ class PostLikeController extends Controller
             $user->likedPosts()->toggle($post->id);
             
             // Actualizar el contador en la tabla posts
-            if ($wasLiked) {
-                // Se quitó el like, decrementar contador
-                $post->decrement('likes_count');
-            } else {
-                // Se agregó el like, incrementar contador
-                $post->increment('likes_count');
-            }
+            $post->likes_count = $post->likers()->count();
+            $post->save();
             
             // Recargar el post para obtener el contador actualizado
             $post->refresh();

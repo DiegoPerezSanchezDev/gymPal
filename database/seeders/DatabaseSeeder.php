@@ -42,6 +42,9 @@ class DatabaseSeeder extends Seeder
         $this->call([
             TestUsersSeeder::class,
         ]);
+
+        //Seeder de Likes
+        $this->call(LikesSeeder::class);
         
     }
 }

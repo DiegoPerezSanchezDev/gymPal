@@ -7,6 +7,7 @@ use App\Http\Controllers\DiscoverController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\PostLikeController;
+use App\Http\Controllers\CommentController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ConnectionController;
@@ -50,6 +51,10 @@ Route::middleware('auth')->group(function () {
     // POST, crear el post para subir a la página.
     Route::get('/posts/create', [PostController::class, 'create'])->name('posts.create');
     Route::post('/posts', [PostController::class, 'store'])->name('posts.store'); // Para guardar el post
+    // Ver el detalle de un post
+    Route::get('/posts/{post}', [PostController::class, 'show'])->name('posts.show');
+    //Lista para ver quien le da like a un post
+    Route::get('/posts/{post}/likes', [PostController::class, 'getLikers'])->name('posts.likes.index');
 
     //DESCUBRIR usuarios gymPals
     Route::get('/discover', [DiscoverController::class, 'index'])->name('discover.index');
@@ -100,6 +105,9 @@ Route::middleware('auth')->group(function () {
 
     // Para dar like a un Post
     Route::post('/posts/{post}/like', [PostLikeController::class, 'toggleLike'])->name('posts.like.toggle');
+
+    //Comentarios en los POST
+    Route::post('/comments', [CommentController::class, 'store'])->middleware('auth:sanctum');
 
 });
 

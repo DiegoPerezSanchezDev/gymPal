@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log; // Para logging
 use Inertia\Inertia;
 use App\Models\User;
 use Illuminate\Validation\Rule; 
-
+use App\Models\Connection;
 class ProfileController extends Controller
 {
     /**
@@ -86,34 +86,43 @@ class ProfileController extends Controller
     /**
      * Display the specified user's public profile.
      */
-    public function showPublic(User $user): \Inertia\Response // $user es inyectado por Route Model Binding
+    public function showPublic(User $user): \Inertia\Response
     {
-       // Usamos loadMissing para cargar relaciones solo si no han sido cargadas ya.
-        $user->loadMissing(['fitnessInterests', 'posts', 'followers', 'following']);
+        $currentUser = Auth::user();
 
-        $authenticatedUser = Auth::user();
+        $connectionStatus = 'none';
+        $connection = null;
+
+        if ($currentUser && $currentUser->id !== $user->id) {
+            $connection = Connection::where(function ($query) use ($currentUser, $user) {
+                $query->where('sender_id', $currentUser->id)->where('receiver_id', $user->id);
+            })->orWhere(function ($query) use ($currentUser, $user) {
+                $query->where('sender_id', $user->id)->where('receiver_id', $currentUser->id);
+            })->first();
+
+            if ($connection) {
+                if ($connection->status === 'pending') {
+                    $connectionStatus = $connection->sender_id === $currentUser->id ? 'sent' : 'received';
+                } else {
+                    $connectionStatus = $connection->status; 
+                }
+            }
+        }
+
+        $user->load('fitnessInterests');
+
+        $user->loadCount('posts');
+        
+        $connections_count = $user->gym_pals->count();
 
         return Inertia::render('Profile/ShowPublic', [
-            'title' => 'Perfil de ' . ($user->display_name ?: $user->name),
-            'profileUser' => [
-            'id' => $user->id,
-            'name' => $user->name,
-            'username' => $user->username,
-            'display_name' => $user->display_name,
-            'bio' => $user->bio,
-            'profile_picture_url' => $user->profile_picture_url,
-            'location_city' => $user->location_city,
-            'availability_general' => $user->availability_general, // Laravel ya lo convierte a array
-            'experience_level' => $user->experience_level,
-            'created_at' => $user->created_at,
-            'posts_count' => $user->posts->count(),
-            'followers_count' => $user->followers->count(),
-            'following_count' => $user->following->count(),
-               'fitness_interests' => $user->fitnessInterests->pluck('name'), // Forma limpia de obtener solo los nombres
-            ],
-            'posts' => $user->posts()->paginate(9),
-            'isFollowing' => $authenticatedUser ? $authenticatedUser->isFollowing($user) : false,
-            'isOwnProfile' => $authenticatedUser ? $authenticatedUser->id === $user->id : false,
+            'profileUser' => $user,
+            'title' => 'Perfil de ' . $user->name,
+            'isOwnProfile' => $currentUser ? $currentUser->id === $user->id : false,
+            
+            'connection_status' => $connectionStatus,
+            'connection_id' => $connection ? $connection->id : null,
+            'connections_count' => $connections_count,
         ]);
     }
 

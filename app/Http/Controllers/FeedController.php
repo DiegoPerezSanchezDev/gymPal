@@ -14,7 +14,9 @@ class FeedController extends Controller
         $user = Auth::user();
         $activeTab = $request->input('tab', 'siguiendo');
 
-        $postsQuery = Post::query()->with(['user', 'likers']);
+        $postsQuery = Post::query()
+            ->with(['user', 'likers', 'latestComments.user'])
+            ->withCount(['comments', 'likers as likes_count']);
     
         switch ($activeTab) {
             case 'populares':
