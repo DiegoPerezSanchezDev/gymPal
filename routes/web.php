@@ -8,6 +8,7 @@ use App\Http\Controllers\FollowController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\PostLikeController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\ReportController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ConnectionController;
@@ -106,8 +107,17 @@ Route::middleware('auth')->group(function () {
     // Para dar like a un Post
     Route::post('/posts/{post}/like', [PostLikeController::class, 'toggleLike'])->name('posts.like.toggle');
 
+    //Para ver una lista de los que dan likes
+    Route::get('posts/{post}/likers', [PostController::class, 'getLikers'])->name('posts.likes.index');
+
     //Comentarios en los POST
     Route::post('/comments', [CommentController::class, 'store'])->middleware('auth:sanctum');
+
+    //Eliminar el post, siendo el escritor de él
+    Route::delete('/posts/{post}', [PostController::class, 'destroy'])->name('posts.destroy');
+
+    //Reportar el post de otra persona
+    Route::post('/posts/{post}/report', [ReportController::class, 'store'])->name('posts.report');
 
 });
 

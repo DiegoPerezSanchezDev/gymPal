@@ -79,4 +79,18 @@ class PostController extends Controller
 
         return response()->json($likers);
     }
+
+    public function destroy(Post $post)
+    {
+        if (Auth::id() != $post->user_id) {
+            return back()->withErrors(['message' => 'No tienes permiso para eliminar este post.']);
+        }
+        if ($post->image_path) {
+            Storage::disk('public')->delete($post->image_path);
+        }
+        $post->delete();
+
+        return back()->with('success_toast', 'Publicación eliminada.');
+    }
+    
 }
