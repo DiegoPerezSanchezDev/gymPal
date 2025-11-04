@@ -15,14 +15,18 @@ class FeedController extends Controller
         $activeTab = $request->input('tab', 'siguiendo');
 
         $postsQuery = Post::query()
-            ->with(['user', 'likers', 'latestComments.user'])
-            ->withCount(['comments', 'likers as likes_count']);
+        ->with([
+            'user', 
+            'latestLikers',
+            'latestComments.user'
+        ])
+        ->withCount(['likers','comments'])->latest();
     
         switch ($activeTab) {
             case 'populares':
                 // Lógica futura: ordenar por likes. Por ahora, mostramos todos ordenados por fecha.
                 // Cuando implementemos los likes, aquí pondremos ->orderBy('likes_count', 'desc')
-                $postsQuery->latest();
+                $postsQuery->orderByDesc('likers_count')->orderByDesc('created_at');
                 break;
     
             case 'cerca':
@@ -36,7 +40,7 @@ class FeedController extends Controller
                 // mostrar posts de GymPals y del propio usuario.
                 $gymPalIds = $user->gym_pals->pluck('id');
                 $idsToQuery = $gymPalIds->push($user->id);
-                $postsQuery->whereIn('user_id', $idsToQuery)->latest();
+                $postsQuery->whereIn('user_id', $idsToQuery);
                 break;
         }
     

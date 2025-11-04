@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Auth;
 
 class Post extends Model
@@ -62,6 +63,20 @@ class Post extends Model
             return $this->likers->contains(Auth::id());
         }
         return $this->likers()->where('user_id', Auth::id())->exists();
+    }
+
+    //Sacamos los likes de los últimos que le dieron
+    public function latestLikers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'post_like', 'post_id', 'user_id')
+                    ->latest('post_like.created_at') // Ordena por la fecha en la tabla pivote
+                    ->limit(3);
+    }
+
+    //Reportar
+    public function reports(): HasMany
+    {
+        return $this->hasMany(Report::class);
     }
 
 }
