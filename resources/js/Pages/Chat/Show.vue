@@ -1,15 +1,9 @@
 <script setup>
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'; // O tu layout principal
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
-import {
-    ref,                // Para crear variables reactivas.
-    reactive,           // Para crear objetos reactivos.
-    computed,           // Para crear propiedades computadas.
-    watch,              // Para observar cambios en datos reactivos.
-    onMounted,          // Hook del ciclo de vida: se ejecuta después de que el componente se monta.
-    onUpdated,          // Hook del ciclo de vida: se ejecuta después de que el componente se actualiza.
-    onUnmounted,        // Hook del ciclo de vida: se ejecuta antes de que el componente se desmonte.
-} from 'vue';
+import { ref, computed, onMounted, nextTick, watch } from 'vue';
+import axios from 'axios';
+import SharedPostCard from '@/Components/SharedPostCard.vue';
 
 // Props que vienen del controlador
 const props = defineProps({
@@ -22,34 +16,65 @@ const props = defineProps({
 const page = usePage();
 const authUserId = computed(() => page.props.auth.user.id);
 const newMessage = ref('');
-const messagesContainer = ref(null); // Para auto-scroll
+const messagesContainer = ref(null);
+const isSending = ref(false);
+const localMessages = ref([]);
 
-// Aquí iría la lógica para enviar mensajes, cargar más mensajes, etc.
-const sendMessage = () => {
-    if (!newMessage.value.trim()) return;
-    // Lógica para enviar el mensaje usando axios.post a la ruta 'chat.messages.store'
-    // ...
-    console.log('Enviando mensaje:', newMessage.value, 'a la conversación:', props.conversationId);
-    // Ejemplo de cómo se vería con Ziggy y axios
-    // axios.post(route('chat.messages.store', { conversation: props.conversationId }), { body: newMessage.value })
-    //   .then(response => {
-    //     // Añadir mensaje a la lista local, limpiar input, etc.
-    //     newMessage.value = '';
-    //   })
-    //   .catch(error => {
-    //     console.error('Error al enviar mensaje:', error);
-    //   });
-    newMessage.value = ''; // Limpiar por ahora
+// Inicializar mensajes locales desde las props
+onMounted(() => {
+    if (props.messages && props.messages.data) {
+        localMessages.value = [...props.messages.data].reverse();
+    }
+    scrollToBottom();
+});
+
+// Función para hacer scroll al final
+const scrollToBottom = () => {
+    nextTick(() => {
+        if (messagesContainer.value) {
+            messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
+        }
+    });
 };
 
-onMounted(() => {
-    // Lógica al montar, como hacer scroll al final de los mensajes
-    // o iniciar la escucha de eventos de broadcasting si lo implementas.
-    console.log('Página de chat individual montada.');
-    console.log('Chat con:', props.chatWithUser);
-    console.log('ID Conversación:', props.conversationId);
-    console.log('Mensajes iniciales:', props.messages);
-});
+// Enviar mensaje
+const sendMessage = async () => {
+    if (!newMessage.value.trim() || isSending.value) return;
+    
+    isSending.value = true;
+    const messageText = newMessage.value.trim();
+    newMessage.value = ''; // Limpiar inmediatamente para mejor UX
+    
+    try {
+        const response = await axios.post(
+            route('chat.messages.store', { conversation: props.conversationId }),
+            { body: messageText }
+        );
+        
+        // Agregar el nuevo mensaje a la lista local
+        localMessages.value.push(response.data);
+        scrollToBottom();
+    } catch (error) {
+        console.error('Error al enviar mensaje:', error);
+        newMessage.value = messageText; // Restaurar el texto si hay error
+        alert('Error al enviar el mensaje. Inténtalo de nuevo.');
+    } finally {
+        isSending.value = false;
+    }
+};
+
+// Verificar si un mensaje es un post compartido
+const isSharedPost = (message) => {
+    return message.type === 'shared_post';
+};
+
+// Observar cambios en los mensajes de las props
+watch(() => props.messages, (newMessages) => {
+    if (newMessages && newMessages.data) {
+        localMessages.value = [...newMessages.data].reverse();
+        scrollToBottom();
+    }
+}, { deep: true });
 
 </script>
 
@@ -79,16 +104,50 @@ onMounted(() => {
 
                 <!-- Contenedor de Mensajes -->
                 <div ref="messagesContainer" class="flex-grow bg-gray-50 p-4 overflow-y-auto space-y-4">
-                    <!-- Iterar sobre los mensajes (hay que invertir el orden si vienen de latest()) -->
-                    <div v-if="messages && messages.data && messages.data.length > 0">
-                        <!-- Los mensajes vienen paginados y 'latest()', así que el más nuevo está primero. -->
-                        <!-- Para mostrarlos en orden cronológico, podrías invertir el array 'data' o manejarlo en el scroll -->
-                        <div v-for="message in [...messages.data].reverse()" :key="message.id"
-                            :class="['flex', message.user_id === $page.props.auth.user.id ? 'justify-end' : 'justify-start']">
-                            <div :class="['max-w-xs lg:max-w-md px-3 py-2 rounded-lg shadow', message.user_id === $page.props.auth.user.id ? 'bg-indigo-500 text-white' : 'bg-white text-gray-800']">
-                                <p class="text-sm">{{ message.body }}</p>
-                                <p class="text-xs mt-1" :class="message.user_id === $page.props.auth.user.id ? 'text-indigo-200 text-right' : 'text-gray-400 text-left'">
-                                    {{ new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
+                    <div v-if="localMessages.length > 0">
+                        <div 
+                            v-for="message in localMessages" 
+                            :key="message.id"
+                            :class="['flex mb-4', message.user_id === authUserId ? 'justify-end' : 'justify-start']"
+                        >
+                            <!-- Mensaje de texto normal -->
+                            <div 
+                                v-if="!isSharedPost(message)"
+                                :class="[
+                                    'max-w-xs lg:max-w-md px-4 py-2 rounded-lg shadow-sm',
+                                    message.user_id === authUserId 
+                                        ? 'bg-indigo-500 text-white rounded-br-none' 
+                                        : 'bg-white text-gray-800 rounded-bl-none'
+                                ]"
+                            >
+                                <p class="text-sm whitespace-pre-wrap">{{ message.body }}</p>
+                                <p 
+                                    class="text-xs mt-1" 
+                                    :class="message.user_id === authUserId ? 'text-indigo-200 text-right' : 'text-gray-400 text-left'"
+                                >
+                                    {{ new Date(message.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) }}
+                                </p>
+                            </div>
+
+                            <!-- Post compartido -->
+                            <div 
+                                v-else
+                                :class="['max-w-md lg:max-w-lg', message.user_id === authUserId ? 'text-right' : 'text-left']"
+                            >
+                                <div class="mb-1">
+                                    <p 
+                                        class="text-xs mb-2"
+                                        :class="message.user_id === authUserId ? 'text-indigo-600 text-right' : 'text-gray-500 text-left'"
+                                    >
+                                        {{ message.body }}
+                                    </p>
+                                </div>
+                                <SharedPostCard :postData="message.metadata || {}" />
+                                <p 
+                                    class="text-xs mt-1"
+                                    :class="message.user_id === authUserId ? 'text-indigo-200 text-right' : 'text-gray-400 text-left'"
+                                >
+                                    {{ new Date(message.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) }}
                                 </p>
                             </div>
                         </div>
@@ -112,9 +171,9 @@ onMounted(() => {
                         <button
                             type="submit"
                             class="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-800 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150"
-                            :disabled="!newMessage.trim()"
+                            :disabled="!newMessage.trim() || isSending"
                         >
-                            Enviar
+                            {{ isSending ? 'Enviando...' : 'Enviar' }}
                         </button>
                     </form>
                 </div>

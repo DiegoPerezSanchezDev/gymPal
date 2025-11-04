@@ -8,6 +8,8 @@ use App\Models\Post;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage; // Para manejar la subida de archivos
+use Illuminate\Support\Facades\DB;
+use App\Services\NotificationService;
 
 class PostController extends Controller
 {
@@ -91,6 +93,82 @@ class PostController extends Controller
         $post->delete();
 
         return back()->with('success_toast', 'Publicación eliminada.');
+    }
+
+    /**
+     * Comparte un post con otro usuario enviándolo como mensaje
+     */
+    public function share(Request $request, Post $post)
+    {
+        $validated = $request->validate([
+            'recipient_id' => 'required|exists:users,id',
+        ]);
+
+        $currentUser = Auth::user();
+        $recipient = User::findOrFail($validated['recipient_id']);
+        
+        // Cargar la relación del usuario del post
+        $post->load('user');
+
+        // Verificar que el usuario esté conectado con el destinatario
+        $isConnected = $currentUser->gym_pals->contains('id', $recipient->id);
+        
+        if (!$isConnected) {
+            return response()->json(['message' => 'Solo puedes compartir con tus GymPals.'], 403);
+        }
+
+        // Buscar o crear conversación entre los dos usuarios
+        $conversation = \App\Models\Conversation::query()
+            ->whereHas('users', function ($q) use ($currentUser) {
+                $q->where('users.id', $currentUser->id);
+            })
+            ->whereHas('users', function ($q) use ($recipient) {
+                $q->where('users.id', $recipient->id);
+            })
+            ->withCount('users')
+            ->having('users_count', '=', 2)
+            ->first();
+
+        if (!$conversation) {
+            $conversation = \App\Models\Conversation::create(['last_message_at' => now()]);
+            $conversation->users()->attach([$currentUser->id, $recipient->id]);
+        }
+
+        // Cargar datos adicionales del post para la metadata
+        $post->load(['user', 'latestLikers']);
+        
+        // Crear mensaje con el post compartido usando tipo y metadata
+        $postUrl = route('posts.show', $post->id);
+        $messageBody = "📌 Compartí una publicación contigo";
+
+        $message = $conversation->messages()->create([
+            'user_id' => $currentUser->id,
+            'body' => $messageBody,
+            'type' => \App\Models\Message::TYPE_SHARED_POST,
+            'metadata' => [
+                'post_id' => $post->id,
+                'post_url' => $postUrl,
+                'post_author_name' => $post->user->name,
+                'post_author_username' => $post->user->username,
+                'post_author_profile_picture' => $post->user->profile_picture_url,
+                'post_content' => $post->content,
+                'post_image_path' => $post->image_path,
+                'post_created_at' => $post->created_at->toISOString(),
+                'post_likes_count' => $post->likes_count ?? 0,
+            ],
+        ]);
+
+        $conversation->update(['last_message_at' => now()]);
+
+        // Crear notificación para el destinatario (solo si no es el dueño del post)
+        if ($recipient->id !== $post->user_id) {
+            NotificationService::notifyPostShared($recipient, $post, $currentUser);
+        }
+
+        return response()->json([
+            'message' => 'Post compartido exitosamente.',
+            'conversation_id' => $conversation->id,
+        ], 201);
     }
     
 }

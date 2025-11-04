@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str; 
 use Illuminate\Support\Facades\DB; 
 use Illuminate\Support\Facades\Log;
+use App\Services\NotificationService;
 
 class ChatController extends Controller
 {
@@ -176,6 +177,18 @@ class ChatController extends Controller
         ]);
 
         $conversation->update(['last_message_at' => now()]); // Actualiza el timestamp
+
+        // Obtener el otro usuario de la conversación (el destinatario)
+        $recipient = $conversation->users()
+            ->where('users.id', '!=', $currentUser->id)
+            ->first();
+
+        // Crear notificación para el destinatario (solo si existe y no es el mismo usuario)
+        if ($recipient && $recipient->id !== $currentUser->id) {
+            // Nota: En una implementación real, deberías verificar si el usuario está viendo el chat
+            // Por ahora, notificamos siempre. Se puede mejorar con broadcasting o verificando la página actual.
+            NotificationService::notifyNewMessage($recipient, $message, $currentUser);
+        }
 
         // event(new NewMessageSent($message->load('user:id,name,profile_picture_url'))); // Para broadcasting
 

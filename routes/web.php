@@ -9,6 +9,7 @@ use App\Http\Controllers\ChatController;
 use App\Http\Controllers\PostLikeController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ConnectionController;
@@ -118,6 +119,22 @@ Route::middleware('auth')->group(function () {
 
     //Reportar el post de otra persona
     Route::post('/posts/{post}/report', [ReportController::class, 'store'])->name('posts.report');
+
+    //Compartir un post con otro usuario
+    Route::post('/posts/{post}/share', [PostController::class, 'share'])->name('posts.share');
+
+    //Obtener conexiones del usuario (API)
+    Route::get('/connections/gym-pals', [ConnectionController::class, 'getGymPals'])->name('connections.gym-pals');
+
+    // Notificaciones
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/test', function() {
+        return \Inertia\Inertia::render('Notifications/Test');
+    })->name('notifications.test');
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+    Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');
+    Route::patch('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-as-read');
+    Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 
 });
 

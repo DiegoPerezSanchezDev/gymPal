@@ -5,6 +5,7 @@ import ThemeSwitcher from '@/Components/ThemeSwitcher.vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
+import NotificationBell from '@/Components/NotificationBell.vue';
 
 const page = usePage();
 const authUser = computed(() => page.props.auth.user);
@@ -36,7 +37,19 @@ const pendingRequestsCount = computed(() => page.props.pendingRequestsCount);
                 </div>
 
                 <div class="flex items-center">
-                    <div class="hidden sm:flex sm:items-center sm:ml-6">
+                    <div class="hidden sm:flex sm:items-center sm:ml-6 space-x-4">
+                        <!-- Chat -->
+                        <Link :href="route('chat.index')" title="Chat" class="text-gray-500 hover:text-indigo-600 p-2 rounded-full transition-colors">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3.68-3.091a1.256 1.256 0 00-.86-.317H7.812a2.25 2.25 0 01-2.25-2.25V6.982c0-1.242 1.008-2.25 2.25-2.25h8.574a2.25 2.25 0 012.25 2.25v1.529z" />
+                            </svg>
+                        </Link>
+                        
+                        <!-- Notificaciones - SIEMPRE VISIBLE PARA DEBUG -->
+                        <div class="flex items-center">
+                            <NotificationBell />
+                        </div>
+                        
                         <Dropdown align="right" width="48">
                             <template #trigger>
                                 <button class="flex items-center text-sm font-medium text-gray-500 hover:text-gray-700 focus:outline-none transition">

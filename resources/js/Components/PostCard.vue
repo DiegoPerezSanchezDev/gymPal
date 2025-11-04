@@ -6,6 +6,7 @@ import axios from 'axios';
 import LikesModal from './LikesModal.vue';
 import PostActionsMenu from './PostActionsMenu.vue';
 import ReportPostModal from './ReportPostModal.vue';
+import SharePostModal from './SharePostModal.vue';
 import DeletePostModal from './DeletePostModal.vue';
 
 const props = defineProps({
@@ -39,6 +40,7 @@ const page = usePage();
 const isOwner = computed(() => page.props.auth.user && page.props.auth.user.id === props.post.user.id);
 
 const showReportModal = ref(false);
+const showShareModal = ref(false);
 const showDeleteModal = ref(false);
 
 function handleDeleteModalClose() {
@@ -266,7 +268,7 @@ const submitComment = async () => {
                 <span class="text-sm font-semibold ml-1">{{ post.comments_count ?? 0 }}</span>
             </Link>
             
-            <button v-if="!isDetailView" class="action-button group text-gray-500 hover:text-green-500">
+            <button v-if="!isDetailView" @click="showShareModal = true" class="action-button group text-gray-500 hover:text-green-500">
                 <svg class="w-7 h-7 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342A8.963 8.963 0 018 12.001c0-1.01.198-1.968.563-2.835m7.899 5.578A8.963 8.963 0 0116 12.001c0-1.01.198-1.968.563-2.835m0 5.67a8.965 8.965 0 01-7.899 0m7.899 0l-1.42 1.42m-5.058-8.54l1.42-1.42" /></svg>
                 <span class="text-sm font-semibold ml-1">Compartir</span>
             </button>
@@ -278,6 +280,7 @@ const submitComment = async () => {
             :post="post"
             @close="handleDeleteModalClose"
         />
+        <SharePostModal v-if="showShareModal" :post="post" @close="showShareModal = false" />
     </div>
 </template>
 

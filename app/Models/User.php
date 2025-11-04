@@ -124,4 +124,21 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Conversation::class);
     }
+
+    // --- RELACIONES PARA NOTIFICACIONES ---
+
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(Notification::class)->latest();
+    }
+
+    public function unreadNotifications(): HasMany
+    {
+        return $this->hasMany(Notification::class)->whereNull('read_at')->latest();
+    }
+
+    public function readNotifications(): HasMany
+    {
+        return $this->hasMany(Notification::class)->whereNotNull('read_at')->latest();
+    }
 }

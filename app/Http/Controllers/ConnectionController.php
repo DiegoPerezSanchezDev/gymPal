@@ -6,6 +6,7 @@ use App\Models\Connection;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use App\Services\NotificationService;
 
 class ConnectionController extends Controller
 {
@@ -95,6 +96,13 @@ class ConnectionController extends Controller
         // Actualizamos el estado a 'accepted'
         $connection->status = 'accepted';
         $connection->save();
+        
+        // Cargar el sender para la notificación
+        $connection->load('sender');
+        $accepter = Auth::user();
+        
+        // Crear notificación para el usuario que envió la solicitud
+        NotificationService::notifyConnectionAccepted($connection->sender, $connection, $accepter);
 
         // Redirigimos de vuelta a la página de conexiones
         return redirect()->back()->with('success', '¡Conexión aceptada!');
@@ -124,5 +132,23 @@ class ConnectionController extends Controller
         $connection->delete();
 
         return redirect()->back()->with('success', 'Conexión eliminada correctamente.');
+    }
+
+    /**
+     * Obtiene las conexiones aceptadas del usuario actual (para API)
+     */
+    public function getGymPals()
+    {
+        $currentUser = Auth::user();
+        $gymPals = $currentUser->gym_pals->map(function ($gymPal) {
+            return [
+                'id' => $gymPal->id,
+                'name' => $gymPal->name,
+                'username' => $gymPal->username,
+                'profile_picture_url' => $gymPal->profile_picture_url,
+            ];
+        });
+
+        return response()->json($gymPals);
     }
 }
