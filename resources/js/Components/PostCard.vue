@@ -6,6 +6,7 @@ import axios from 'axios';
 import LikesModal from './LikesModal.vue';
 import PostActionsMenu from './PostActionsMenu.vue';
 import ReportPostModal from './ReportPostModal.vue';
+import DeletePostModal from './DeletePostModal.vue';
 
 const props = defineProps({
     post: {
@@ -38,7 +39,13 @@ const page = usePage();
 const isOwner = computed(() => page.props.auth.user && page.props.auth.user.id === props.post.user.id);
 
 const showReportModal = ref(false);
+const showDeleteModal = ref(false);
 
+function handleDeleteModalClose() {
+    showDeleteModal.value = false;
+    // Emitir evento para que el padre/array pueda eliminar este post si hace falta
+    emit('post-deleted', props.post.id);
+}
 
 const emit = defineEmits(['delete-post']);
 // Función para inicializar valores
@@ -126,6 +133,7 @@ const submitComment = async () => {
                 :post="post" 
                 :isOwner="isOwner"
                 @report-post="showReportModal = true"
+                @delete-post="showDeleteModal = true"
             />
         </div>
 
@@ -251,6 +259,11 @@ const submitComment = async () => {
         </div>
         <LikesModal v-if="showLikesModal" :postId="post.id" @close="showLikesModal = false" />
         <ReportPostModal v-if="showReportModal" :post="post" @close="showReportModal = false" />
+        <DeletePostModal
+            v-if="showDeleteModal"
+            :post="post"
+            @close="handleDeleteModalClose"
+        />
     </div>
 </template>
 
