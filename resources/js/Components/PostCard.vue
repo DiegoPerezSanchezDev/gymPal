@@ -76,10 +76,18 @@ const toggleLike = async () => {
 
     try {
         const response = await axios.post(route('posts.like.toggle', props.post.id));
-        ('Respuesta toggleLike:', response.data);
         // Sincronización con backend
         isLiked.value = response.data.is_liked;
         localLikesCount.value = response.data.likes_count;
+        if (response.data.latest_likers) {
+            props.post.latest_likers = response.data.latest_likers;
+        }
+        if (response.data.likes_count !== undefined) {
+            props.post.likers_count = response.data.likes_count;
+        }
+        if (response.data.is_liked !== undefined) {
+            props.post.is_liked = response.data.is_liked;
+        }
     } catch (error) {
         isLiked.value = originalIsLiked;
         localLikesCount.value = originalLikesCount;
@@ -100,6 +108,12 @@ const submitComment = async () => {
         // Si no hay array de latest_comments lo creamos
         if (!props.post.latest_comments) props.post.latest_comments = [];
         props.post.latest_comments.unshift(response.data);
+        if (props.post.latest_comments.length > 2) {
+            props.post.latest_comments.pop();
+        }
+        if (response.data.comments_count !== undefined) {
+            props.post.comments_count = response.data.comments_count;
+        }
         newCommentBody.value = "";
     } catch (err) {
         console.error('Error al enviar comentario', err);
@@ -201,7 +215,7 @@ const submitComment = async () => {
         </form>
 
         <!-- 1. NUEVA SECCIÓN VISUAL DE LIKES -->
-        <div v-if="post.likers_count > 0 && post.latest_likers && post.latest_likers.length > 0" 
+        <div v-if="localLikesCount > 0 && post.latest_likers && post.latest_likers.length > 0" 
             class="px-5 pt-3 pb-2 border-t border-gray-100"
         >
             <button @click="showLikesModal = true" class="flex items-center w-full text-left group focus:outline-none">
@@ -249,7 +263,7 @@ const submitComment = async () => {
             
             <Link v-if="!isDetailView" :href="route('posts.show', post.id)" class="action-button group text-gray-500 hover:text-indigo-500">
                 <svg class="w-7 h-7 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                <span class="text-sm font-semibold ml-1">{{ post.comments_count || 0 }}</span>
+                <span class="text-sm font-semibold ml-1">{{ post.comments_count ?? 0 }}</span>
             </Link>
             
             <button v-if="!isDetailView" class="action-button group text-gray-500 hover:text-green-500">
