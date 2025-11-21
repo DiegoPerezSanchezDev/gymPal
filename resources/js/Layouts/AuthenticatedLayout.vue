@@ -66,7 +66,10 @@ const pendingRequestsCount = computed(() => page.props.pendingRequestsCount);
                         </Dropdown>
                     </div>
                     
-                    <div class="flex items-center sm:hidden space-x-2 -mr-2">
+                    <div class="flex items-center sm:hidden space-x-3 -mr-2">
+                        <!-- Notificaciones Móvil -->
+                        <NotificationBell />
+                        
                         <Link :href="route('chat.index')" title="Chat" class="text-gray-500 hover:text-indigo-600 p-1 rounded-full">
                             <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3.68-3.091a1.256 1.256 0 00-.86-.317H7.812a2.25 2.25 0 01-2.25-2.25V6.982c0-1.242 1.008-2.25 2.25-2.25h8.574a2.25 2.25 0 012.25 2.25v1.529z" /></svg>
                         </Link>

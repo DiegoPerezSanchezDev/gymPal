@@ -34,7 +34,7 @@ onUnmounted(() => {
 <template>
     <Link
         :href="route('notifications.index')"
-        class="relative p-2 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors"
+        class="relative p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-500 hover:text-gray-700 focus:outline-none transition-colors"
         title="Notificaciones"
     >
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
