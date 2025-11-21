@@ -1,13 +1,24 @@
-<!-- Página principal de notificaciones -->
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { ref, watch } from 'vue';
 import axios from 'axios';
 
 const props = defineProps({
     notifications: Object,
     unread_count: Number,
+    filters: Object, // Recibimos los filtros actuales
+});
+
+const currentFilter = ref(new URLSearchParams(window.location.search).get('unread_only') === '1' ? 'unread' : 'all');
+const isDeleting = ref(false);
+
+// Observar cambios en el filtro para recargar
+watch(currentFilter, (val) => {
+    router.get(route('notifications.index'), 
+        { unread_only: val === 'unread' ? 1 : 0 }, 
+        { preserveState: true, preserveScroll: true, only: ['notifications', 'unread_count'] }
+    );
 });
 
 const formatDate = (dateString) => {
@@ -30,7 +41,7 @@ const markAsRead = async (notification) => {
     
     try {
         await axios.patch(route('notifications.mark-as-read', { notification: notification.id }));
-        notification.read_at = new Date().toISOString();
+        // Actualización optimista local si es necesario, pero Inertia recargará
         router.reload({ only: ['notifications', 'unread_count'] });
     } catch (error) {
         console.error('Error:', error);
@@ -43,6 +54,20 @@ const markAllAsRead = async () => {
         router.reload({ only: ['notifications', 'unread_count'] });
     } catch (error) {
         console.error('Error:', error);
+    }
+};
+
+const deleteAll = async () => {
+    if (!confirm('¿Estás seguro de que quieres eliminar todas las notificaciones? Esta acción no se puede deshacer.')) return;
+    
+    isDeleting.value = true;
+    try {
+        await axios.delete(route('notifications.delete-all'));
+        router.reload({ only: ['notifications', 'unread_count'] });
+    } catch (error) {
+        console.error('Error:', error);
+    } finally {
+        isDeleting.value = false;
     }
 };
 
@@ -99,84 +124,152 @@ const getNotificationColor = (type) => {
     <Head title="Notificaciones" />
     
     <AuthenticatedLayout>
-        <div class="py-12">
+        <div class="py-6 sm:py-12">
             <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <!-- Header -->
-                    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                        <h1 class="text-2xl font-bold text-gray-900">Notificaciones</h1>
-                        <div v-if="unread_count > 0" class="flex items-center gap-3">
-                            <span class="text-sm text-gray-600">
-                                {{ unread_count }} no leída{{ unread_count > 1 ? 's' : '' }}
-                            </span>
+                    <!-- Header con Tabs -->
+                    <div class="border-b border-gray-200">
+                        <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <h1 class="text-2xl font-bold text-gray-900">Notificaciones</h1>
+                            
+                            <div class="flex items-center gap-2 self-end sm:self-auto">
+                                <button
+                                    v-if="notifications.data.length > 0"
+                                    @click="deleteAll"
+                                    :disabled="isDeleting"
+                                    class="text-sm text-red-600 hover:text-red-800 font-medium px-3 py-1 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
+                                >
+                                    {{ isDeleting ? 'Eliminando...' : 'Borrar todas' }}
+                                </button>
+                                <button
+                                    v-if="unread_count > 0"
+                                    @click="markAllAsRead"
+                                    class="text-sm text-indigo-600 hover:text-indigo-800 font-medium px-3 py-1 rounded hover:bg-indigo-50 transition-colors"
+                                >
+                                    Marcar todas leídas
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Tabs de navegación -->
+                        <div class="px-4 sm:px-6 flex space-x-6">
                             <button
-                                @click="markAllAsRead"
-                                class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+                                @click="currentFilter = 'all'"
+                                :class="[
+                                    'pb-3 text-sm font-medium border-b-2 transition-colors',
+                                    currentFilter === 'all' 
+                                        ? 'border-indigo-500 text-indigo-600' 
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                ]"
                             >
-                                Marcar todas como leídas
+                                Todas
+                            </button>
+                            <button
+                                @click="currentFilter = 'unread'"
+                                :class="[
+                                    'pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2',
+                                    currentFilter === 'unread' 
+                                        ? 'border-indigo-500 text-indigo-600' 
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                ]"
+                            >
+                                No leídas
+                                <span v-if="unread_count > 0" class="bg-indigo-100 text-indigo-600 py-0.5 px-2 rounded-full text-xs">
+                                    {{ unread_count }}
+                                </span>
                             </button>
                         </div>
                     </div>
 
                     <!-- Lista de notificaciones -->
-                    <div v-if="notifications && notifications.data && notifications.data.length > 0" class="divide-y divide-gray-200">
-                        <button
-                            v-for="notification in notifications.data"
-                            :key="notification.id"
-                            @click="handleNotificationClick(notification)"
-                            :class="[
-                                'w-full px-6 py-4 text-left hover:bg-gray-50 transition-colors',
-                                !notification.read_at ? 'bg-indigo-50/30' : 'bg-white'
-                            ]"
+                    <div v-if="notifications && notifications.data && notifications.data.length > 0" class="divide-y divide-gray-200 min-h-[300px]">
+                        <TransitionGroup 
+                            enter-active-class="transition duration-300 ease-out"
+                            enter-from-class="transform translate-x-5 opacity-0"
+                            enter-to-class="transform translate-x-0 opacity-100"
+                            leave-active-class="transition duration-200 ease-in"
+                            leave-from-class="transform translate-x-0 opacity-100"
+                            leave-to-class="transform translate-x-5 opacity-0"
                         >
-                            <div class="flex items-start gap-4">
-                                <!-- Icono -->
-                                <div :class="['flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center', getNotificationColor(notification.type)]">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="getNotificationIcon(notification.type)" />
-                                    </svg>
-                                </div>
-                                
-                                <!-- Contenido -->
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-start justify-between">
-                                        <div class="flex-1">
-                                            <p class="text-base font-semibold text-gray-900">{{ notification.title }}</p>
-                                            <p class="text-sm text-gray-600 mt-1">{{ notification.message }}</p>
-                                            <p class="text-xs text-gray-400 mt-2">{{ formatDate(notification.created_at) }}</p>
-                                        </div>
-                                        <div v-if="!notification.read_at" class="ml-4 flex-shrink-0">
-                                            <div class="w-3 h-3 bg-indigo-500 rounded-full"></div>
+                            <button
+                                v-for="notification in notifications.data"
+                                :key="notification.id"
+                                @click="handleNotificationClick(notification)"
+                                :class="[
+                                    'w-full px-4 sm:px-6 py-4 text-left hover:bg-gray-50 transition-colors block',
+                                    !notification.read_at ? 'bg-indigo-50/40' : 'bg-white'
+                                ]"
+                            >
+                                <div class="flex items-start gap-4">
+                                    <!-- Icono -->
+                                    <div :class="['flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center', getNotificationColor(notification.type)]">
+                                        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="getNotificationIcon(notification.type)" />
+                                        </svg>
+                                    </div>
+                                    
+                                    <!-- Contenido -->
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-start justify-between">
+                                            <div class="flex-1 pr-4">
+                                                <p class="text-sm sm:text-base font-semibold text-gray-900 line-clamp-1">{{ notification.title }}</p>
+                                                <p class="text-sm text-gray-600 mt-0.5 line-clamp-2">{{ notification.message }}</p>
+                                                <p class="text-xs text-gray-400 mt-1.5">{{ formatDate(notification.created_at) }}</p>
+                                            </div>
+                                            <div v-if="!notification.read_at" class="flex-shrink-0 mt-1.5">
+                                                <div class="w-2.5 h-2.5 bg-indigo-500 rounded-full ring-2 ring-white"></div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </button>
+                            </button>
+                        </TransitionGroup>
                     </div>
 
                     <!-- Estado vacío -->
-                    <div v-else class="p-12 text-center">
-                        <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                        </svg>
-                        <p class="text-lg font-medium text-gray-900 mb-2">No tienes notificaciones</p>
-                        <p class="text-sm text-gray-500">Las notificaciones aparecerán aquí cuando recibas actividades</p>
+                    <div v-else class="p-12 text-center flex flex-col items-center justify-center min-h-[400px]">
+                        <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                            <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-1">
+                            {{ currentFilter === 'unread' ? 'Estás al día' : 'Sin notificaciones' }}
+                        </h3>
+                        <p class="text-sm text-gray-500 max-w-xs mx-auto">
+                            {{ currentFilter === 'unread' 
+                                ? 'No tienes notificaciones sin leer en este momento.' 
+                                : 'Las notificaciones sobre likes, comentarios y conexiones aparecerán aquí.' 
+                            }}
+                        </p>
+                        <button 
+                            v-if="currentFilter === 'unread'"
+                            @click="currentFilter = 'all'"
+                            class="mt-4 text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                        >
+                            Ver todas las notificaciones
+                        </button>
                     </div>
 
                     <!-- Paginación -->
-                    <div v-if="notifications && notifications.links && notifications.links.length > 3" class="px-6 py-4 border-t border-gray-200">
-                        <div class="flex items-center justify-between">
-                            <div class="text-sm text-gray-700">
-                                Mostrando {{ notifications.from }} a {{ notifications.to }} de {{ notifications.total }} notificaciones
+                    <div v-if="notifications && notifications.links && notifications.links.length > 3" class="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                        <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div class="text-sm text-gray-700 text-center sm:text-left">
+                                Mostrando {{ notifications.from }} a {{ notifications.to }} de {{ notifications.total }} resultados
                             </div>
-                            <div class="flex gap-2">
+                            <div class="flex flex-wrap justify-center gap-1">
                                 <Link
-                                    v-for="link in notifications.links"
-                                    :key="link.label"
+                                    v-for="(link, key) in notifications.links"
+                                    :key="key"
                                     :href="link.url"
+                                    :preserve-scroll="true"
+                                    :preserve-state="true"
+                                    :data="{ unread_only: currentFilter === 'unread' ? 1 : 0 }"
                                     :class="[
-                                        'px-3 py-2 text-sm rounded-md',
-                                        link.active ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
+                                        'px-3 py-1 text-sm rounded-md transition-colors',
+                                        link.active 
+                                            ? 'bg-indigo-600 text-white shadow-sm' 
+                                            : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300',
                                         !link.url ? 'opacity-50 cursor-not-allowed' : ''
                                     ]"
                                     v-html="link.label"

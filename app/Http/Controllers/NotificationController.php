@@ -16,11 +16,16 @@ class NotificationController extends Controller
     {
         $user = Auth::user();
         $unreadOnly = $request->boolean('unread_only', false);
+        $type = $request->input('type');
 
         $query = $user->notifications();
 
         if ($unreadOnly) {
             $query->whereNull('read_at');
+        }
+
+        if ($type) {
+            $query->where('type', $type);
         }
 
         $notifications = $query->paginate(20);
@@ -98,6 +103,19 @@ class NotificationController extends Controller
         return response()->json([
             'message' => 'Notificación eliminada',
             'unread_count' => Auth::user()->unreadNotifications()->count(),
+        ]);
+    }
+
+    /**
+     * Eliminar todas las notificaciones
+     */
+    public function deleteAll()
+    {
+        Auth::user()->notifications()->delete();
+
+        return response()->json([
+            'message' => 'Todas las notificaciones han sido eliminadas',
+            'unread_count' => 0,
         ]);
     }
 }
