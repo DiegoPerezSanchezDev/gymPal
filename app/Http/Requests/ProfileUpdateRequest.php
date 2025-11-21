@@ -66,6 +66,10 @@ class ProfileUpdateRequest extends FormRequest
             // Valida las coordenadas de geolocalización.
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+
+            // --- Foto de Perfil ---
+            'profile_picture' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif', 'max:5120'], // 5MB máx
+            'remove_profile_picture' => ['nullable', 'boolean'],
         ];
     }
 }

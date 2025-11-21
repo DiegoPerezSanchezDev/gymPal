@@ -15,6 +15,11 @@ class DiscoverController extends Controller
      */
     public function index(Request $request)
     {
+        // Simulate latency in development for testing Skeletons
+        if (app()->environment('local') && request()->has('simulate_latency')) {
+            sleep(1);
+        }
+
         // 1. DATOS DEL USUARIO ACTUAL
         // Aseguramos la carga de intereses del usuario actual.
         $usuarioActual = Auth::user() ? User::with('fitnessInterests')->findOrFail(Auth::id()) : null;
@@ -203,8 +208,9 @@ class DiscoverController extends Controller
         return Inertia::render('Discover', [
             'title' => 'Conectar con GymPals',
             'users' => $users,
+            'user' => $usuarioActual, // Usuario actual para usar su looking_for_interest_id
             'sugerencias' => collect(), // Se mantiene la variable, aunque no se use en la lógica actual.
-            'filters' => $request->only(['search', 'city', 'interests', 'availability_general', 'filtro_rapido', 'experience_level', 'lat', 'lon']),
+            'filters' => $request->only(['search', 'city', 'interests', 'availability_general', 'filtro_rapido', 'experience_level', 'lat', 'lon', 'interest_id']),
             'interests' => \App\Models\FitnessInterest::all(['id', 'name']),
             'searchedInterestId' => $searchedInterestId,
         ]);

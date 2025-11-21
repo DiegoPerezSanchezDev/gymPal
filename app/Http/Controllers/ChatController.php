@@ -19,6 +19,11 @@ class ChatController extends Controller
      */
     public function index()
     {
+        // Simulate latency in development for testing Skeletons
+        if (app()->environment('local') && request()->has('simulate_latency')) {
+            sleep(1);
+        }
+
         $currentUser = Auth::user();
 
         // Obtener las conversaciones del usuario actual
@@ -164,17 +169,35 @@ class ChatController extends Controller
     // Método para guardar un nuevo mensaje (se llamaría vía POST desde Chat/Show.vue)
     public function storeMessage(Request $request, Conversation $conversation)
     {
-        $validated = $request->validate(['body' => 'required|string|max:2000']);
+        $validated = $request->validate([
+            'body' => 'nullable|string|max:2000',
+            'image' => 'nullable|image|mimes:jpeg,jpg,png,gif|max:5120', // 5MB máx
+        ]);
+        
         $currentUser = Auth::user();
 
         if (!$conversation->users()->where('user_id', $currentUser->id)->exists()) {
             return response()->json(['message' => 'No autorizado.'], 403);
         }
 
-        $message = $conversation->messages()->create([
+        // Preparar datos del mensaje
+        $messageData = [
             'user_id' => $currentUser->id,
-            'body' => $validated['body'],
-        ]);
+            'body' => $validated['body'] ?? null,
+        ];
+
+        // Manejar imagen si se envió
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('chat-images', 'public');
+            $messageData['image_url'] = $path;
+        }
+
+        // Validar que haya al menos body o imagen
+        if (empty($messageData['body']) && empty($messageData['image_url'])) {
+            return response()->json(['message' => 'Debes enviar un mensaje o una imagen.'], 422);
+        }
+
+        $message = $conversation->messages()->create($messageData);
 
         $conversation->update(['last_message_at' => now()]); // Actualiza el timestamp
 

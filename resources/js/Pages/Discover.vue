@@ -1,255 +1,444 @@
 <script setup>
-import { Head, useForm, usePage, router } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
-import axios from 'axios';
-import debounce from 'lodash.debounce';
-
-// Componentes
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import UserCard from '@/Components/UserCard.vue';
-import Pagination from '@/Components/Pagination.vue';
-import TagsInput from '@/Components/TagsInput.vue';
-import AvailabilityInput from '@/Components/AvailabilityInput.vue';
-import CityAutocomplete from '@/Components/CityAutocomplete.vue';
-import SelectInput from '@/Components/SelectInput.vue';
+import UserCardSkeleton from '@/Components/Skeletons/UserCardSkeleton.vue';
+import { Head, useForm, router, Link } from '@inertiajs/vue3';
+import { ref, watch, onMounted, computed } from 'vue';
+import _ from 'lodash';
 
-const geoapifyKey = usePage().props.geoapify_key;
 const props = defineProps({
-    users: Object,
-    sugerencias: Array,
-    filters: Object,
     title: String,
+    users: Object, // Paginación de usuarios
+    filters: Object,
+    user: Object, // Usuario actual
     interests: Array,
-    searchedInterestId: [String, Number, null],
+    searchedInterestId: [String, Number],
 });
 
-function handleCitySelected(cityData) {
-    searchForm.city = cityData.name;
-}
-
-const manualFiltersVisible = ref(false);
-const geolocationStatus = ref('');
-
-const searchForm = useForm({
+const form = useForm({
     search: props.filters.search || '',
     city: props.filters.city || '',
     interests: props.filters.interests || [],
     availability_general: props.filters.availability_general || [],
     experience_level: props.filters.experience_level || '',
+    looking_for_interest_id: props.filters.looking_for_interest_id || '',
+    interest_id: props.filters.interest_id || (props.user?.looking_for_interest_id || ''), // Deporte para buscar compañero
+    filtro_rapido: props.filters.filtro_rapido || '',
+    lat: props.filters.lat || null,
+    lon: props.filters.lon || null,
 });
 
-const submitManualFilters = () => {
-    router.get(route('discover.index'), searchForm.data(), {
-        preserveState: true,
-        preserveScroll: true,
-        replace: true,
-    });
-};
+const showFilters = ref(false);
+const isLoading = ref(true);
 
-function searchNearby() {
-    if (!navigator.geolocation) {
-        geolocationStatus.value = "Tu navegador no soporta geolocalización.";
-        return;
-    }
-    geolocationStatus.value = "Solicitando permiso...";
-
-    const success = (position) => {
-        geolocationStatus.value = "¡Ubicación encontrada! Buscando...";
-        router.get(route('discover.index'), {
-            lat: position.coords.latitude,
-            lon: position.coords.longitude
-        }, {
-            replace: true,
-            onFinish: () => { geolocationStatus.value = ''; }
-        });
-    };
-
-    const error = (err) => {
-        geolocationStatus.value = 'No se pudo obtener la ubicación.';
-        console.error(`ERROR DE GEOLOCALIZACIÓN (${err.code}): ${err.message}`);
-    };
-
-    navigator.geolocation.getCurrentPosition(success, error, { timeout: 10000 });
-}
-
-// --- LÓGICA PARA "BUSCANDO COMPAÑERO" ---
-const defaultUserInterestId = computed(() => usePage().props.auth.user?.looking_for_interest_id);
-// Usamos props.searchedInterestId directamente, ya que lo estamos pasando desde el controlador
-const selectedInterestId = ref(props.searchedInterestId);
-
-// Watch #1: Se encarga de SINCRONIZAR el 'ref' con los props de la página
-watch(() => props.searchedInterestId, (newFilterId) => {
-    selectedInterestId.value = newFilterId || defaultUserInterestId.value || null;
-}, { immediate: true });
-
-const performSearch = (interestId) => {
-    saveInterestPreference(interestId);
-
-    router.get(route('discover.index'), {
-        filtro_rapido: 'buscando_companero',
-        interest_id: interestId
-    }, {
-        replace: true,
-        preserveScroll: true,
-        preserveState: true,
-    });
-};
-
-const debouncedSearch = debounce(performSearch, 500);
-
-watch(selectedInterestId, (newId, oldId) => {
-    if (oldId !== undefined && newId !== oldId) {
-        debouncedSearch(newId);
+onMounted(() => {
+    // Delay de 1.5 segundos para dar tiempo a que se oculten datos anteriores
+    if (props.users) {
+        setTimeout(() => isLoading.value = false, 1500);
     }
 });
 
 
-// La función 'saveInterestPreference' se mantiene exactamente igual.
-function saveInterestPreference(interestId) {
-    if (!interestId) return;
-    axios.patch(route('profile.updateLookingFor'), {
-        interest_id: interestId
-    }).catch(error => {
-        console.error("Error al guardar la preferencia de interés:", error);
+const submit = _.debounce(() => {
+    form.get(route('discover.index'), {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+        onFinish: () => {
+            // Delay para mostrar skeleton y dar tiempo a transición
+            setTimeout(() => isLoading.value = false, 800);
+        },
     });
-}
+}, 500);
 
-const filtrosActivos = computed(() => usePage().props.filters);
-const quickFilterActive = computed(() => !!filtrosActivos.value.filtro_rapido);
-const isGeolocationSearch = computed(() => !!filtrosActivos.value.lat);
+// Watches que activan loading inmediatamente
+watch(() => form.search, () => { isLoading.value = true; submit(); });
+watch(() => form.city, () => { isLoading.value = true; submit(); });
+watch(() => form.interests, () => { isLoading.value = true; submit(); });
+watch(() => form.availability_general, () => { isLoading.value = true; submit(); });
+watch(() => form.experience_level, () => { isLoading.value = true; submit(); });
+watch(() => form.interest_id, () => { isLoading.value = true; submit(); });
+watch(() => form.looking_for_interest_id, () => { isLoading.value = true; submit(); });
 
-function clearAllFilters() {
-    router.get(route('discover.index'), {}, { replace: true });
-}
-
-function applyQuickFilter(nombreFiltro) {
-    if (nombreFiltro === 'buscando_companero') {
-        const interestToSearch = defaultUserInterestId.value || null;
-        if (!interestToSearch) {
-            alert('¡Por favor, selecciona un deporte en tu perfil para usar este filtro!');
-            return;
+const aplicarFiltroRapido = (tipo) => {
+    form.filtro_rapido = form.filtro_rapido === tipo ? '' : tipo; // Toggle
+    
+    // Limpiar otros filtros si se activa uno rápido (opcional, depende de la UX deseada)
+    if (form.filtro_rapido) {
+        form.search = '';
+        form.city = '';
+        form.interests = [];
+        form.availability_general = [];
+        form.experience_level = '';
+        form.looking_for_interest_id = '';
+        // No reseteamos lat/lon si es 'cerca de mi'
+        if (tipo !== 'cerca_de_mi') {
+            form.lat = null;
+            form.lon = null;
         }
-        router.get(route('discover.index'), {
-            filtro_rapido: nombreFiltro,
-            interest_id: interestToSearch
-        }, {
-            replace: true,
-        });
+        // Si es 'buscando_companero', usar el deporte del usuario actual por defecto
+        if (tipo === 'buscando_companero' && props.user?.looking_for_interest_id) {
+            form.interest_id = props.user.looking_for_interest_id;
+        }
+    } else {
+        // Si se desactiva el filtro, limpiar también el interest_id
+        form.interest_id = '';
+    }
+    submit();
+};
+
+const buscarPorUbicacion = () => {
+    if (!navigator.geolocation) {
+        alert("La geolocalización no es soportada por tu navegador.");
         return;
     }
-    const filtroActual = filtrosActivos.value.filtro_rapido;
-    const nuevoFiltro = filtroActual === nombreFiltro ? null : nombreFiltro;
-    router.get(route('discover.index'), { filtro_rapido: nuevoFiltro }, { replace: true });
-}
 
-function toggleManualFilters() {
-    if (!quickFilterActive.value && !isGeolocationSearch.value) {
-        manualFiltersVisible.value = !manualFiltersVisible.value;
-    }
-}
+    navigator.geolocation.getCurrentPosition((position) => {
+        form.lat = position.coords.latitude;
+        form.lon = position.coords.longitude;
+        form.filtro_rapido = ''; // Desactivar filtros rápidos si se usa geo explícito
+        submit();
+    }, () => {
+        alert("No se pudo obtener tu ubicación.");
+    });
+};
+
+const limpiarFiltros = () => {
+    form.reset();
+    form.interests = []; // Reset manual para arrays
+    form.availability_general = [];
+    submit();
+};
+
+// Helper para color de afinidad
+const getAffinityColor = (score) => {
+    if (score >= 80) return 'from-green-400 to-emerald-600';
+    if (score >= 50) return 'from-yellow-400 to-orange-500';
+    return 'from-blue-400 to-indigo-500';
+};
+
+const availabilitySlots = ['Mañanas', 'Tardes', 'Noches', 'Fines de semana'];
 </script>
 
 <template>
-    <Head :title="title || 'Conectar'" />
+    <Head :title="title" />
 
     <AuthenticatedLayout>
-        <div class="flex flex-col items-center justify-center pt-8 mb-8">
-            <h2 class="text-3xl font-extrabold text-indigo-700 tracking-tight">Conectar</h2>
-            <p class="text-lg text-gray-600 max-w-xl text-center">Encuentra compañeros para entrenar y haz nuevos amigos.</p>
-        </div>
+        <template #header>
+            <h2 class="font-bold text-xl text-gray-800 leading-tight">
+                {{ title }}
+            </h2>
+        </template>
 
-        <div class="container mx-auto px-2 sm:px-4 pb-8">
-            
-            <div v-if="sugerencias && sugerencias.length > 0" class="mb-10">
-                </div>
-
-            <div class="bg-white p-4 rounded-lg shadow-md mb-6">
-                <div class="flex flex-col sm:flex-row gap-4 items-center pb-4">
-                    <button @click="searchNearby" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-indigo-600 text-white font-bold rounded-md shadow-lg hover:bg-indigo-700 transition transform hover:scale-105">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                        Buscar Cerca de Mí
-                    </button>
-                    <p v-if="geolocationStatus" class="text-sm text-gray-600">{{ geolocationStatus }}</p>
-                    <button v-if="quickFilterActive || isGeolocationSearch" @click="clearAllFilters" class="ml-auto text-sm text-indigo-600 hover:underline">Mostrar todos</button>
-                </div>
-
-                <div class="border-t border-gray-200">
-                    <div class="flex flex-wrap items-center gap-4 pt-4">
-                        <button @click="applyQuickFilter('mas_activos')" :class="['px-3 py-1.5 text-sm font-semibold rounded-full border-2 transition', filtrosActivos.filtro_rapido === 'mas_activos' ? 'bg-indigo-600 text-white border-indigo-700 shadow-md' : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-100']">🔥 Más Activos</button>
-                        <button @click="applyQuickFilter('nuevos_en_ciudad')" :class="['px-3 py-1.5 text-sm font-semibold rounded-full border-2 transition', filtrosActivos.filtro_rapido === 'nuevos_en_ciudad' ? 'bg-indigo-600 text-white border-indigo-700 shadow-md' : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-100']">🏙️ Nuevos en tu ciudad</button>
-                        <button @click="applyQuickFilter('buscando_companero')" :class="['px-3 py-1.5 text-sm font-semibold rounded-full border-2 transition', filtrosActivos.filtro_rapido === 'buscando_companero' ? 'bg-indigo-600 text-white border-indigo-700 shadow-md' : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-100']">🤝 Buscando Compañero</button>
-                    </div>
-                    
-                    <div class="border-t border-gray-200 mt-4 pt-4 flex items-center justify-between">
-                        <button @click="toggleManualFilters" :disabled="quickFilterActive || isGeolocationSearch" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-2 disabled:text-gray-400 disabled:cursor-not-allowed">
-                            <svg v-if="!manualFiltersVisible" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                            <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 12H6"></path></svg>
-                            Búsqueda Manual Avanzada
-                        </button>
-                        <button v-if="manualFiltersVisible" @click="searchForm.reset()" class="text-xs text-gray-500 hover:text-red-600 hover:underline">Limpiar filtros</button>
-                    </div>
-
-                    <transition enter-active-class="transition ease-out duration-300" enter-from-class="opacity-0 -translate-y-2" enter-to-class="opacity-100 translate-y-0" leave-active-class="transition ease-in duration-200" leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 -translate-y-2">
-                        <div v-show="manualFiltersVisible" class="mt-4 pt-4 border-t border-gray-200">
-                            <form @submit.prevent="submitManualFilters">
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-8">
-                                    <div>
-                                        <label for="search_term" class="block text-sm font-medium leading-6 text-gray-900">Buscar por nombre</label>
-                                        <input type="text" v-model="searchForm.search" id="search_term" class="mt-2 block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="Ej: Juan Perez">
-                                    </div>
-                                    <div>
-                                        <label for="city_filter" class="block text-sm font-medium leading-6 text-gray-900">Ciudad</label>
-                                        <CityAutocomplete v-model="searchForm.city" :api-key="geoapifyKey" @city-selected="handleCitySelected" class="mt-2"/>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium leading-6 text-gray-900">Nivel</label>
-                                        <SelectInput class="mt-2" v-model="searchForm.experience_level" :options="[{ value: '', label: 'Cualquiera' }, { value: 'Principiante', label: 'Principiante' }, { value: 'Intermedio', label: 'Intermedio' }, { value: 'Avanzado', label: 'Avanzado' }]" />
-                                    </div>
-                                    <div class="col-span-1 md:col-span-full">
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Disponibilidad</label>
-                                        <AvailabilityInput v-model="searchForm.availability_general" />
-                                    </div>
-                                    <div class="col-span-1 md:col-span-full">
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Intereses deportivos</label>
-                                        <TagsInput v-model="searchForm.interests" :interests="interests" />
-                                    </div>
-                                </div>
-                                <div class="mt-6 flex justify-end">
-                                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white font-bold rounded-md shadow-sm hover:bg-indigo-700">
-                                        Aplicar Filtros
-                                    </button>
-                                </div>
-                            </form>
+        <div class="py-6 md:py-12">
+            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                
+                <!-- Barra de Herramientas y Filtros -->
+                <div class="bg-white shadow-lg sm:rounded-xl p-6 mb-8 border border-gray-100">
+                    <!-- Buscador Principal -->
+                    <div class="relative mb-6">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
                         </div>
-                    </transition>
-                </div>
-            </div>
+                        <input 
+                            v-model="form.search" 
+                            type="text" 
+                            placeholder="Buscar por nombre o usuario..." 
+                            class="pl-10 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-3"
+                        >
+                    </div>
 
-            <div v-if="filtrosActivos.filtro_rapido === 'buscando_companero'" 
-                class="bg-indigo-50 border-l-4 border-indigo-500 p-4 rounded-md mb-6 shadow-sm">
-                <div class="flex flex-col items-center gap-y-2">
-                    <label for="interest-select" class="block text-sm font-semibold text-indigo-800">Buscando compañeros para:</label>
-                    <select id="interest-select" v-model="selectedInterestId"
-                            class="block w-full max-w-xs rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-                        <option v-if="!selectedInterestId" :value="null" disabled>Selecciona un deporte</option>
-                        <option v-for="interest in interests" :key="interest.id" :value="interest.id">
-                            {{ interest.name }}
-                        </option>
-                    </select>
-                </div>
-            </div>
+                    <!-- Filtros Rápidos (Chips) -->
+                    <div class="flex flex-wrap gap-3 mb-6">
+                        <button 
+                            @click="aplicarFiltroRapido('mas_activos')"
+                            class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border"
+                            :class="form.filtro_rapido === 'mas_activos' ? 'bg-indigo-100 text-indigo-700 border-indigo-200 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'"
+                        >
+                            🔥 Más Activos
+                        </button>
+                        <button 
+                            @click="aplicarFiltroRapido('nuevos_en_ciudad')"
+                            class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border"
+                            :class="form.filtro_rapido === 'nuevos_en_ciudad' ? 'bg-indigo-100 text-indigo-700 border-indigo-200 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'"
+                        >
+                            🏙️ Nuevos en mi ciudad
+                        </button>
+                        <button 
+                            @click="aplicarFiltroRapido('buscando_companero')"
+                            class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border"
+                            :class="form.filtro_rapido === 'buscando_companero' ? 'bg-indigo-100 text-indigo-700 border-indigo-200 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'"
+                        >
+                            🤝 Buscan compañero
+                        </button>
+                        <button 
+                            @click="buscarPorUbicacion"
+                            class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border"
+                            :class="form.lat ? 'bg-green-100 text-green-700 border-green-200 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'"
+                        >
+                            📍 Cerca de mí
+                        </button>
+                        
+                        <button 
+                            @click="showFilters = !showFilters"
+                            class="ml-auto text-sm text-indigo-600 font-semibold hover:text-indigo-800 flex items-center gap-1"
+                        >
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+                            {{ showFilters ? 'Ocultar Filtros' : 'Más Filtros' }}
+                        </button>
+                    </div>
 
+                    <!-- Filtros Avanzados (Collapsible) -->
+                    <div v-show="showFilters" class="pt-6 border-t border-gray-100 animate-fade-in-down space-y-6">
+                        
+                        <!-- Fila 1: Nivel y Ciudad -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                                    <span class="text-base">💪</span>
+                                    <span>Nivel de Experiencia</span>
+                                </label>
+                                <select v-model="form.experience_level" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 sm:text-sm bg-white font-medium">
+                                    <option value="">✨ Todos los niveles</option>
+                                    <option value="Principiante">🌱 Principiante</option>
+                                    <option value="Intermedio">⚡ Intermedio</option>
+                                    <option value="Avanzado">🔥 Avanzado</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                                    <span class="text-base">📍</span>
+                                    <span>Ciudad</span>
+                                </label>
+                                <input v-model="form.city" type="text" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 sm:text-sm font-medium" placeholder="Ej: Madrid, Barcelona...">
+                            </div>
+                        </div>
+                        
+                        <!-- Intereses (Checkbox) -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                                <span class="text-base">🏃</span>
+                                <span>Deportes que practican</span>
+                            </label>
+                            <div class="flex flex-wrap gap-2">
+                                <div v-for="interest in interests" :key="'filter-int-'+interest.id" class="flex items-center">
+                                    <input 
+                                        :id="'interest-' + interest.id" 
+                                        :value="interest.id" 
+                                        v-model="form.interests" 
+                                        type="checkbox" 
+                                        class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                                    >
+                                    <label :for="'interest-' + interest.id" class="ml-2 text-sm text-gray-700 cursor-pointer hover:text-indigo-600 transition-colors">
+                                        {{ interest.name }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
 
-            <div v-if="users.data && users.data.length > 0">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    <UserCard v-for="user in users.data" :key="user.id" :user="user"  :active-filter="filtrosActivos.filtro_rapido" :searched-interest-id="props.searchedInterestId" />
+                        <!-- Disponibilidad -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                                <span class="text-base">⏰</span>
+                                <span>Disponibilidad</span>
+                            </label>
+                            <div class="flex flex-wrap gap-2">
+                                <div v-for="slot in availabilitySlots" :key="slot" class="flex items-center">
+                                    <input 
+                                        :id="'avail-' + slot" 
+                                        :value="slot" 
+                                        v-model="form.availability_general" 
+                                        type="checkbox" 
+                                        class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                                    >
+                                    <label :for="'avail-' + slot" class="ml-2 text-sm text-gray-700 cursor-pointer hover:text-indigo-600 transition-colors">
+                                        {{ slot }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end pt-4 border-t border-gray-100">
+                            <button @click="limpiarFiltros" class="text-sm text-red-500 hover:text-red-700 font-bold flex items-center gap-1 hover:gap-2 transition-all">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                Limpiar filtros
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filtro Específico para "Buscan Compañero" -->
+                    <div v-if="form.filtro_rapido === 'buscando_companero'" class="mt-6 pt-6 border-t border-indigo-100 bg-indigo-50/30 -mx-6 px-6 pb-6 rounded-b-xl">
+                        <label class="block text-sm font-bold text-indigo-700 mb-3 flex items-center gap-2">
+                            <span class="text-lg">🤝</span>
+                            <span>Buscar compañero para</span>
+                        </label>
+                        <select v-model="form.interest_id" class="mt-1 block w-full rounded-lg border-indigo-200 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 sm:text-sm bg-white font-medium">
+                            <option value="">🏃 Cualquier deporte</option>
+                            <option v-for="interest in interests" :key="interest.id" :value="interest.id">
+                                {{ interest.name }}
+                            </option>
+                        </select>
+                        <p class="text-xs text-indigo-600 mt-2 flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
+                            Las tarjetas que coincidan se resaltarán automáticamente
+                        </p>
+                    </div>
                 </div>
-                <Pagination :links="users.links" class="mt-6" />
-            </div>
-            <div v-else class="text-center py-10 bg-white rounded-lg shadow-md">
-                <h3 class="mt-2 text-sm font-medium text-gray-900">No se encontraron GymPals</h3>
-                <p class="mt-1 text-sm text-gray-500">Intenta ajustar tus filtros de búsqueda o usa un filtro rápido.</p>
+
+                <!-- Grid de Resultados -->
+                <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <UserCardSkeleton v-for="n in 6" :key="n" />
+                </div>
+
+                <div v-else>
+                    <div v-if="users.data.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div v-for="user in users.data" :key="user.id" 
+                             class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col h-full group relative transform scale-[0.98]"
+                             :class="{
+                                 'border-2 border-indigo-500 ring-2 ring-indigo-200': form.interest_id && user.looking_for_interest_id == form.interest_id,
+                                 'border border-gray-100': !form.interest_id || user.looking_for_interest_id != form.interest_id
+                             }">
+                            
+                            <!-- Badge de Nivel de Experiencia (Top Left) -->
+                            <div v-if="user.experience_level" 
+                                 class="absolute top-3 left-3 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm z-10 flex items-center gap-1"
+                                 :class="{
+                                     'bg-green-600': user.experience_level === 'Principiante',
+                                     'bg-blue-600': user.experience_level === 'Intermedio',
+                                     'bg-purple-600': user.experience_level === 'Avanzado'
+                                 }">
+                                <span>{{ user.experience_level === 'Principiante' ? '🌱' : (user.experience_level === 'Intermedio' ? '⚡' : '🔥') }}</span>
+                                <span>{{ user.experience_level }}</span>
+                            </div>
+
+                            <!-- Badge de Afinidad (Top Right) -->
+                            <div v-if="user.affinity_score > 0" 
+                                 class="absolute top-3 right-3 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm z-10 bg-gradient-to-r"
+                                 :class="getAffinityColor(user.affinity_score)"
+                            >
+                                {{ user.affinity_score }}% Afinidad
+                            </div>
+
+                            <!-- Header / Avatar -->
+                            <div class="p-6 flex flex-col items-center flex-grow">
+                                
+                                <div class="relative mb-4">
+                                    <img 
+                                        :src="user.profile_picture_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.name) + '&background=random&color=fff'" 
+                                        :alt="user.name" 
+                                        class="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md group-hover:scale-105 transition-transform duration-300"
+                                    >
+                                    <span v-if="user.connection_status === 'accepted'" class="absolute bottom-1 right-1 bg-green-500 w-5 h-5 rounded-full border-2 border-white" title="Conectado"></span>
+                                </div>
+                                
+                                <h3 class="text-lg font-bold text-gray-900 text-center mt-2">{{ user.name }}</h3>
+                                <p class="text-sm text-gray-500 font-medium mb-3">@{{ user.username }}</p>
+                                
+                                <!-- Ubicación y Distancia -->
+                                <div class="flex items-center justify-center gap-2 mb-4 text-xs text-gray-500">
+                                    <span v-if="user.location_city" class="flex items-center">
+                                        📍 {{ user.location_city }}
+                                    </span>
+                                    <span v-if="user.distance !== undefined && user.distance !== null" class="flex items-center font-semibold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
+                                        📏 A {{ parseFloat(user.distance).toFixed(2) }} km
+                                    </span>
+                                </div>
+
+                                <!-- Separador -->
+                                <div class="w-full border-t border-gray-100 my-2"></div>
+
+                                <!-- Buscando Compañero (solo visible cuando el filtro está activo) -->
+                                <div v-if="form.filtro_rapido === 'buscando_companero' && user.looking_for_interest" class="w-full mb-3">
+                                    <p class="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-2 text-center">Buscando compañero</p>
+                                    <div class="flex justify-center">
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border-2 shadow-sm"
+                                              :class="{
+                                                  'bg-indigo-100 text-indigo-700 border-indigo-500 shadow-indigo-200': form.interest_id && user.looking_for_interest_id == form.interest_id,
+                                                  'bg-purple-50 text-purple-700 border-purple-200': !form.interest_id || user.looking_for_interest_id != form.interest_id
+                                              }">
+                                            🤝 {{ user.looking_for_interest.name }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Deportes / Intereses -->
+                                <div class="w-full mt-2">
+                                    <p class="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-2 text-center">Practica</p>
+                                    <div class="flex flex-wrap justify-center gap-1.5">
+                                        <span v-for="interest in user.fitness_interests.slice(0, 3)" :key="interest.id" class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-50 text-gray-700 border border-gray-200">
+                                            {{ interest.name }}
+                                        </span>
+                                        <span v-if="user.fitness_interests.length > 3" class="text-xs text-gray-400 font-medium flex items-center px-1">
+                                            +{{ user.fitness_interests.length - 3 }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Disponibilidad (Si existe) -->
+                                <div v-if="user.availability_general && user.availability_general.length" class="w-full mt-4">
+                                    <p class="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-2 text-center">Disponible</p>
+                                    <div class="flex flex-wrap justify-center gap-1">
+                                        <span v-for="slot in user.availability_general.slice(0, 2)" :key="slot" class="text-[10px] px-1.5 py-0.5 bg-green-50 text-green-700 rounded border border-green-100">
+                                            {{ slot }}
+                                        </span>
+                                        <span v-if="user.availability_general.length > 2" class="text-[10px] text-gray-400">...</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Footer / Actions -->
+                            <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 mt-auto">
+                                <button 
+                                    @click="router.visit(route('profile.show.public', { user: user.username }))"
+                                    class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all transform active:scale-95"
+                                >
+                                    Ver Perfil
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div v-else class="text-center py-16">
+                        <div class="mx-auto h-24 w-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                            <svg class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900">No se encontraron usuarios</h3>
+                        <p class="mt-1 text-gray-500">Intenta ajustar tus filtros de búsqueda.</p>
+                        <button @click="limpiarFiltros" class="mt-4 text-indigo-600 hover:text-indigo-800 font-semibold">
+                            Limpiar filtros
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Paginación -->
+                <div v-if="!isLoading && users.links.length > 3" class="mt-8 flex justify-center">
+                     <template v-for="(link, key) in users.links" :key="key">
+                        <div v-if="link.url === null" class="mr-1 mb-1 px-4 py-3 text-sm leading-4 text-gray-400 border rounded" v-html="link.label" />
+                        <Link v-else class="mr-1 mb-1 px-4 py-3 text-sm leading-4 border rounded hover:bg-white focus:border-indigo-500 focus:text-indigo-500" :class="{ 'bg-indigo-500 text-white': link.active }" :href="link.url" v-html="link.label" preserve-scroll />
+                    </template>
+                </div>
+
             </div>
         </div>
     </AuthenticatedLayout>
 </template>
+
+<style scoped>
+.animate-fade-in-down {
+    animation: fadeInDown 0.3s ease-out;
+}
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>

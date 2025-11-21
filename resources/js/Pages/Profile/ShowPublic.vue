@@ -64,21 +64,21 @@ const sendMessage = () => {
 };
 
 const avatarUrl = computed(() => {
-    return props.profileUser.profile_picture_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(props.profileUser.name || 'G P')}&background=random&color=fff&size=160`;
+    if (props.profileUser.profile_picture_url) {
+        return `/storage/${props.profileUser.profile_picture_url}`;
+    }
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(props.profileUser.name || 'G P')}&background=random&color=fff&size=160`;
 });
 const fitnessInterestsArray = computed(() => {
     return props.profileUser.fitness_interests || [];
 });
-const levelStyles = computed(() => {
-    const level = props.profileUser.experience_level?.toLowerCase();
-    switch (level) {
-        case 'principiante': return { span: 'bg-fuchsia-100 text-fuchsia-800', svg: 'text-fuchsia-500' };
-        case 'intermedio': return { span: 'bg-teal-100 text-teal-800', svg: 'text-teal-500' };
-        case 'avanzado': return { span: 'bg-amber-100 text-amber-800', svg: 'text-amber-500' };
-        default: return { span: 'bg-blue-100 text-blue-800', svg: 'text-gray-500' };
-    }
-});
 
+// Helper para color de afinidad (si existe)
+const getAffinityColor = (score) => {
+    if (score >= 80) return 'from-green-400 to-emerald-600';
+    if (score >= 50) return 'from-yellow-400 to-orange-500';
+    return 'from-blue-400 to-indigo-500';
+};
 </script>
 
 <template>
@@ -90,44 +90,43 @@ const levelStyles = computed(() => {
         </div>
 
         <div v-else-if="profileUser" class="container mx-auto px-2 sm:px-4 py-8">
-            <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+            <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 relative">
                 
-                <!-- Header Background (Optional) -->
+                <!-- Badge de Afinidad (Si existe) -->
+                <div v-if="profileUser.affinity_score > 0" 
+                     class="absolute top-4 right-4 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg z-10 bg-gradient-to-r"
+                     :class="getAffinityColor(profileUser.affinity_score)"
+                >
+                    {{ profileUser.affinity_score }}% Afinidad
+                </div>
+
+                <!-- Header Background -->
                 <div class="h-32 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
 
-                <div class="px-8 pb-8 flex flex-col items-center -mt-16">
-                    <img :src="avatarUrl" :alt="profileUser.name" class="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md mb-4 bg-white">
-                    
-                    <h1 class="text-3xl font-extrabold text-gray-900 mb-1 tracking-tight">{{ profileUser.display_name || profileUser.name }}</h1>
-                    <p v-if="profileUser.username" class="text-md text-indigo-600 font-medium mb-4">@{{ profileUser.username }}</p>
-                    
-                    <p v-if="profileUser.bio" class="text-gray-600 text-center mb-6 whitespace-pre-line max-w-lg leading-relaxed">{{ profileUser.bio }}</p>
-
-                    <div class="flex flex-col items-center gap-y-4 w-full mt-2">
-                        <div class="flex flex-wrap gap-2 justify-center mb-2 items-center">
-                            <span v-if="profileUser.location_city" class="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full border border-gray-200">
-                                <svg class="w-4 h-4 mr-1 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m13-6.13a4 4 0 11-8 0 4 4 0 018 0zM5 8a4 4 0 108 0 4 4 0 00-8 0z" /></svg>
-                                {{ profileUser.location_city }}
-                            </span>
-                            <template v-if="profileUser.availability_general && profileUser.availability_general.length">
-                                <span v-for="slot in profileUser.availability_general" :key="slot" class="inline-block bg-pink-50 text-pink-700 border border-pink-100 text-xs font-semibold px-3 py-1 rounded-full">
-                                    {{ slot }}
-                                </span>
-                            </template>
+                <div class="px-8 pb-8 flex flex-col items-center -mt-20">
+                    <div class="relative">
+                        <!-- Avatar con borde gradiente -->
+                        <div class="w-36 h-36 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 p-1 shadow-lg">
+                            <img :src="avatarUrl" :alt="profileUser.name" class="w-full h-full rounded-full object-cover border-4 border-white" />
                         </div>
-                        <div v-if="profileUser.experience_level" class="mb-2 flex flex-wrap gap-2 justify-center">
-                            <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full border border-transparent shadow-sm" :class="levelStyles.span">
-                                <svg class="w-4 h-4 mr-1" :class="levelStyles.svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                {{ profileUser.experience_level }}
-                            </span>
-                        </div>
-                        <div v-if="fitnessInterestsArray.length" class="mb-6 flex flex-wrap gap-2 justify-center max-w-md">
-                            <span v-for="interest in fitnessInterestsArray" :key="interest.id" class="inline-block bg-indigo-50 text-indigo-700 border border-indigo-100 text-xs font-semibold px-3 py-1 rounded-full">
-                                {{ interest.name }}
-                            </span>
+                        <!-- Nivel de Experiencia (Badge con gradiente) -->
+                        <div v-if="profileUser.experience_level" class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-green-400 to-emerald-600 text-white text-xs font-bold uppercase tracking-wide px-3 py-1 rounded-full shadow-md">
+                            {{ profileUser.experience_level }}
                         </div>
                     </div>
+                    
+                    <h1 class="text-3xl font-extrabold text-gray-900 mt-4 mb-1 tracking-tight text-center">{{ profileUser.display_name || profileUser.name }}</h1>
+                    <p v-if="profileUser.username" class="text-md text-indigo-600 font-medium mb-4">@{{ profileUser.username }}</p>
+                    
+                    <!-- Ubicación -->
+                    <div v-if="profileUser.location_city" class="flex items-center gap-1 text-gray-500 text-sm mb-4">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        {{ profileUser.location_city }}
+                    </div>
 
+                    <p v-if="profileUser.bio" class="text-gray-600 text-center mb-6 whitespace-pre-line max-w-lg leading-relaxed italic">"{{ profileUser.bio }}"</p>
+
+                    <!-- Stats -->
                     <div class="flex gap-8 justify-center mb-8 w-full border-t border-b border-gray-100 py-4">
                         <div class="text-center">
                             <span class="block text-2xl font-bold text-gray-800">{{ connections_count ?? 0 }}</span>
@@ -139,6 +138,30 @@ const levelStyles = computed(() => {
                         </div>
                     </div>
 
+                    <!-- Secciones de Información -->
+                    <div class="w-full space-y-6 mb-8">
+                        <!-- Intereses -->
+                        <div v-if="fitnessInterestsArray.length" class="text-center">
+                            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Intereses / Deportes</h3>
+                            <div class="flex flex-wrap gap-2 justify-center">
+                                <span v-for="interest in fitnessInterestsArray" :key="interest.id" class="inline-block bg-indigo-50 text-indigo-700 border border-indigo-100 text-sm font-medium px-3 py-1 rounded-full">
+                                    {{ interest.name }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Disponibilidad -->
+                        <div v-if="profileUser.availability_general && profileUser.availability_general.length" class="text-center">
+                            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Disponibilidad Habitual</h3>
+                            <div class="flex flex-wrap gap-2 justify-center">
+                                <span v-for="slot in profileUser.availability_general" :key="slot" class="inline-block bg-green-50 text-green-700 border border-green-100 text-sm font-medium px-3 py-1 rounded-lg">
+                                    {{ slot }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones de Acción -->
                     <div class="w-full max-w-sm mx-auto space-y-3">
                         <Link v-if="isOwnProfile" :href="route('profile.edit')" class="btn-primary w-full shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all">
                             Editar Perfil
@@ -177,8 +200,12 @@ const levelStyles = computed(() => {
 </template>
 
 <style scoped>
-.btn-primary { @apply inline-flex items-center justify-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 transition disabled:opacity-50; }
-.btn-primary-gradient { @apply inline-flex items-center justify-center px-4 py-2 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-green-400 to-indigo-500 hover:opacity-90 transition disabled:opacity-50; }
-.btn-secondary { @apply inline-flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 transition disabled:opacity-50; }
-.btn-disabled { @apply inline-flex items-center justify-center px-4 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-gray-400 uppercase tracking-widest cursor-not-allowed; }
+<style scoped>
+.btn-primary { @apply inline-flex items-center justify-center px-4 py-3 bg-indigo-600 border border-transparent rounded-xl font-bold text-sm text-white uppercase tracking-widest hover:bg-indigo-700 transition disabled:opacity-50; }
+.btn-primary-gradient { @apply inline-flex items-center justify-center px-4 py-3 border border-transparent text-sm font-bold rounded-xl shadow-sm text-white bg-gradient-to-r from-green-400 to-indigo-500 hover:opacity-90 transition disabled:opacity-50; }
+.btn-secondary { @apply inline-flex items-center justify-center px-4 py-3 bg-white border border-gray-300 rounded-xl font-bold text-sm text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 transition disabled:opacity-50; }
+.btn-secondary-gradient { @apply inline-flex items-center justify-center px-4 py-3 border border-transparent text-sm font-bold rounded-xl shadow-sm text-white bg-gradient-to-r from-red-400 to-pink-500 hover:opacity-90 transition disabled:opacity-50; }
+.btn-danger-gradient { @apply inline-flex items-center justify-center px-4 py-3 border border-transparent text-sm font-bold rounded-xl shadow-sm text-white bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-90 transition disabled:opacity-50; }
+.btn-disabled { @apply inline-flex items-center justify-center px-4 py-3 bg-gray-200 border border-transparent rounded-xl font-bold text-sm text-gray-400 uppercase tracking-widest cursor-not-allowed; }
+</style>
 </style>

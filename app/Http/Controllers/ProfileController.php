@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Log; // Para logging
+use Illuminate\Support\Facades\Storage; // Para manejo de archivos
 use Inertia\Inertia;
 use App\Models\User;
 use Illuminate\Validation\Rule; 
@@ -40,6 +41,28 @@ class ProfileController extends Controller
         $data = $request->validated();
 
         Log::info('[PERFIL UPDATE] Datos VALIDADOS:', $data);
+
+        // --- MANEJO DE FOTO DE PERFIL ---
+        // Eliminar foto si se solicitó
+        if (!empty($data['remove_profile_picture']) && $user->profile_picture_url) {
+            // Eliminar archivo físico si existe
+            if (Storage::disk('public')->exists($user->profile_picture_url)) {
+                Storage::disk('public')->delete($user->profile_picture_url);
+            }
+            $user->profile_picture_url = null;
+        }
+
+        // Subir nueva foto si se proporcionó
+        if ($request->hasFile('profile_picture')) {
+            // Eliminar foto anterior si existe
+            if ($user->profile_picture_url && Storage::disk('public')->exists($user->profile_picture_url)) {
+                Storage::disk('public')->delete($user->profile_picture_url);
+            }
+
+            // Guardar nueva foto
+            $path = $request->file('profile_picture')->store('profile-pictures', 'public');
+            $user->profile_picture_url = $path;
+        }
 
         // Actualizar campos simples
         $user->fill($data);

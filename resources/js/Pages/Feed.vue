@@ -79,38 +79,58 @@ function closeDeleteModal() {
     <Head :title="title || 'Feed'" />
 
     <AuthenticatedLayout>
-    <template #header_actions>
-        <button class="text-gray-500 hover:text-indigo-600 p-1 rounded-full" title="Filtros del Feed">
-            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.591 2.122l-2.67 1.335a2.25 2.25 0 01-2.447-2.122v-2.927a2.25 2.25 0 00-.659-1.591L4.659 7.409A2.25 2.25 0 014 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
-            </svg>
-        </button>
-    </template>
+        <template #header>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+                    <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="font-extrabold text-xl text-gray-900 leading-tight">
+                        Feed
+                    </h2>
+                    <p class="text-xs text-gray-500 font-medium">Descubre contenido</p>
+                </div>
+            </div>
+        </template>
 
-        <!-- Sección de Pestañas (Tabs) -->
-        <div class="bg-white shadow-sm md:hidden sticky top-16 z-30">
-            <div class="max-w-7xl mx-auto">
-                <nav class="flex border-b border-gray-200" aria-label="Tabs">
+        <!-- Sección de Pestañas (Tabs) - Mejorada -->
+        <div class="bg-white shadow-md border-b border-gray-100 sticky top-16 z-30">
+            <div class="max-w-7xl mx-auto px-4">
+                <nav class="flex gap-1" aria-label="Tabs">
                     <button @click="setActiveTab('siguiendo')"
                             :class="[
-                                'flex-1 group inline-flex items-center justify-center py-3 px-1 text-center border-b-2 font-medium text-sm whitespace-nowrap transition-colors duration-200',
-                                props.activeTab === 'siguiendo' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                'flex-1 group inline-flex items-center justify-center py-4 px-4 text-center font-bold text-sm whitespace-nowrap transition-all duration-200 rounded-t-xl relative',
+                                props.activeTab === 'siguiendo' 
+                                    ? 'text-indigo-600 bg-gradient-to-b from-indigo-50 to-transparent' 
+                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                             ]">
+                        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                         Siguiendo
+                        <span v-if="props.activeTab === 'siguiendo'" class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-full"></span>
                     </button>
                     <button @click="setActiveTab('populares')"
                             :class="[
-                                'flex-1 group inline-flex items-center justify-center py-3 px-1 text-center border-b-2 font-medium text-sm whitespace-nowrap transition-colors duration-200',
-                                props.activeTab === 'populares' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                'flex-1 group inline-flex items-center justify-center py-4 px-4 text-center font-bold text-sm whitespace-nowrap transition-all duration-200 rounded-t-xl relative',
+                                props.activeTab === 'populares' 
+                                    ? 'text-indigo-600 bg-gradient-to-b from-indigo-50 to-transparent' 
+                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                             ]">
+                        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" /></svg>
                         Populares
+                        <span v-if="props.activeTab === 'populares'" class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-full"></span>
                     </button>
                     <button @click="setActiveTab('cerca')"
                             :class="[
-                                'flex-1 group inline-flex items-center justify-center py-3 px-1 text-center border-b-2 font-medium text-sm whitespace-nowrap transition-colors duration-200',
-                                props.activeTab === 'cerca' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                'flex-1 group inline-flex items-center justify-center py-4 px-4 text-center font-bold text-sm whitespace-nowrap transition-all duration-200 rounded-t-xl relative',
+                                props.activeTab === 'cerca' 
+                                    ? 'text-indigo-600 bg-gradient-to-b from-indigo-50 to-transparent' 
+                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                             ]">
+                        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                         Cerca
+                        <span v-if="props.activeTab === 'cerca'" class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-full"></span>
                     </button>
                 </nav>
             </div>
