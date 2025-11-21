@@ -10,6 +10,10 @@ class FeedController extends Controller
 {
     public function index(Request $request)
     {
+        // Simular latencia en desarrollo para probar Skeletons
+        if (app()->environment('local') && $request->has('simulate_latency')) {
+            sleep(1);
+        }
         
         $user = Auth::user();
         $activeTab = $request->input('tab', 'siguiendo');
@@ -20,12 +24,11 @@ class FeedController extends Controller
             'latestLikers',
             'latestComments.user'
         ])
-        ->withCount(['likers','comments'])->latest();
+        ->withCount(['likers','comments']);
     
         switch ($activeTab) {
             case 'populares':
-                // Lógica futura: ordenar por likes. Por ahora, mostramos todos ordenados por fecha.
-                // Cuando implementemos los likes, aquí pondremos ->orderBy('likes_count', 'desc')
+                // Ordenar por likes y luego por fecha
                 $postsQuery->orderByDesc('likers_count')->orderByDesc('created_at');
                 break;
     
@@ -40,7 +43,7 @@ class FeedController extends Controller
                 // mostrar posts de GymPals y del propio usuario.
                 $gymPalIds = $user->gym_pals->pluck('id');
                 $idsToQuery = $gymPalIds->push($user->id);
-                $postsQuery->whereIn('user_id', $idsToQuery);
+                $postsQuery->whereIn('user_id', $idsToQuery)->latest();
                 break;
         }
     

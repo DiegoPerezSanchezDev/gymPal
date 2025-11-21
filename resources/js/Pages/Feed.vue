@@ -1,8 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PostCard from '@/Components/PostCard.vue';
+import PostSkeleton from '@/Components/Skeletons/PostSkeleton.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, watch  } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import DeletePostModal from '@/Components/DeletePostModal.vue';
 
 const props = defineProps({
@@ -13,40 +14,54 @@ const props = defineProps({
 
 // Variable reactiva para almacenar la lista de todos los posts
 const allPosts = ref(props.posts.data);
-
 const postToDelete = ref(null);
+const isLoading = ref(false);
+const isLoadingMore = ref(false);
 
 // Variable para controlar la URL de la siguiente página
 let nextPageUrl = ref(props.posts.next_page_url);
+
+// Detectar navegación inicial vs actualizaciones
+onMounted(() => {
+    // Si no hay posts y no es la primera carga (ej: navegación SPA), podría ser loading
+    // Pero Inertia maneja el estado inicial. Lo usaremos para cambios de tab.
+});
 
 watch(() => props.posts, (newPosts) => {
     if (newPosts.current_page === 1) {
         allPosts.value = newPosts.data;
     }
     nextPageUrl.value = newPosts.next_page_url;
+    isLoading.value = false;
 });
 
 function setActiveTab(tabName) {
+    isLoading.value = true;
     router.get(route('feed.index'), { tab: tabName }, {
         preserveState: true,
         preserveScroll: true,
         onSuccess: (page) => {
             allPosts.value = page.props.posts.data;
             nextPageUrl.value = page.props.posts.next_page_url;
-        }
+            isLoading.value = false;
+        },
+        onFinish: () => isLoading.value = false
     });
 }
 
 function loadMorePosts() {
     if (!nextPageUrl.value) return;
 
+    isLoadingMore.value = true;
     router.get(nextPageUrl.value, {}, {
         preserveState: true,
         preserveScroll: true,
         onSuccess: (page) => {
             allPosts.value = [...allPosts.value, ...page.props.posts.data];
             nextPageUrl.value = page.props.posts.next_page_url;
+            isLoadingMore.value = false;
         },
+        onFinish: () => isLoadingMore.value = false
     });
 }
 
@@ -78,21 +93,21 @@ function closeDeleteModal() {
                 <nav class="flex border-b border-gray-200" aria-label="Tabs">
                     <button @click="setActiveTab('siguiendo')"
                             :class="[
-                                'flex-1 group inline-flex items-center justify-center py-3 px-1 text-center border-b-2 font-medium text-sm whitespace-nowrap',
+                                'flex-1 group inline-flex items-center justify-center py-3 px-1 text-center border-b-2 font-medium text-sm whitespace-nowrap transition-colors duration-200',
                                 props.activeTab === 'siguiendo' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                             ]">
                         Siguiendo
                     </button>
                     <button @click="setActiveTab('populares')"
                             :class="[
-                                'flex-1 group inline-flex items-center justify-center py-3 px-1 text-center border-b-2 font-medium text-sm whitespace-nowrap',
+                                'flex-1 group inline-flex items-center justify-center py-3 px-1 text-center border-b-2 font-medium text-sm whitespace-nowrap transition-colors duration-200',
                                 props.activeTab === 'populares' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                             ]">
                         Populares
                     </button>
                     <button @click="setActiveTab('cerca')"
                             :class="[
-                                'flex-1 group inline-flex items-center justify-center py-3 px-1 text-center border-b-2 font-medium text-sm whitespace-nowrap',
+                                'flex-1 group inline-flex items-center justify-center py-3 px-1 text-center border-b-2 font-medium text-sm whitespace-nowrap transition-colors duration-200',
                                 props.activeTab === 'cerca' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                             ]">
                         Cerca
@@ -105,31 +120,48 @@ function closeDeleteModal() {
         <div class="container mx-auto px-2 sm:px-4 py-4 md:py-8">
             <h2 v-if="title" class="text-2xl font-bold text-gray-800 mb-6 hidden md:block text-center">{{ title }}</h2>
 
-            <div v-if="allPosts.length > 0">
+            <!-- Estado de Carga (Skeletons) -->
+            <div v-if="isLoading" class="space-y-6 max-w-2xl mx-auto">
+                <PostSkeleton v-for="n in 3" :key="n" />
+            </div>
+
+            <!-- Lista de Posts -->
+            <div v-else-if="allPosts.length > 0">
                 <div class="space-y-6">
-                    
                     <PostCard v-for="post in allPosts" :key="post.id" :post="post"
                             @delete-post="openDeleteModal(post)"
                     />
                 </div>
 
                 <!-- Botón para Cargar Más -->
-                <div v-if="nextPageUrl" class="text-center mt-8">
-                    <button @click="loadMorePosts" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors">
-                        Cargar más
+                <div v-if="nextPageUrl" class="text-center mt-8 mb-12">
+                    <button 
+                        @click="loadMorePosts" 
+                        :disabled="isLoadingMore"
+                        class="bg-indigo-600 text-white font-semibold py-2 px-6 rounded-full hover:bg-indigo-700 transition-all transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 shadow-md"
+                    >
+                        <span v-if="isLoadingMore" class="flex items-center gap-2">
+                            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Cargando...
+                        </span>
+                        <span v-else>Cargar más</span>
                     </button>
                 </div>
             </div>
         
+            <!-- Estado Vacío -->
             <div v-else class="text-center py-10 max-w-lg mx-auto bg-white shadow-sm rounded-lg p-8">
                 <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
                 <h3 class="mt-2 text-lg font-semibold text-gray-900">Tu feed está un poco silencioso</h3>
                 <p class="mt-1 text-sm text-gray-500">Crea tu primera publicación o conecta con otros GymPals para ver su contenido aquí.</p>
                 <div class="mt-6 flex flex-col items-stretch gap-4">
-                    <Link :href="route('posts.create')" class="inline-flex items-center justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none">
+                    <Link :href="route('posts.create')" class="inline-flex items-center justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition-colors">
                         Crear Publicación
                     </Link>
-                    <Link :href="route('discover.index')" class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none">
+                    <Link :href="route('discover.index')" class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition-colors">
                         Descubrir GymPals
                     </Link>
                 </div>

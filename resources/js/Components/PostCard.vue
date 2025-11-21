@@ -76,6 +76,12 @@ const toggleLike = async () => {
     isLiked.value = !isLiked.value;
     localLikesCount.value = originalLikesCount + (isLiked.value ? 1 : -1);
 
+    // Activar animación de "pop"
+    if (isLiked.value) {
+        heartPop.value = true;
+        setTimeout(() => heartPop.value = false, 300);
+    }
+
     try {
         const response = await axios.post(route('posts.like.toggle', props.post.id));
         // Sincronización con backend
