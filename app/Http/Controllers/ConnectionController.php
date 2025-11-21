@@ -45,6 +45,11 @@ class ConnectionController extends Controller
      */
     public function index()
     {
+        // Simulate latency in development for testing Skeletons
+        if (app()->environment('local') && request()->has('simulate_latency')) {
+            sleep(1);
+        }
+
         $currentUser = User::find(Auth::id());
         $currentUser->load('fitnessInterests');
         $currentUserInterestIds = $currentUser->fitnessInterests->pluck('id');
@@ -52,7 +57,9 @@ class ConnectionController extends Controller
         //Obtener solicitudes PENDIENTES que he recibido
         $pendingRequests = Connection::where('receiver_id', $currentUser->id)
                                     ->where('status', 'pending')
-                                    ->with('sender.fitnessInterests')
+                                    ->with(['sender' => function($query) {
+                                        $query->select('id', 'name', 'username', 'profile_picture_url', 'experience_level');
+                                    }, 'sender.fitnessInterests'])
                                     ->orderBy('created_at', 'desc')
                                     ->get()
                                     ->map(function ($request) use ($currentUserInterestIds) {
@@ -68,7 +75,11 @@ class ConnectionController extends Controller
                 $query->where('sender_id', $currentUser->id)
                     ->orWhere('receiver_id', $currentUser->id);
             })
-            ->with(['sender', 'receiver'])
+            ->with(['sender' => function($query) {
+                $query->select('id', 'name', 'username', 'profile_picture_url');
+            }, 'receiver' => function($query) {
+                $query->select('id', 'name', 'username', 'profile_picture_url');
+            }])
             ->get();
 
         //Transformar conexiones en una lista de amigos
