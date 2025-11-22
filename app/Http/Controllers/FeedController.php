@@ -26,24 +26,29 @@ class FeedController extends Controller
         ])
         ->withCount(['likers','comments']);
     
+        $gymPalIds = $user->gym_pals->pluck('id');
+        $userId = $user->id;
+
         switch ($activeTab) {
             case 'populares':
+                // Excluir conexiones y propio usuario para fomentar descubrimiento
+                $postsQuery->whereNotIn('user_id', $gymPalIds->merge([$userId]));
                 // Ordenar por likes y luego por fecha
                 $postsQuery->orderByDesc('likers_count')->orderByDesc('created_at');
                 break;
     
             case 'cerca':
+                // Excluir conexiones y propio usuario para fomentar descubrimiento
+                $postsQuery->whereNotIn('user_id', $gymPalIds->merge([$userId]));
                 // Lógica futura y avanzada para geolocalización.
-                // Por ahora, mostramos todos.
+                // Por ahora, mostramos todos los demás.
                 $postsQuery->latest();
                 break;
     
             case 'siguiendo':
             default:
                 // mostrar posts de GymPals y del propio usuario.
-                $gymPalIds = $user->gym_pals->pluck('id');
-                $idsToQuery = $gymPalIds->push($user->id);
-                $postsQuery->whereIn('user_id', $idsToQuery)->latest();
+                $postsQuery->whereIn('user_id', $gymPalIds->merge([$userId]))->latest();
                 break;
         }
     

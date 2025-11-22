@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Message extends Model
 {
     use HasFactory;
-    protected $fillable = ['conversation_id', 'user_id', 'body', 'read_at', 'type', 'metadata'];
+    protected $fillable = ['conversation_id', 'user_id', 'body', 'image_url', 'read_at', 'type', 'metadata'];
     protected $casts = [
         'read_at' => 'datetime',
         'metadata' => 'array', // Cast automático de JSON a array

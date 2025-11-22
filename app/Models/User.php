@@ -141,4 +141,17 @@ class User extends Authenticatable
     {
         return $this->hasMany(Notification::class)->whereNotNull('read_at')->latest();
     }
+
+    // --- RELACIONES PARA RUTINAS ---
+
+    public function workouts(): HasMany
+    {
+        return $this->hasMany(Workout::class);
+    }
+
+    public function savedWorkouts(): BelongsToMany
+    {
+        return $this->belongsToMany(Workout::class, 'saved_workouts')
+            ->withTimestamps();
+    }
 }

@@ -85,7 +85,7 @@ onMounted(() => {
             <ul v-else-if="users.length > 0" class="space-y-1 mb-2 max-h-80 overflow-y-auto custom-scrollbar">
                 <!-- CAMBIO: Estilos de item con hover y borde -->
                 <li v-for="user in users" :key="user.id" class="flex items-center gap-3 p-2 rounded-lg transition-colors hover:bg-gray-50 border-b border-gray-100 last:border-b-0">
-                    <img :src="user.profile_picture_url || ('https://ui-avatars.com/api/?name=' + user.name + '&background=random')" alt="avatar" class="w-9 h-9 rounded-full object-cover" />
+                    <img :src="user.profile_picture_url ? '/storage/' + user.profile_picture_url : 'https://ui-avatars.com/api/?name=' + user.name + '&background=random'" alt="avatar" class="w-9 h-9 rounded-full object-cover" />
                     <div>
                         <Link :href="route('profile.show.public', { user: user.username })" class="font-semibold text-gray-800 hover:underline">
                             {{ user.name }}

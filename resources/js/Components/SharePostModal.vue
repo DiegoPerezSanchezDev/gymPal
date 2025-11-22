@@ -2,9 +2,12 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
+import { useToast } from '@/composables/useToast';
 
 const props = defineProps({ post: Object });
 const emit = defineEmits(['close']);
+
+const { success, error } = useToast();
 
 const gymPals = ref([]);
 const isLoading = ref(false);
@@ -17,8 +20,9 @@ const loadGymPals = async () => {
     try {
         const response = await axios.get(route('connections.gym-pals'));
         gymPals.value = response.data;
-    } catch (error) {
-        console.error('Error al cargar conexiones:', error);
+    } catch (err) {
+        console.error('Error al cargar conexiones:', err);
+        error('Error al cargar tus conexiones');
     } finally {
         isLoading.value = false;
     }
@@ -38,16 +42,15 @@ const sharePost = async () => {
     
     isSharing.value = true;
     try {
-        const response = await axios.post(route('posts.share', { post: props.post.id }), {
+        await axios.post(route('posts.share', { post: props.post.id }), {
             recipient_id: selectedRecipient.value.id
         });
         
-        // Mostrar mensaje de éxito y cerrar
-        alert('¡Post compartido exitosamente!');
+        success(`Post compartido con ${selectedRecipient.value.name}`);
         emit('close');
-    } catch (error) {
-        console.error('Error al compartir post:', error);
-        alert(error.response?.data?.message || 'Error al compartir el post. Inténtalo de nuevo.');
+    } catch (err) {
+        console.error('Error al compartir post:', err);
+        error(err.response?.data?.message || 'Error al compartir el post');
     } finally {
         isSharing.value = false;
     }

@@ -1,15 +1,29 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { Link, Head, usePage } from '@inertiajs/vue3';
 import ThemeSwitcher from '@/Components/ThemeSwitcher.vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NotificationBell from '@/Components/NotificationBell.vue';
+import ToastContainer from '@/Components/ToastContainer.vue';
+import { useToast } from '@/composables/useToast';
 
 const page = usePage();
 const authUser = computed(() => page.props.auth.user);
 const pendingRequestsCount = computed(() => page.props.pendingRequestsCount);
+
+const { success, error } = useToast();
+
+// Listen for flash messages from backend
+watch(() => page.props, (newProps) => {
+    if (newProps.flash?.success_toast) {
+        success(newProps.flash.success_toast);
+    }
+    if (newProps.flash?.error_toast) {
+        error(newProps.flash.error_toast);
+    }
+}, { deep: true });
 
 </script>
 
@@ -108,6 +122,9 @@ const pendingRequestsCount = computed(() => page.props.pendingRequestsCount);
             </Link>
         </div>
     </nav>
+
+    <!-- Toast Notifications Container -->
+    <ToastContainer />
     </div>
 </template>
 

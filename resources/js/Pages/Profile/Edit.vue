@@ -309,13 +309,30 @@ function removeProfilePicture() {
                                             <div v-for="level in ['Principiante', 'Intermedio', 'Avanzado']" :key="level"
                                                  @click="form.experience_level = level"
                                                  class="cursor-pointer border rounded-xl p-4 text-center transition-all duration-200 relative overflow-hidden group"
-                                                 :class="form.experience_level === level ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500' : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'">
-                                                <div class="text-2xl mb-1">
+                                                 :class="{
+                                                     'border-green-500 bg-green-50 ring-1 ring-green-500': form.experience_level === 'Principiante' && level === 'Principiante',
+                                                     'border-blue-500 bg-blue-50 ring-1 ring-blue-500': form.experience_level === 'Intermedio' && level === 'Intermedio',
+                                                     'border-purple-500 bg-purple-50 ring-1 ring-purple-500': form.experience_level === 'Avanzado' && level === 'Avanzado',
+                                                     'border-gray-200 hover:border-gray-300 hover:bg-gray-50': form.experience_level !== level
+                                                 }">
+                                                <div class="text-2xl mb-1 transform group-hover:scale-110 transition-transform">
                                                     {{ level === 'Principiante' ? '🌱' : (level === 'Intermedio' ? '⚡' : '🔥') }}
                                                 </div>
-                                                <span class="block font-bold text-sm" :class="form.experience_level === level ? 'text-indigo-700' : 'text-gray-700'">{{ level }}</span>
-                                                <div v-if="form.experience_level === level" class="absolute top-2 right-2 text-indigo-600">
-                                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+                                                <span class="block font-bold text-sm" 
+                                                    :class="{
+                                                        'text-green-700': form.experience_level === 'Principiante' && level === 'Principiante',
+                                                        'text-blue-700': form.experience_level === 'Intermedio' && level === 'Intermedio',
+                                                        'text-purple-700': form.experience_level === 'Avanzado' && level === 'Avanzado',
+                                                        'text-gray-700': form.experience_level !== level
+                                                    }">
+                                                    {{ level }}
+                                                </span>
+                                                <div v-if="form.experience_level === level" class="absolute top-2 right-2">
+                                                    <svg class="w-4 h-4" :class="{
+                                                        'text-green-600': level === 'Principiante',
+                                                        'text-blue-600': level === 'Intermedio',
+                                                        'text-purple-600': level === 'Avanzado'
+                                                    }" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
                                                 </div>
                                             </div>
                                         </div>
