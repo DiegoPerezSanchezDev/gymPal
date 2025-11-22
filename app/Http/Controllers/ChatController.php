@@ -171,7 +171,7 @@ class ChatController extends Controller
     {
         $validated = $request->validate([
             'body' => 'nullable|string|max:2000',
-            'image' => 'nullable|image|mimes:jpeg,jpg,png,gif|max:5120', // 5MB máx
+            'image' => 'nullable|file|image|mimes:jpeg,jpg,png,gif|max:5120', // 5MB máx
         ]);
         
         $currentUser = Auth::user();
@@ -186,18 +186,23 @@ class ChatController extends Controller
             'body' => $validated['body'] ?? null,
         ];
 
-        // Manejar imagen si se envió
-        if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('chat-images', 'public');
-            $messageData['image_url'] = $path;
-        }
+        try {
+            // Manejar imagen si se envió
+            if ($request->hasFile('image')) {
+                $path = $request->file('image')->store('chat-images', 'public');
+                $messageData['image_url'] = $path;
+            }
 
-        // Validar que haya al menos body o imagen
-        if (empty($messageData['body']) && empty($messageData['image_url'])) {
-            return response()->json(['message' => 'Debes enviar un mensaje o una imagen.'], 422);
-        }
+            // Validar que haya al menos body o imagen
+            if (empty($messageData['body']) && empty($messageData['image_url'])) {
+                return response()->json(['message' => 'Debes enviar un mensaje o una imagen.'], 422);
+            }
 
-        $message = $conversation->messages()->create($messageData);
+            $message = $conversation->messages()->create($messageData);
+        } catch (\Exception $e) {
+            \Log::error('Error sending message: ' . $e->getMessage());
+            return response()->json(['message' => 'Error interno al enviar el mensaje: ' . $e->getMessage()], 500);
+        }
 
         $conversation->update(['last_message_at' => now()]); // Actualiza el timestamp
 

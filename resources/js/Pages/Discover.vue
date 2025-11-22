@@ -325,7 +325,7 @@ const availabilitySlots = ['Mañanas', 'Tardes', 'Noches', 'Fines de semana'];
                                 
                                 <div class="relative mb-4">
                                     <img 
-                                        :src="user.profile_picture_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.name) + '&background=random&color=fff'" 
+                                        :src="user.profile_picture_url ? '/storage/' + user.profile_picture_url : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.name) + '&background=random&color=fff'" 
                                         :alt="user.name" 
                                         class="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md group-hover:scale-105 transition-transform duration-300"
                                     >

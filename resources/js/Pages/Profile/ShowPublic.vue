@@ -1,8 +1,11 @@
-// resources/js/Pages/Profile/ShowPublic.vue
+
 <script setup>
 // Importaciones y props
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import ProfileSkeleton from '@/Components/Skeletons/ProfileSkeleton.vue';
+import PostCard from '@/Components/PostCard.vue';
+import ConnectionsModal from '@/Components/ConnectionsModal.vue';
+import PostGridModal from '@/Components/PostGridModal.vue';
 import { Head, Link, usePage, router } from '@inertiajs/vue3';
 import { computed, ref, onMounted } from 'vue';
 
@@ -14,10 +17,30 @@ const props = defineProps({
     connection_status: String,
     connection_id: Number,
     connections_count: Number,
+    connections_list: Array, // Lista de conexiones para el modal
+    posts: Array, // Posts del usuario
+    workouts: {
+        type: Array,
+        default: () => []
+    }, // Rutinas del usuario
 });
 
 const processingConnection = ref(false);
 const isLoading = ref(true);
+const showConnectionsModal = ref(false);
+const showPostModal = ref(false);
+const selectedPostIndex = ref(0);
+
+const activeContentTab = ref('publicaciones'); // 'rutinas' o 'publicaciones'
+
+const openPostModal = (post) => {
+    // Find the index in the original posts array
+    const index = props.posts.findIndex(p => p.id === post.id);
+    if (index !== -1) {
+        selectedPostIndex.value = index;
+        showPostModal.value = true;
+    }
+};
 
 onMounted(() => {
     // Simulación de carga para mostrar el Skeleton
@@ -79,6 +102,21 @@ const getAffinityColor = (score) => {
     if (score >= 50) return 'from-yellow-400 to-orange-500';
     return 'from-blue-400 to-indigo-500';
 };
+
+// Helper para color de nivel de experiencia
+const getExperienceLevelColor = (level) => {
+    const levelLower = level?.toLowerCase() || '';
+    if (levelLower.includes('principiante') || levelLower.includes('beginner')) {
+        return 'from-green-400 to-emerald-500';
+    }
+    if (levelLower.includes('intermedio') || levelLower.includes('intermediate')) {
+        return 'from-blue-400 to-indigo-500';
+    }
+    if (levelLower.includes('avanzado') || levelLower.includes('advanced')) {
+        return 'from-purple-500 to-pink-600';
+    }
+    return 'from-gray-400 to-gray-500'; // Fallback
+};
 </script>
 
 <template>
@@ -109,8 +147,11 @@ const getAffinityColor = (score) => {
                         <div class="w-36 h-36 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 p-1 shadow-lg">
                             <img :src="avatarUrl" :alt="profileUser.name" class="w-full h-full rounded-full object-cover border-4 border-white" />
                         </div>
-                        <!-- Nivel de Experiencia (Badge con gradiente) -->
-                        <div v-if="profileUser.experience_level" class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-green-400 to-emerald-600 text-white text-xs font-bold uppercase tracking-wide px-3 py-1 rounded-full shadow-md">
+                        <!-- Nivel de Experiencia (Badge con gradiente dinámico) -->
+                        <div v-if="profileUser.experience_level" 
+                             class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r text-white text-xs font-bold uppercase tracking-wide px-3 py-1 rounded-full shadow-md"
+                             :class="getExperienceLevelColor(profileUser.experience_level)"
+                        >
                             {{ profileUser.experience_level }}
                         </div>
                     </div>
@@ -128,11 +169,11 @@ const getAffinityColor = (score) => {
 
                     <!-- Stats -->
                     <div class="flex gap-8 justify-center mb-8 w-full border-t border-b border-gray-100 py-4">
-                        <div class="text-center">
+                        <button @click="showConnectionsModal = true" class="text-center hover:bg-gray-50 rounded-lg px-4 py-2 transition-colors cursor-pointer">
                             <span class="block text-2xl font-bold text-gray-800">{{ connections_count ?? 0 }}</span>
                             <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Conexiones</span>
-                        </div>
-                        <div class="text-center border-l border-gray-100 pl-8">
+                        </button>
+                        <div class="text-center border-l border-gray-100 pl-8 py-2">
                             <span class="block text-2xl font-bold text-gray-800">{{ profileUser.posts_count ?? 0 }}</span>
                             <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Publicaciones</span>
                         </div>
@@ -162,50 +203,203 @@ const getAffinityColor = (score) => {
                     </div>
 
                     <!-- Botones de Acción -->
-                    <div class="w-full max-w-sm mx-auto space-y-3">
-                        <Link v-if="isOwnProfile" :href="route('profile.edit')" class="btn-primary w-full shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all">
+                    <div v-if="!isOwnProfile" class="flex flex-wrap justify-center gap-3 w-full">
+                        <button v-if="connection_status === 'none'" @click="connect" :disabled="processingConnection" class="btn-primary-gradient">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
+                            Conectar
+                        </button>
+
+                        <button v-else-if="connection_status === 'sent'" disabled class="btn-disabled">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            Solicitud Enviada
+                        </button>
+
+                        <div v-else-if="connection_status === 'received'" class="flex gap-2">
+                            <button @click="accept" :disabled="processingConnection" class="btn-primary-gradient">
+                                Aceptar
+                            </button>
+                            <button @click="reject" :disabled="processingConnection" class="btn-danger-gradient">
+                                Rechazar
+                            </button>
+                        </div>
+
+                        <div v-else-if="connection_status === 'accepted'" class="flex gap-2">
+                            <button @click="sendMessage" class="btn-primary-gradient">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                                Mensaje
+                            </button>
+                            <button @click="disconnect" :disabled="processingConnection" class="btn-secondary-gradient">
+                                Desconectar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div v-else class="flex justify-center w-full">
+                        <Link :href="route('profile.edit')" class="btn-secondary-gradient">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                             Editar Perfil
                         </Link>
+                    </div>
 
-                        <div v-else class="grid grid-cols-1 gap-3">
-                            <div class="w-full">
-                                <button v-if="connection_status === 'none'" @click="connect" :disabled="processingConnection" class="btn-primary-gradient w-full shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2">
-                                    <svg v-if="processingConnection" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                    <span>Conectar</span>
-                                </button>
-                                <button v-if="connection_status === 'sent'" disabled class="btn-disabled w-full flex justify-center items-center gap-2">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                    Solicitud Enviada
-                                </button>
-                                <div v-if="connection_status === 'accepted'" class="grid grid-cols-2 gap-3">
-                                    <button @click="disconnect" :disabled="processingConnection" class="btn-secondary w-full text-red-600 hover:bg-red-50 border-red-200">Desconectar</button>
-                                    <button @click="sendMessage" class="btn-primary w-full bg-indigo-600 hover:bg-indigo-700">Mensaje</button>
+                    <div v-if="profileUser.created_at" class="mt-8 text-xs text-gray-400">
+                        Miembro desde {{ new Date(profileUser.created_at).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }) }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección de Contenido con Tabs -->
+            <div v-if="posts && posts.length > 0" class="max-w-2xl mx-auto mt-8">
+                
+                <!-- Tabs Navigation -->
+                <div class="flex items-center justify-between mb-6 px-2">
+                    <div class="flex gap-2 bg-white rounded-xl p-1 shadow-sm border border-gray-100">
+                        <button
+                            @click="activeContentTab = 'rutinas'"
+                            :class="[
+                                'px-6 py-2.5 rounded-lg font-bold text-sm transition-all duration-200 flex items-center gap-2',
+                                activeContentTab === 'rutinas' 
+                                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' 
+                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                            ]"
+                        >
+                            🏋️ Rutinas
+                            <span v-if="workouts.length" :class="activeContentTab === 'rutinas' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'" class="px-2 py-0.5 rounded-full text-xs font-bold">
+                                {{ workouts.length }}
+                            </span>
+                        </button>
+                        
+                        <button
+                            @click="activeContentTab = 'publicaciones'"
+                            :class="[
+                                'px-6 py-2.5 rounded-lg font-bold text-sm transition-all duration-200 flex items-center gap-2',
+                                activeContentTab === 'publicaciones' 
+                                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' 
+                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                            ]"
+                        >
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                            </svg>
+                            Publicaciones
+                            <span :class="activeContentTab === 'publicaciones' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'" class="px-2 py-0.5 rounded-full text-xs font-bold">
+                                {{ posts.length }}
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Workouts Tab -->
+                <div v-if="activeContentTab === 'rutinas'">
+                    <div v-if="workouts.length > 0" class="grid grid-cols-1 gap-4">
+                        <!-- Workout cards will go here -->
+                        <div v-for="workout in workouts" :key="workout.id" class="bg-white border-2 border-gray-100 rounded-2xl p-5 hover:border-indigo-200 hover:shadow-lg transition-all cursor-pointer">
+                            <div class="flex items-start justify-between mb-3">
+                                <div>
+                                    <h3 class="font-bold text-lg text-gray-900">{{ workout.name }}</h3>
+                                    <p class="text-sm text-gray-500 mt-1">{{ workout.description }}</p>
                                 </div>
-                                
-                                <div v-if="connection_status === 'received'" class="grid grid-cols-2 gap-3">
-                                    <button @click="reject" :disabled="processingConnection" class="btn-secondary w-full hover:text-red-600">Rechazar</button>
-                                    <button @click="accept" :disabled="processingConnection" class="btn-primary w-full bg-green-600 hover:bg-green-700 border-transparent">Aceptar</button>
-                                </div>
+                                <span class="px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700">
+                                    {{ workout.difficulty_level }}
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-4 text-sm text-gray-600">
+                                <span class="flex items-center gap-1">
+                                    ⏱️ {{ workout.duration_minutes }} min
+                                </span>
+                                <span class="flex items-center gap-1">
+                                    💪 {{ workout.exercises?.length || 0 }} ejercicios
+                                </span>
                             </div>
                         </div>
                     </div>
                     
-                    <div v-if="profileUser.created_at" class="mt-8 text-xs text-gray-400 text-center">
-                        Miembro desde {{ new Date(profileUser.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long' }) }}
+                    <!-- Empty state for workouts -->
+                    <div v-else class="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-gray-200">
+                        <div class="w-24 h-24 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <span class="text-5xl">🏋️</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">
+                            {{ isOwnProfile ? 'Crea tu primera rutina' : 'Sin rutinas disponibles' }}
+                        </h3>
+                        <p class="text-gray-500 max-w-md mx-auto mb-6">
+                            {{ isOwnProfile 
+                                ? 'Comparte tus rutinas de entrenamiento para inspirar a otros GymPals' 
+                                : 'Este usuario aún no ha compartido rutinas de entrenamiento' 
+                            }}
+                        </p>
+                        <button v-if="isOwnProfile" class="btn-primary-gradient" @click="$inertia.visit(route('workouts.create'))">
+                            ✨ Crear mi primera rutina
+                        </button>
                     </div>
                 </div>
+
+                <!-- Posts Tab (List) -->
+                <div v-else-if="activeContentTab === 'publicaciones'" class="space-y-4">
+                    <PostCard 
+                        v-for="post in posts" 
+                        :key="post.id" 
+                        :post="post" 
+                    />
+                </div>
             </div>
+            
+            <div v-else-if="isOwnProfile || connection_status === 'accepted'" class="max-w-2xl mx-auto mt-8 text-center py-10 bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                </div>
+                <p class="text-gray-500 font-medium mb-2">Aún no hay publicaciones</p>
+                <p class="text-gray-400 text-sm">Comparte tu primer post para que tu perfil cobre vida</p>
+            </div>
+            
+            <div v-else class="max-w-2xl mx-auto mt-8 text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100 px-6">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">Este perfil es privado</h3>
+                <p class="text-gray-500">Conecta con {{ profileUser.name }} para ver sus publicaciones y actividad reciente.</p>
+                <button v-if="connection_status === 'none'" @click="connect" :disabled="processingConnection" class="mt-6 btn-primary-gradient">
+                    Conectar ahora
+                </button>
+            </div>
+
         </div>
+
+        <!-- Modal de Conexiones -->
+        <ConnectionsModal 
+            v-if="showConnectionsModal" 
+            :connections="connections_list || []" 
+            :isOwnProfile="isOwnProfile"
+            @close="showConnectionsModal = false" 
+        />
+
+        <!-- Modal de Post Grid -->
+        <PostGridModal
+            v-if="showPostModal && posts && posts.length > 0"
+            :posts="posts"
+            :initialPostIndex="selectedPostIndex"
+            @close="showPostModal = false"
+        />
+
     </AuthenticatedLayout>
 </template>
 
 <style scoped>
-<style scoped>
 .btn-primary { @apply inline-flex items-center justify-center px-4 py-3 bg-indigo-600 border border-transparent rounded-xl font-bold text-sm text-white uppercase tracking-widest hover:bg-indigo-700 transition disabled:opacity-50; }
-.btn-primary-gradient { @apply inline-flex items-center justify-center px-4 py-3 border border-transparent text-sm font-bold rounded-xl shadow-sm text-white bg-gradient-to-r from-green-400 to-indigo-500 hover:opacity-90 transition disabled:opacity-50; }
+.btn-primary-gradient {
+    @apply inline-flex items-center px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:from-indigo-700 hover:to-purple-700 active:bg-indigo-900 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150 shadow-md hover:shadow-lg transform hover:-translate-y-0.5;
+}
 .btn-secondary { @apply inline-flex items-center justify-center px-4 py-3 bg-white border border-gray-300 rounded-xl font-bold text-sm text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 transition disabled:opacity-50; }
-.btn-secondary-gradient { @apply inline-flex items-center justify-center px-4 py-3 border border-transparent text-sm font-bold rounded-xl shadow-sm text-white bg-gradient-to-r from-red-400 to-pink-500 hover:opacity-90 transition disabled:opacity-50; }
-.btn-danger-gradient { @apply inline-flex items-center justify-center px-4 py-3 border border-transparent text-sm font-bold rounded-xl shadow-sm text-white bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-90 transition disabled:opacity-50; }
-.btn-disabled { @apply inline-flex items-center justify-center px-4 py-3 bg-gray-200 border border-transparent rounded-xl font-bold text-sm text-gray-400 uppercase tracking-widest cursor-not-allowed; }
-</style>
+.btn-secondary-gradient {
+    @apply inline-flex items-center px-6 py-2.5 bg-white border border-gray-300 rounded-full font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:text-gray-500 focus:outline-none focus:border-blue-300 focus:ring ring-blue-200 active:text-gray-800 active:bg-gray-50 disabled:opacity-25 transition ease-in-out duration-150 hover:shadow-md transform hover:-translate-y-0.5;
+}
+.btn-danger-gradient {
+    @apply inline-flex items-center px-6 py-2.5 bg-gradient-to-r from-red-500 to-pink-600 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:from-red-600 hover:to-pink-700 active:bg-red-900 focus:outline-none focus:border-red-900 focus:ring ring-red-300 disabled:opacity-25 transition ease-in-out duration-150 shadow-md hover:shadow-lg transform hover:-translate-y-0.5;
+}
+.btn-disabled {
+    @apply inline-flex items-center px-6 py-2.5 bg-gray-300 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest cursor-not-allowed;
+}
 </style>

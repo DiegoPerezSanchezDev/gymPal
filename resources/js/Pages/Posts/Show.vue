@@ -42,7 +42,7 @@ const props = defineProps({
                         class="flex items-start gap-3 p-3 rounded-lg transition-colors hover:bg-gray-50"
                     >
                         <!-- Avatar del comentarista -->
-                        <img :src="comment.user && comment.user.profile_picture_url ? comment.user.profile_picture_url : 'https://ui-avatars.com/api/?name=' + (comment.user ? comment.user.name : 'Anon') + '&background=random'" 
+                        <img :src="comment.user && comment.user.profile_picture_url ? '/storage/' + comment.user.profile_picture_url : 'https://ui-avatars.com/api/?name=' + (comment.user ? comment.user.name : 'Anon') + '&background=random'" 
                             alt="Avatar" 
                             class="w-9 h-9 rounded-full object-cover" 
                         />

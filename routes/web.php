@@ -137,6 +137,17 @@ Route::middleware('auth')->group(function () {
     Route::delete('/notifications/delete-all', [NotificationController::class, 'deleteAll'])->name('notifications.delete-all');
     Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 
+    // Rutinas (Workouts)
+    Route::get('/workouts', [\App\Http\Controllers\WorkoutController::class, 'index'])->name('workouts.index');
+    Route::get('/workouts/create', [\App\Http\Controllers\WorkoutController::class, 'create'])->name('workouts.create');
+    Route::post('/workouts', [\App\Http\Controllers\WorkoutController::class, 'store'])->name('workouts.store');
+    Route::get('/workouts/saved', [\App\Http\Controllers\WorkoutController::class, 'saved'])->name('workouts.saved');
+    Route::get('/workouts/{workout}', [\App\Http\Controllers\WorkoutController::class, 'show'])->name('workouts.show');
+    Route::get('/workouts/{workout}/edit', [\App\Http\Controllers\WorkoutController::class, 'edit'])->name('workouts.edit');
+    Route::put('/workouts/{workout}', [\App\Http\Controllers\WorkoutController::class, 'update'])->name('workouts.update');
+    Route::delete('/workouts/{workout}', [\App\Http\Controllers\WorkoutController::class, 'destroy'])->name('workouts.destroy');
+    Route::post('/workouts/{workout}/toggle-save', [\App\Http\Controllers\WorkoutController::class, 'toggleSave'])->name('workouts.toggle-save');
+
 });
 
 require __DIR__.'/auth.php';

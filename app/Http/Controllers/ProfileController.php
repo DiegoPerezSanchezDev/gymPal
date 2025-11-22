@@ -136,7 +136,65 @@ class ProfileController extends Controller
 
         $user->loadCount('posts');
         
-        $connections_count = $user->gym_pals->count();
+        // Obtener conexiones manualmente para incluir el ID de la conexión
+        $sent = Connection::where('sender_id', $user->id)
+            ->where('status', 'accepted')
+            ->with('receiver:id,name,username,profile_picture_url')
+            ->get()
+            ->map(function ($conn) {
+                $u = $conn->receiver;
+                $u->pivot = ['id' => $conn->id];
+                return $u;
+            });
+
+        $received = Connection::where('receiver_id', $user->id)
+            ->where('status', 'accepted')
+            ->with('sender:id,name,username,profile_picture_url')
+            ->get()
+            ->map(function ($conn) {
+                $u = $conn->sender;
+                $u->pivot = ['id' => $conn->id];
+                return $u;
+            });
+
+        $connections = $sent->merge($received);
+        $connections_count = $connections->count();
+
+        // Cargar posts si es el propio perfil o si están conectados
+        $posts = [];
+        if (($currentUser && $currentUser->id === $user->id) || $connectionStatus === 'accepted') {
+            $posts = $user->posts()
+                ->with([
+                    'user:id,name,username,profile_picture_url',
+                    'comments.user:id,name,username,profile_picture_url',
+                    'likers' // Corregido: likes -> likers
+                ])
+                ->withCount(['comments', 'likers']) // Corregido: likes -> likers
+                ->latest()
+                ->get()
+                ->map(function ($post) use ($currentUser) {
+                    // Corregido: likes -> likers. likers son Usuarios, así que buscamos por id.
+                    $post->is_liked = $currentUser ? $post->likers->contains('id', $currentUser->id) : false;
+                    
+                    // Optimización para likes: obtener los últimos 3 para mostrar avatares
+                    // Corregido: likes() -> likers()
+                    $post->latest_likers = $post->likers()->latest('post_like.created_at')->take(3)->get();
+                    
+                    // Optimización para comentarios: obtener los últimos 2
+                    $post->latest_comments = $post->comments()->latest()->take(2)->with('user:id,name,username,profile_picture_url')->get()->reverse()->values();
+                    return $post;
+                });
+        }
+
+        // Cargar rutinas si es el propio perfil o si están conectados
+        $workouts = [];
+        if (($currentUser && $currentUser->id === $user->id) || $connectionStatus === 'accepted') {
+            $workouts = $user->workouts()
+                ->with('exercises')
+                ->where('is_public', true) // Solo rutinas públicas
+                ->latest()
+                ->get();
+        }
 
         return Inertia::render('Profile/ShowPublic', [
             'profileUser' => $user,
@@ -146,6 +204,9 @@ class ProfileController extends Controller
             'connection_status' => $connectionStatus,
             'connection_id' => $connection ? $connection->id : null,
             'connections_count' => $connections_count,
+            'connections_list' => $connections, // Pasar la lista de conexiones
+            'posts' => $posts, // Pasar los posts
+            'workouts' => $workouts, // Pasar las rutinas
         ]);
     }
 
