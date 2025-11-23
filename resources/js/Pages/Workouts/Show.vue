@@ -9,6 +9,8 @@ const props = defineProps({
     workout: Object,
     isSaved: Boolean,
     isOwner: Boolean,
+    logsCount: Number,
+    recentLogs: Array,
     title: String
 });
 
@@ -108,6 +110,16 @@ const duplicateWorkout = () => {
 
                         <!-- Actions -->
                         <div class="flex gap-2">
+                            <Link 
+                                :href="route('profile.show.public', { user: workout.user.username }) + '?tab=rutinas'"
+                                class="px-3 py-2 bg-white/20 hover:bg-white/30 rounded-full backdrop-blur-sm transition flex items-center gap-2 text-sm font-medium"
+                                title="Volver al perfil"
+                            >
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                </svg>
+                                <span class="hidden sm:inline">Volver</span>
+                            </Link>
                             <button 
                                 v-if="isOwner"
                                 @click="$inertia.visit(route('workouts.edit', workout.id))"
@@ -152,6 +164,20 @@ const duplicateWorkout = () => {
                             <p class="text-xs text-white/60 uppercase font-bold mb-1">Guardados</p>
                             <p class="font-bold">🔖 {{ localSaveCount }} veces</p>
                         </div>
+                    </div>
+
+                    <!-- Start Workout Button (prominent) -->
+                    <div class="mt-6 flex justify-center">
+                        <button 
+                            @click="$inertia.visit(route('workouts.live', workout.id))"
+                            class="w-full md:w-auto px-12 py-4 rounded-2xl font-black text-lg shadow-2xl transition-all transform hover:scale-105 flex items-center justify-center gap-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 border-4 border-white"
+                        >
+                            <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            ¡Empezar Rutina!
+                        </button>
                     </div>
 
                     <!-- Save & Clone Buttons (if not owner) -->
@@ -280,6 +306,64 @@ const duplicateWorkout = () => {
             <!-- Empty State -->
             <div v-if="workout.exercises.length === 0" class="text-center py-12 text-gray-500">
                 <p>Esta rutina no tiene ejercicios asignados aún.</p>
+            </div>
+
+            <!-- Historial de entrenamientos (si hay logs) -->
+            <div v-if="logsCount > 0" class="px-4 mt-12">
+                <div class="max-w-4xl mx-auto">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+                                <span class="text-xl">📊</span>
+                            </div>
+                            <div>
+                                <h3 class="text-2xl font-bold text-gray-800">Tu Historial</h3>
+                                <p class="text-sm text-gray-500">Has completado esta rutina {{ logsCount }} {{ logsCount === 1 ? 'vez' : 'veces' }}</p>
+                            </div>
+                        </div>
+                        <Link 
+                            :href="route('workout-logs.index')"
+                            class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition text-sm"
+                        >
+                            Ver todo
+                        </Link>
+                    </div>
+
+                    <!-- Últimos 3 logs -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Link 
+                            v-for="log in recentLogs" 
+                            :key="log.id"
+                            :href="route('workout-logs.show', log.id)"
+                            class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all border-2 border-gray-100 hover:border-indigo-200 p-5 group"
+                        >
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-xs text-gray-500 font-medium">
+                                    {{ new Date(log.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) }}
+                                </span>
+                                <div 
+                                    class="w-12 h-12 rounded-full font-black text-sm flex items-center justify-center"
+                                    :class="log.completed_sets === log.total_sets 
+                                        ? 'bg-green-100 text-green-600' 
+                                        : 'bg-yellow-100 text-yellow-600'"
+                                >
+                                    {{ Math.round((log.completed_sets / log.total_sets) * 100) }}%
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="bg-gray-50 rounded-lg p-2">
+                                    <div class="text-lg font-bold text-indigo-600">{{ log.duration_minutes || '--' }}</div>
+                                    <div class="text-xs text-gray-500">min</div>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-2">
+                                    <div class="text-lg font-bold text-purple-600">{{ log.completed_sets }}</div>
+                                    <div class="text-xs text-gray-500">series</div>
+                                </div>
+                            </div>
+                        </Link>
+                    </div>
+                </div>
             </div>
 
         </div>

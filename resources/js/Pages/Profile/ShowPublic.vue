@@ -31,7 +31,10 @@ const showConnectionsModal = ref(false);
 const showPostModal = ref(false);
 const selectedPostIndex = ref(0);
 
-const activeContentTab = ref('publicaciones'); // 'rutinas' o 'publicaciones'
+// Detectar tab desde URL
+const urlParams = new URLSearchParams(window.location.search);
+const tabParam = urlParams.get('tab');
+const activeContentTab = ref(tabParam === 'rutinas' ? 'rutinas' : 'publicaciones');
 
 const openPostModal = (post) => {
     // Find the index in the original posts array

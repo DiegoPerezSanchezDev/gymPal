@@ -114,11 +114,30 @@ class WorkoutController extends Controller
 
         $isSaved = Auth::check() ? Auth::user()->savedWorkouts()->where('workout_id', $workout->id)->exists() : false;
         $isOwner = Auth::check() && Auth::id() === $workout->user_id;
+        
+        // Obtener logs de esta rutina para el usuario autenticado
+        $logsCount = 0;
+        $recentLogs = [];
+        if (Auth::check()) {
+            $logsCount = \App\Models\WorkoutLog::where('user_id', Auth::id())
+                ->where('workout_id', $workout->id)
+                ->count();
+            
+            if ($logsCount > 0) {
+                $recentLogs = \App\Models\WorkoutLog::where('user_id', Auth::id())
+                    ->where('workout_id', $workout->id)
+                    ->latest()
+                    ->take(3)
+                    ->get(['id', 'created_at', 'duration_minutes', 'completed_sets', 'total_sets']);
+            }
+        }
 
         return Inertia::render('Workouts/Show', [
             'workout' => $workout,
             'isSaved' => $isSaved,
             'isOwner' => $isOwner,
+            'logsCount' => $logsCount,
+            'recentLogs' => $recentLogs,
             'title' => $workout->name,
         ]);
     }
@@ -273,5 +292,23 @@ class WorkoutController extends Controller
 
         return redirect()->route('workouts.edit', $newWorkout)
             ->with('success_toast', 'Rutina duplicada exitosamente. Ahora puedes editarla.');
+    }
+
+    /**
+     * Start live workout mode
+     */
+    public function live(Workout $workout)
+    {
+        $workout->load([
+            'user:id,name,username,profile_picture_url',
+            'exercises' => function($query) {
+                $query->orderBy('order');
+            }
+        ]);
+
+        return Inertia::render('Workouts/Live', [
+            'workout' => $workout,
+            'title' => 'Entrenar: ' . $workout->name,
+        ]);
     }
 }

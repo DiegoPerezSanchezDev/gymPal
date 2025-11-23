@@ -154,4 +154,9 @@ class User extends Authenticatable
         return $this->belongsToMany(Workout::class, 'saved_workouts')
             ->withTimestamps();
     }
+
+    public function workoutLogs(): HasMany
+    {
+        return $this->hasMany(WorkoutLog::class);
+    }
 }
