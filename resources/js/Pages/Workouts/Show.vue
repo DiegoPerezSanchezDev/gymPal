@@ -44,6 +44,17 @@ const categoryIcons = {
     'Otro': '💪'
 };
 
+// isOwner ya viene como prop, no necesitamos recalcularlo
+// const isOwner = computed(() => ...);
+
+const backRoute = computed(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('from') === 'notifications') {
+        return route('notifications.index');
+    }
+    return route('profile.show.public', { user: props.workout.user.username }) + '?tab=rutinas';
+});
+
 const headerGradient = computed(() => {
     return difficultyColors[props.workout.difficulty_level] || difficultyColors.intermedio;
 });
@@ -111,9 +122,9 @@ const duplicateWorkout = () => {
                         <!-- Actions -->
                         <div class="flex gap-2">
                             <Link 
-                                :href="route('profile.show.public', { user: workout.user.username }) + '?tab=rutinas'"
+                                :href="backRoute"
                                 class="px-3 py-2 bg-white/20 hover:bg-white/30 rounded-full backdrop-blur-sm transition flex items-center gap-2 text-sm font-medium"
-                                title="Volver al perfil"
+                                title="Volver"
                             >
                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -167,7 +178,7 @@ const duplicateWorkout = () => {
                     </div>
 
                     <!-- Start Workout Button (prominent) -->
-                    <div class="mt-6 flex justify-center">
+                    <div v-if="isOwner" class="mt-6 flex justify-center">
                         <button 
                             @click="$inertia.visit(route('workouts.live', workout.id))"
                             class="w-full md:w-auto px-12 py-4 rounded-2xl font-black text-lg shadow-2xl transition-all transform hover:scale-105 flex items-center justify-center gap-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 border-4 border-white"

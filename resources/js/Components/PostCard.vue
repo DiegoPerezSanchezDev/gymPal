@@ -9,6 +9,7 @@ import PostActionsMenu from './PostActionsMenu.vue';
 import ReportPostModal from './ReportPostModal.vue';
 import SharePostModal from './SharePostModal.vue';
 import DeletePostModal from './DeletePostModal.vue';
+import WorkoutCard from './WorkoutCard.vue';
 
 const { error: showError } = useToast();
 
@@ -174,6 +175,11 @@ const submitComment = async () => {
         <p v-if="post.content" class="px-5 pb-4 text-gray-700 whitespace-pre-line text-[15px] leading-relaxed">
             {{ post.content }}
         </p>
+
+        <!-- ================== Tarjeta de Workout (si existe) ================== -->
+        <div v-if="post.workout_log" class="px-5 pb-4">
+            <WorkoutCard :workoutLog="post.workout_log" />
+        </div>
 
         <div v-if="postImageUrl" class="bg-gray-100 max-h-[400px] overflow-hidden mb-6 flex items-center justify-center">
             <img :src="postImageUrl" alt="Imagen de la publicación" class="w-full max-h-[400px] object-contain"/>

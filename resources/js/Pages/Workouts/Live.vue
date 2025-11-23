@@ -6,10 +6,18 @@ import { useToast } from '@/composables/useToast';
 
 const props = defineProps({
     workout: Object,
-    title: String
+    title: String,
+    personalRecords: Object
 });
 
-const { success, error } = useToast();
+const { success, error, info } = useToast();
+
+const setTypeLabels = {
+    normal: 'Normal',
+    warmup: 'Calentamiento',
+    drop_set: 'Drop Set',
+    failure: 'Fallo'
+};
 
 // Estado del entrenamiento
 const currentExerciseIndex = ref(0);
@@ -55,9 +63,29 @@ function toggleSet(exerciseIndex, setIndex) {
     const wasCompleted = completedSets.value[exerciseIndex][setIndex];
     completedSets.value[exerciseIndex][setIndex] = !wasCompleted;
     
-    // Si se marcó como completada, iniciar descanso
-    if (!wasCompleted && currentExercise.value.rest_seconds) {
-        startRest(currentExercise.value.rest_seconds);
+    // Si se marcó como completada
+    if (!wasCompleted) {
+        // Verificar PR
+        const exercise = props.workout.exercises[exerciseIndex];
+        const set = exercise.sets_data[setIndex];
+        const exerciseName = exercise.exercise_name.toLowerCase();
+        const pr = props.personalRecords?.[exerciseName];
+        
+        if (pr) {
+            if (set.weight > pr.max_weight) {
+                info(`🏆 ¡Nuevo Récord de Peso! ${set.weight}kg en ${exercise.exercise_name}`);
+                // Actualizar PR localmente para no spammear
+                pr.max_weight = set.weight;
+            } else if (set.weight === pr.max_weight && set.reps > pr.max_reps) {
+                info(`🏆 ¡Nuevo Récord de Reps! ${set.reps} reps con ${set.weight}kg`);
+                pr.max_reps = set.reps;
+            }
+        }
+
+        // Iniciar descanso
+        if (currentExercise.value.rest_seconds) {
+            startRest(currentExercise.value.rest_seconds);
+        }
     }
 }
 
@@ -99,8 +127,17 @@ function previousExercise() {
     }
 }
 
-function finishWorkout() {
-    if (!confirm('¿Estás seguro de que quieres finalizar el entrenamiento?')) return;
+const showFinishModal = ref(false);
+const workoutNotes = ref('');
+const isSubmitting = ref(false);
+
+function openFinishModal() {
+    showFinishModal.value = true;
+}
+
+function confirmFinish() {
+    if (isSubmitting.value) return;
+    isSubmitting.value = true;
     
     const duration = Math.round((Date.now() - startTime.value) / 1000 / 60); // minutos
     
@@ -121,12 +158,18 @@ function finishWorkout() {
         duration_minutes: duration,
         total_sets: totalSets.value,
         completed_sets: completedSetsCount.value,
+        notes: workoutNotes.value
     }, {
         onSuccess: () => {
-            success(`¡Entrenamiento completado! Duración: ${duration} minutos. ${completedSetsCount.value}/${totalSets.value} series completadas.`);
+            success(`¡Entrenamiento completado! Duración: ${duration} minutos.`);
+            showFinishModal.value = false;
         },
         onError: () => {
             error('Error al guardar el registro del entrenamiento');
+            isSubmitting.value = false;
+        },
+        onFinish: () => {
+            // No reseteamos isSubmitting aquí si es exitoso porque redirige
         }
     });
 }
@@ -215,9 +258,26 @@ watch(() => {}, () => {
                         <span class="text-5xl">💪</span>
                     </div>
                     
-                    <p v-if="currentExercise.notes" class="text-gray-600 mb-6 italic">
+                    <p v-if="currentExercise.notes" class="text-gray-600 mb-4 italic">
                         📝 {{ currentExercise.notes }}
                     </p>
+
+                    <!-- Mostrar PR actual -->
+                    <div 
+                        v-if="personalRecords?.[currentExercise.exercise_name.toLowerCase()]?.max_weight > 0"
+                        class="mb-6 p-3 bg-yellow-50 border border-yellow-200 rounded-xl flex items-center gap-3"
+                    >
+                        <span class="text-2xl">🏆</span>
+                        <div>
+                            <p class="text-xs font-bold text-yellow-800 uppercase tracking-wider">Tu Récord Actual</p>
+                            <p class="text-sm text-yellow-900">
+                                <span class="font-black">{{ personalRecords[currentExercise.exercise_name.toLowerCase()].max_weight }}kg</span> 
+                                (máx peso) • 
+                                <span class="font-black">{{ personalRecords[currentExercise.exercise_name.toLowerCase()].max_reps }} reps</span> 
+                                (máx reps)
+                            </p>
+                        </div>
+                    </div>
 
                     <!-- Series -->
                     <div class="space-y-3">
@@ -244,19 +304,49 @@ watch(() => {}, () => {
                                 </div>
                             </div>
 
-                            <!-- Info de la serie -->
-                            <div class="flex-1">
-                                <div class="flex items-center gap-4">
-                                    <span class="text-lg font-bold text-gray-700">Serie {{ setIndex + 1 }}</span>
-                                    <span class="text-2xl font-black text-indigo-600">{{ set.reps }} reps</span>
-                                    <span class="text-gray-400">×</span>
-                                    <span class="text-2xl font-black text-purple-600">{{ set.weight }} kg</span>
+                            <!-- Info de la serie (Rediseño Vertical) -->
+                            <div class="flex-1 flex flex-col items-center justify-center gap-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-bold text-gray-500 uppercase tracking-wider">Serie {{ setIndex + 1 }}</span>
                                     <span 
                                         v-if="set.type && set.type !== 'normal'"
-                                        class="text-xs uppercase font-bold px-2 py-1 rounded bg-yellow-100 text-yellow-700"
+                                        class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700"
                                     >
-                                        {{ set.type }}
+                                        {{ setTypeLabels[set.type] || set.type }}
                                     </span>
+                                </div>
+                                
+                                <div class="flex items-center gap-3" @click.stop>
+                                    <!-- Reps -->
+                                    <div class="flex flex-col items-center">
+                                        <div class="flex items-center bg-gray-50 rounded-lg px-2 py-1 border border-gray-100">
+                                            <input 
+                                                v-model="set.reps"
+                                                type="number"
+                                                class="w-10 bg-transparent border-none p-0 text-center font-black text-indigo-600 text-xl focus:ring-0 appearance-none"
+                                                min="0"
+                                                placeholder="0"
+                                            />
+                                        </div>
+                                        <span class="text-[10px] text-gray-400 font-bold uppercase mt-0.5">Reps</span>
+                                    </div>
+
+                                    <span class="text-gray-300 text-xl font-light">/</span>
+
+                                    <!-- Peso -->
+                                    <div class="flex flex-col items-center">
+                                        <div class="flex items-center bg-gray-50 rounded-lg px-2 py-1 border border-gray-100">
+                                            <input 
+                                                v-model="set.weight"
+                                                type="number"
+                                                class="w-14 bg-transparent border-none p-0 text-center font-black text-purple-600 text-xl focus:ring-0 appearance-none"
+                                                min="0"
+                                                step="0.5"
+                                                placeholder="0"
+                                            />
+                                        </div>
+                                        <span class="text-[10px] text-gray-400 font-bold uppercase mt-0.5">Kg</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -283,7 +373,7 @@ watch(() => {}, () => {
 
                 <!-- Botón finalizar -->
                 <button 
-                    @click="finishWorkout"
+                    @click="openFinishModal"
                     class="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl font-black text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all"
                     :class="allSetsCompleted ? 'animate-pulse' : ''"
                 >
@@ -292,5 +382,53 @@ watch(() => {}, () => {
 
             </div>
         </div>
+
+        <!-- Modal de Finalización con Notas -->
+        <div v-if="showFinishModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div class="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl animate-fadeIn">
+                <div class="text-center mb-6">
+                    <div class="text-6xl mb-2">🎉</div>
+                    <h2 class="text-2xl font-black text-gray-900">¡Entrenamiento Terminado!</h2>
+                    <p class="text-gray-500">Has completado {{ completedSetsCount }} de {{ totalSets }} series.</p>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Notas del entrenamiento (opcional)</label>
+                    <textarea 
+                        v-model="workoutNotes"
+                        rows="4"
+                        class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+                        placeholder="¿Cómo te sentiste? ¿Algún dolor? ¿Récord personal?"
+                    ></textarea>
+                </div>
+
+                <div class="flex gap-3">
+                    <button 
+                        @click="showFinishModal = false"
+                        class="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition"
+                    >
+                        Cancelar
+                    </button>
+                    <button 
+                        @click="confirmFinish"
+                        class="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg"
+                        :disabled="isSubmitting"
+                    >
+                        {{ isSubmitting ? 'Guardando...' : 'Guardar Log' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </AuthenticatedLayout>
 </template>
+
+<style scoped>
+.animate-fadeIn {
+    animation: fadeIn 0.2s ease-out;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+</style>

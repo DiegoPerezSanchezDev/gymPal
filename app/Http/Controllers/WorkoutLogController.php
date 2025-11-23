@@ -14,15 +14,39 @@ class WorkoutLogController extends Controller
      */
     public function index(Request $request)
     {
-        $logs = Auth::user()
+        $query = Auth::user()
             ->workoutLogs()
             ->with('workout:id,name')
-            ->latest()
-            ->paginate(20);
+            ->latest();
+
+        if ($request->filled('search')) {
+            $query->where('workout_name', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        $logs = $query->paginate(20)->withQueryString();
+
+        // Obtener fechas con actividad para el calendario (últimos 6 meses para no sobrecargar)
+        $activityDates = Auth::user()
+            ->workoutLogs()
+            ->where('created_at', '>=', now()->subMonths(6))
+            ->pluck('created_at')
+            ->map(fn($date) => $date->format('Y-m-d'))
+            ->unique()
+            ->values();
 
         return Inertia::render('Workouts/History', [
             'logs' => $logs,
             'title' => 'Historial de Entrenamientos',
+            'filters' => $request->only(['search', 'date_from', 'date_to']),
+            'activityDates' => $activityDates,
         ]);
     }
 

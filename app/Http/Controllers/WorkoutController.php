@@ -246,13 +246,22 @@ class WorkoutController extends Controller
             $user->savedWorkouts()->attach($workout->id);
             $workout->incrementSaveCount();
             $message = 'Rutina guardada exitosamente';
+            
+            // Notificar al dueño si no es el mismo usuario
+            if ($workout->user_id !== $user->id) {
+                $workout->user->notify(new \App\Notifications\WorkoutNotification($user, $workout, 'saved'));
+            }
         }
 
-        return response()->json([
-            'is_saved' => !$isSaved,
-            'times_saved' => $workout->times_saved,
-            'message' => $message
-        ]);
+        if (request()->wantsJson()) {
+            return response()->json([
+                'is_saved' => !$isSaved,
+                'times_saved' => $workout->times_saved,
+                'message' => $message
+            ]);
+        }
+
+        return back()->with('success', $message);
     }
 
     /**
@@ -279,19 +288,24 @@ class WorkoutController extends Controller
         $newWorkout = $workout->replicate();
         $newWorkout->user_id = Auth::id();
         $newWorkout->name = $workout->name . ' (Copia)';
-        $newWorkout->times_saved = 0; // Reset stats
-        $newWorkout->created_at = now();
-        $newWorkout->updated_at = now();
+        $newWorkout->is_public = false;
+        $newWorkout->original_workout_id = $workout->id; // Asumiendo que existe esta columna o similar para tracking
         $newWorkout->save();
 
+        // Copiar ejercicios
         foreach ($workout->exercises as $exercise) {
             $newExercise = $exercise->replicate();
             $newExercise->workout_id = $newWorkout->id;
             $newExercise->save();
         }
 
-        return redirect()->route('workouts.edit', $newWorkout)
-            ->with('success_toast', 'Rutina duplicada exitosamente. Ahora puedes editarla.');
+        // Notificar al dueño original si no es el mismo usuario
+        if ($workout->user_id !== Auth::id()) {
+            $workout->user->notify(new \App\Notifications\WorkoutNotification(Auth::user(), $workout, 'cloned'));
+        }
+
+        return redirect()->route('workouts.edit', $newWorkout->id)
+            ->with('success', 'Rutina clonada exitosamente. Ahora puedes editarla.');
     }
 
     /**
@@ -306,8 +320,53 @@ class WorkoutController extends Controller
             }
         ]);
 
+        // Obtener PRs para los ejercicios de esta rutina
+        $exerciseNames = $workout->exercises->pluck('exercise_name')->map(fn($name) => strtolower($name))->unique();
+        
+        $logs = \App\Models\WorkoutLog::where('user_id', Auth::id())->get();
+        $personalRecords = [];
+
+        foreach ($exerciseNames as $name) {
+            $personalRecords[$name] = [
+                'max_weight' => 0,
+                'max_reps' => 0,
+                'max_volume' => 0
+            ];
+        }
+
+        foreach ($logs as $log) {
+            foreach ($log->exercises_data as $exercise) {
+                $name = strtolower($exercise['name']);
+                if (in_array($name, $exerciseNames->toArray())) {
+                    foreach ($exercise['sets'] as $set) {
+                        if ($set['completed'] ?? false) {
+                            $weight = $set['weight'] ?? 0;
+                            $reps = $set['reps'] ?? 0;
+                            
+                            // Lógica de "Mejor Set": Mayor peso gana. Si empate, mayor reps gana.
+                            $currentBest = $personalRecords[$name];
+                            
+                            if ($weight > $currentBest['max_weight']) {
+                                // Nuevo peso máximo encontrado
+                                $personalRecords[$name] = [
+                                    'max_weight' => $weight,
+                                    'max_reps' => $reps, // Guardamos las reps de ESTE peso
+                                    'max_volume' => $weight * $reps
+                                ];
+                            } elseif ($weight == $currentBest['max_weight'] && $reps > $currentBest['max_reps']) {
+                                // Mismo peso pero más reps
+                                $personalRecords[$name]['max_reps'] = $reps;
+                                $personalRecords[$name]['max_volume'] = $weight * $reps;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         return Inertia::render('Workouts/Live', [
             'workout' => $workout,
+            'personalRecords' => $personalRecords,
             'title' => 'Entrenar: ' . $workout->name,
         ]);
     }

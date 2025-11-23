@@ -81,17 +81,23 @@ const handleNotificationClick = (notification) => {
         case 'post_liked':
         case 'post_commented':
             if (data.post_id) {
-                router.visit(route('posts.show', data.post_id));
+                router.visit(route('posts.show', { post: data.post_id, from: 'notifications' }));
             }
             break;
         case 'new_message':
             if (data.sender_username) {
-                router.visit(route('chat.show', { user: data.sender_username }));
+                router.visit(route('chat.show', { user: data.sender_username, from: 'notifications' }));
             }
             break;
         case 'connection_accepted':
             if (data.accepter_username) {
-                router.visit(route('profile.show.public', { user: data.accepter_username }));
+                router.visit(route('profile.show.public', { user: data.accepter_username, from: 'notifications' }));
+            }
+            break;
+        case 'workout_saved':
+        case 'workout_cloned':
+            if (data.workout_id) {
+                router.visit(route('workouts.show', { workout: data.workout_id, from: 'notifications' }));
             }
             break;
     }

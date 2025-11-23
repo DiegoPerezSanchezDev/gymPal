@@ -1,12 +1,38 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { ref, watch, computed } from 'vue';
+import { router } from '@inertiajs/vue3';
+import debounce from 'lodash/debounce';
+import CalendarFilter from '@/Components/CalendarFilter.vue';
 
 const props = defineProps({
     logs: Object,
-    title: String
+    title: String,
+    filters: Object,
+    activityDates: Array
 });
+
+const search = ref(props.filters?.search || '');
+const dateRange = ref({
+    start: props.filters?.date_from || null,
+    end: props.filters?.date_to || null
+});
+
+const showCalendar = ref(false);
+
+const updateFilters = debounce(() => {
+    router.get(route('workout-logs.index'), { 
+        search: search.value,
+        date_from: dateRange.value.start,
+        date_to: dateRange.value.end
+    }, { 
+        preserveState: true, 
+        replace: true 
+    });
+}, 300);
+
+watch([search, dateRange], updateFilters, { deep: true });
 
 function formatDate(dateString) {
     return new Date(dateString).toLocaleDateString('es-ES', {
@@ -25,12 +51,6 @@ function formatTime(dateString) {
 }
 
 const totalWorkouts = computed(() => props.logs.total || 0);
-const totalMinutes = computed(() => {
-    return props.logs.data.reduce((sum, log) => sum + (log.duration_minutes || 0), 0);
-});
-const totalSets = computed(() => {
-    return props.logs.data.reduce((sum, log) => sum + log.completed_sets, 0);
-});
 </script>
 
 <template>
@@ -54,7 +74,7 @@ const totalSets = computed(() => {
                     :href="route('workout-logs.calendar')"
                     class="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition text-sm flex items-center gap-2"
                 >
-                    📅 Calendario
+                    📅 Calendario Completo
                 </Link>
             </div>
         </template>
@@ -67,6 +87,44 @@ const totalSets = computed(() => {
                     <div class="text-6xl font-black mb-2">{{ totalWorkouts }}</div>
                     <div class="text-lg text-indigo-100">Entrenamientos Completados</div>
                     <p class="text-sm text-indigo-200 mt-2">¡Sigue así! 💪</p>
+                </div>
+
+                <!-- Filtros (Acordeón) -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-6">
+                    <div class="max-w-2xl mx-auto">
+                        <button 
+                            @click="showCalendar = !showCalendar"
+                            class="w-full flex items-center justify-between p-2 rounded-xl hover:bg-gray-50 transition group"
+                        >
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-100 transition">
+                                    📅
+                                </div>
+                                <div class="text-left">
+                                    <h3 class="font-bold text-gray-800 group-hover:text-indigo-600 transition">Filtrar por Fecha</h3>
+                                    <p v-if="dateRange.start" class="text-xs font-medium text-indigo-600">
+                                        {{ formatDate(dateRange.start) }} 
+                                        <span v-if="dateRange.end"> - {{ formatDate(dateRange.end) }}</span>
+                                    </p>
+                                    <p v-else class="text-xs text-gray-400">Desplegar calendario</p>
+                                </div>
+                            </div>
+                            <svg 
+                                class="w-5 h-5 text-gray-400 transition-transform duration-300"
+                                :class="{'rotate-180': showCalendar}"
+                                fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                            >
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+
+                        <div v-show="showCalendar" class="mt-4 border-t border-gray-100 pt-4">
+                            <CalendarFilter 
+                                v-model="dateRange" 
+                                :activity-dates="activityDates"
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Lista de entrenamientos -->
