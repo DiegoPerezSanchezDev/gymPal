@@ -176,7 +176,7 @@ function removeProfilePicture() {
         </template>
 
         <div class="py-12">
-            <div class="max-w-5xl mx-auto sm:px-6 lg:px-8">
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                 <form @submit.prevent="saveProfile">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         

@@ -252,4 +252,26 @@ class WorkoutController extends Controller
             'title' => 'Rutinas Guardadas',
         ]);
     }
+    /**
+     * Duplicate a workout (Fork/Clone)
+     */
+    public function duplicate(Workout $workout)
+    {
+        $newWorkout = $workout->replicate();
+        $newWorkout->user_id = Auth::id();
+        $newWorkout->name = $workout->name . ' (Copia)';
+        $newWorkout->times_saved = 0; // Reset stats
+        $newWorkout->created_at = now();
+        $newWorkout->updated_at = now();
+        $newWorkout->save();
+
+        foreach ($workout->exercises as $exercise) {
+            $newExercise = $exercise->replicate();
+            $newExercise->workout_id = $newWorkout->id;
+            $newExercise->save();
+        }
+
+        return redirect()->route('workouts.edit', $newWorkout)
+            ->with('success_toast', 'Rutina duplicada exitosamente. Ahora puedes editarla.');
+    }
 }

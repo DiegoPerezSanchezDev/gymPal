@@ -173,16 +173,31 @@ function closeDeleteModal() {
             </div>
         
             <!-- Estado Vacío -->
-            <div v-else class="text-center py-10 max-w-lg mx-auto bg-white shadow-sm rounded-lg p-8">
-                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
-                <h3 class="mt-2 text-lg font-semibold text-gray-900">Tu feed está un poco silencioso</h3>
-                <p class="mt-1 text-sm text-gray-500">Crea tu primera publicación o conecta con otros GymPals para ver su contenido aquí.</p>
-                <div class="mt-6 flex flex-col items-stretch gap-4">
-                    <Link :href="route('posts.create')" class="inline-flex items-center justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition-colors">
-                        Crear Publicación
+            <div v-else class="text-center py-12 max-w-lg mx-auto bg-white shadow-sm rounded-xl border border-gray-100 p-8">
+                <div class="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+                    {{ activeTab === 'populares' ? '🔥' : (activeTab === 'cerca' ? '📍' : '📭') }}
+                </div>
+                
+                <h3 class="mt-2 text-xl font-bold text-gray-900">
+                    {{ 
+                        activeTab === 'populares' ? 'Aún no hay tendencias' : 
+                        (activeTab === 'cerca' ? 'No hay actividad cercana' : 'Tu feed está tranquilo') 
+                    }}
+                </h3>
+                
+                <p class="mt-2 text-gray-500 max-w-sm mx-auto">
+                    {{ 
+                        activeTab === 'populares' ? 'Las publicaciones más destacadas de la comunidad aparecerán aquí. ¡Crea contenido genial para ser el primero!' : 
+                        (activeTab === 'cerca' ? 'Parece que no hay GymPals activos cerca de tu ubicación por ahora.' : 'Sigue a más atletas o crea tu primera publicación para empezar.') 
+                    }}
+                </p>
+
+                <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <Link :href="route('posts.create')" class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent shadow-lg text-sm font-bold rounded-xl text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transform hover:-translate-y-0.5 transition-all">
+                        ✨ Crear Publicación
                     </Link>
-                    <Link :href="route('discover.index')" class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition-colors">
-                        Descubrir GymPals
+                    <Link v-if="activeTab === 'siguiendo'" :href="route('discover.index')" class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border-2 border-gray-100 shadow-sm text-sm font-bold rounded-xl text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-200 transition-all">
+                        🔍 Descubrir Personas
                     </Link>
                 </div>
             </div>

@@ -127,7 +127,7 @@ const getExperienceLevelColor = (level) => {
             <ProfileSkeleton />
         </div>
 
-        <div v-else-if="profileUser" class="container mx-auto px-2 sm:px-4 py-8">
+        <div v-else-if="profileUser" class="container mx-auto px-4 py-8">
             <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 relative">
                 
                 <!-- Badge de Afinidad (Si existe) -->
@@ -343,7 +343,7 @@ const getExperienceLevelColor = (level) => {
                     </div>
 
                         <!-- Button to create new workout -->
-                        <div v-if="isOwnProfile" class="mt-4">
+                        <div v-if="isOwnProfile && workouts.length > 0" class="mt-4">
                             <button 
                                 @click="$inertia.visit(route('workouts.create'))"
                                 class="w-full py-4 bg-gray-50 hover:bg-white border-2 border-dashed border-gray-300 hover:border-indigo-400 text-gray-500 hover:text-indigo-600 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 group"
@@ -373,7 +373,14 @@ const getExperienceLevelColor = (level) => {
                     </svg>
                 </div>
                 <p class="text-gray-500 font-medium mb-2">Aún no hay publicaciones</p>
-                <p class="text-gray-400 text-sm">Comparte tu primer post para que tu perfil cobre vida</p>
+                <p class="text-gray-400 text-sm mb-6">Comparte tu primer post para que tu perfil cobre vida</p>
+                <button 
+                    v-if="isOwnProfile"
+                    @click="$inertia.visit(route('posts.create'))"
+                    class="px-6 py-2 bg-indigo-600 text-white rounded-full font-bold hover:bg-indigo-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                >
+                    Crear Publicación
+                </button>
             </div>
             
             <div v-else class="max-w-2xl mx-auto mt-8 text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100 px-6">

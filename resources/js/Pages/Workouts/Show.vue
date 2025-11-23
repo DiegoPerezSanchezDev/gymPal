@@ -71,6 +71,11 @@ const deleteWorkout = () => {
 const toggleExercise = (id) => {
     expandedExercises.value[id] = !expandedExercises.value[id];
 };
+
+const duplicateWorkout = () => {
+    if (!confirm('¿Quieres crear una copia de esta rutina en tu perfil para editarla?')) return;
+    router.post(route('workouts.duplicate', props.workout.id));
+};
 </script>
 
 <template>
@@ -149,8 +154,8 @@ const toggleExercise = (id) => {
                         </div>
                     </div>
 
-                    <!-- Save Button (if not owner) -->
-                    <div v-if="!isOwner" class="mt-6 flex justify-center">
+                    <!-- Save & Clone Buttons (if not owner) -->
+                    <div v-if="!isOwner" class="mt-6 flex flex-col sm:flex-row justify-center gap-3">
                         <button 
                             @click="toggleSave"
                             class="w-full md:w-auto px-8 py-3 rounded-xl font-bold shadow-lg transition-all transform hover:scale-105 flex items-center justify-center gap-2"
@@ -159,7 +164,17 @@ const toggleExercise = (id) => {
                             <svg class="w-6 h-6" :class="localIsSaved ? 'fill-current' : 'fill-none stroke-current'" viewBox="0 0 24 24" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                             </svg>
-                            {{ localIsSaved ? 'Guardado en tu colección' : 'Guardar esta rutina' }}
+                            {{ localIsSaved ? 'Guardado' : 'Guardar' }}
+                        </button>
+
+                        <button 
+                            @click="duplicateWorkout"
+                            class="w-full md:w-auto px-8 py-3 rounded-xl font-bold shadow-lg transition-all transform hover:scale-105 flex items-center justify-center gap-2 bg-indigo-600 text-white hover:bg-indigo-700 border border-transparent"
+                        >
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                            </svg>
+                            Clonar y Editar
                         </button>
                     </div>
                 </div>

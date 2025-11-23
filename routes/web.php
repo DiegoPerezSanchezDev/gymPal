@@ -147,6 +147,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/workouts/{workout}', [\App\Http\Controllers\WorkoutController::class, 'update'])->name('workouts.update');
     Route::delete('/workouts/{workout}', [\App\Http\Controllers\WorkoutController::class, 'destroy'])->name('workouts.destroy');
     Route::post('/workouts/{workout}/toggle-save', [\App\Http\Controllers\WorkoutController::class, 'toggleSave'])->name('workouts.toggle-save');
+    Route::post('/workouts/{workout}/duplicate', [\App\Http\Controllers\WorkoutController::class, 'duplicate'])->name('workouts.duplicate');
 
 });
 
