@@ -175,8 +175,8 @@ const submitComment = async () => {
             {{ post.content }}
         </p>
 
-        <div v-if="postImageUrl" class="bg-gray-100 max-h-[500px] overflow-hidden mb-6">
-            <img :src="postImageUrl" alt="Imagen de la publicación" class="w-full h-full object-cover"/>
+        <div v-if="postImageUrl" class="bg-gray-100 max-h-[400px] overflow-hidden mb-6 flex items-center justify-center">
+            <img :src="postImageUrl" alt="Imagen de la publicación" class="w-full max-h-[400px] object-contain"/>
         </div>
 
         <!-- ================== Lista de Comentarios ================== -->

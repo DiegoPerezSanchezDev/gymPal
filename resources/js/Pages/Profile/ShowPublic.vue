@@ -247,8 +247,9 @@ const getExperienceLevelColor = (level) => {
                 </div>
             </div>
 
+
             <!-- Sección de Contenido con Tabs -->
-            <div v-if="posts && posts.length > 0" class="max-w-2xl mx-auto mt-8">
+            <div v-if="isOwnProfile || connection_status === 'accepted'" class="max-w-2xl mx-auto mt-8">
                 
                 <!-- Tabs Navigation -->
                 <div class="flex items-center justify-between mb-6 px-2">
@@ -342,45 +343,47 @@ const getExperienceLevelColor = (level) => {
                         </button>
                     </div>
 
-                        <!-- Button to create new workout -->
-                        <div v-if="isOwnProfile && workouts.length > 0" class="mt-4">
-                            <button 
-                                @click="$inertia.visit(route('workouts.create'))"
-                                class="w-full py-4 bg-gray-50 hover:bg-white border-2 border-dashed border-gray-300 hover:border-indigo-400 text-gray-500 hover:text-indigo-600 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 group"
-                            >
-                                <span class="w-8 h-8 rounded-full bg-gray-200 group-hover:bg-indigo-100 text-gray-500 group-hover:text-indigo-600 flex items-center justify-center transition-colors">
-                                    +
-                                </span>
-                                Crear Nueva Rutina
-                            </button>
-                        </div>
+                    <!-- Button to create new workout -->
+                    <div v-if="isOwnProfile && workouts.length > 0" class="mt-4">
+                        <button 
+                            @click="$inertia.visit(route('workouts.create'))"
+                            class="w-full py-4 bg-gray-50 hover:bg-white border-2 border-dashed border-gray-300 hover:border-indigo-400 text-gray-500 hover:text-indigo-600 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 group"
+                        >
+                            <span class="w-8 h-8 rounded-full bg-gray-200 group-hover:bg-indigo-100 text-gray-500 group-hover:text-indigo-600 flex items-center justify-center transition-colors">
+                                +
+                            </span>
+                            Crear Nueva Rutina
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Posts Tab (List) -->
-                <div v-else-if="activeContentTab === 'publicaciones'" class="space-y-4">
-                    <PostCard 
-                        v-for="post in posts" 
-                        :key="post.id" 
-                        :post="post" 
-                    />
+                <!-- Posts Tab -->
+                <div v-else-if="activeContentTab === 'publicaciones'">
+                    <div v-if="posts && posts.length > 0" class="space-y-4">
+                        <PostCard 
+                            v-for="post in posts" 
+                            :key="post.id" 
+                            :post="post" 
+                        />
+                    </div>
+                    
+                    <!-- Empty State for Posts -->
+                    <div v-else class="text-center py-12 bg-white rounded-2xl border-2 border-dashed border-gray-200">
+                        <div class="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                            📝
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900 mb-1">Aún no hay publicaciones</h3>
+                        <p class="text-gray-500 mb-6 max-w-xs mx-auto">Comparte tu primer post para que tu perfil cobre vida</p>
+                        
+                        <button 
+                            v-if="isOwnProfile"
+                            @click="$inertia.visit(route('posts.create'))"
+                            class="px-6 py-2 bg-indigo-600 text-white rounded-full font-bold hover:bg-indigo-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                        >
+                            Crear Publicación
+                        </button>
+                    </div>
                 </div>
-            </div>
-            
-            <div v-else-if="isOwnProfile || connection_status === 'accepted'" class="max-w-2xl mx-auto mt-8 text-center py-10 bg-white rounded-xl shadow-sm border border-gray-100">
-                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                </div>
-                <p class="text-gray-500 font-medium mb-2">Aún no hay publicaciones</p>
-                <p class="text-gray-400 text-sm mb-6">Comparte tu primer post para que tu perfil cobre vida</p>
-                <button 
-                    v-if="isOwnProfile"
-                    @click="$inertia.visit(route('posts.create'))"
-                    class="px-6 py-2 bg-indigo-600 text-white rounded-full font-bold hover:bg-indigo-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                >
-                    Crear Publicación
-                </button>
             </div>
             
             <div v-else class="max-w-2xl mx-auto mt-8 text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100 px-6">
