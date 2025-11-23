@@ -15,6 +15,20 @@ const pendingRequestsCount = computed(() => page.props.pendingRequestsCount);
 
 const { success, error } = useToast();
 
+const profilePictureUrl = computed(() => {
+    const user = authUser.value;
+    if (!user) return '';
+    
+    if (user.profile_picture_url) {
+        if (user.profile_picture_url.startsWith('http')) {
+            return user.profile_picture_url;
+        }
+        return `/storage/${user.profile_picture_url}`;
+    }
+    
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`;
+});
+
 // Listen for flash messages from backend
 watch(() => page.props, (newProps) => {
     if (newProps.flash?.success_toast) {
@@ -67,7 +81,7 @@ watch(() => page.props, (newProps) => {
                         <Dropdown align="right" width="48">
                             <template #trigger>
                                 <button class="flex items-center text-sm font-medium text-gray-500 hover:text-gray-700 focus:outline-none transition">
-                                    <img :src="authUser.profile_picture_url" class="h-8 w-8 rounded-full object-cover mr-2" :alt="authUser.name">
+                                    <img :src="profilePictureUrl" class="h-8 w-8 rounded-full object-cover mr-2" :alt="authUser.name">
                                     <span>{{ authUser.name }}</span>
                                     <svg class="ml-2 -mr-0.5 h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
                                 </button>
@@ -117,7 +131,7 @@ watch(() => page.props, (newProps) => {
                 <span class="text-xs mt-1">Conexiones</span>
             </Link>
             <Link :href="route('profile.show.public', { user: authUser.username })" title="Perfil" class="bottom-nav-link" :class="{'active': route().current('profile.show.public')}">
-                <img :src="authUser.profile_picture_url || 'https://ui-avatars.com/api/?name=' + authUser.name" alt="Perfil" class="h-6 w-6 rounded-full object-cover">
+                <img :src="profilePictureUrl" alt="Perfil" class="h-6 w-6 rounded-full object-cover">
                 <span class="text-xs mt-1">Perfil</span>
             </Link>
         </div>
