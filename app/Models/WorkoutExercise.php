@@ -13,16 +13,14 @@ class WorkoutExercise extends Model
     protected $fillable = [
         'workout_id',
         'exercise_name',
-        'sets',
-        'reps',
-        'weight_kg',
+        'sets_data',
         'rest_seconds',
         'notes',
         'order',
     ];
 
     protected $casts = [
-        'weight_kg' => 'decimal:2',
+        'sets_data' => 'array',
     ];
 
     // --- RELACIONES ---

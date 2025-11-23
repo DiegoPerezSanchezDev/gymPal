@@ -292,13 +292,25 @@ const getExperienceLevelColor = (level) => {
                 <div v-if="activeContentTab === 'rutinas'">
                     <div v-if="workouts.length > 0" class="grid grid-cols-1 gap-4">
                         <!-- Workout cards will go here -->
-                        <div v-for="workout in workouts" :key="workout.id" class="bg-white border-2 border-gray-100 rounded-2xl p-5 hover:border-indigo-200 hover:shadow-lg transition-all cursor-pointer">
+                        <div 
+                            v-for="workout in workouts" 
+                            :key="workout.id" 
+                            @click="$inertia.visit(route('workouts.show', workout.id))"
+                            class="bg-white border-2 border-gray-100 rounded-2xl p-5 hover:border-indigo-200 hover:shadow-lg transition-all cursor-pointer group"
+                        >
                             <div class="flex items-start justify-between mb-3">
                                 <div>
-                                    <h3 class="font-bold text-lg text-gray-900">{{ workout.name }}</h3>
-                                    <p class="text-sm text-gray-500 mt-1">{{ workout.description }}</p>
+                                    <h3 class="font-bold text-lg text-gray-900 group-hover:text-indigo-600 transition-colors">{{ workout.name }}</h3>
+                                    <p class="text-sm text-gray-500 mt-1 line-clamp-2">{{ workout.description }}</p>
                                 </div>
-                                <span class="px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700">
+                                <span 
+                                    class="px-3 py-1 rounded-full text-xs font-bold capitalize"
+                                    :class="{
+                                        'bg-emerald-100 text-emerald-700': workout.difficulty_level === 'principiante',
+                                        'bg-indigo-100 text-indigo-700': workout.difficulty_level === 'intermedio',
+                                        'bg-purple-100 text-purple-700': workout.difficulty_level === 'avanzado'
+                                    }"
+                                >
                                     {{ workout.difficulty_level }}
                                 </span>
                             </div>
@@ -313,24 +325,35 @@ const getExperienceLevelColor = (level) => {
                         </div>
                     </div>
                     
-                    <!-- Empty state for workouts -->
-                    <div v-else class="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-gray-200">
-                        <div class="w-24 h-24 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <span class="text-5xl">🏋️</span>
+                    <!-- Empty State -->
+                    <div v-else class="text-center py-12 bg-white rounded-2xl border-2 border-dashed border-gray-200">
+                        <div class="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                            🏋️
                         </div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-2">
-                            {{ isOwnProfile ? 'Crea tu primera rutina' : 'Sin rutinas disponibles' }}
-                        </h3>
-                        <p class="text-gray-500 max-w-md mx-auto mb-6">
-                            {{ isOwnProfile 
-                                ? 'Comparte tus rutinas de entrenamiento para inspirar a otros GymPals' 
-                                : 'Este usuario aún no ha compartido rutinas de entrenamiento' 
-                            }}
-                        </p>
-                        <button v-if="isOwnProfile" class="btn-primary-gradient" @click="$inertia.visit(route('workouts.create'))">
-                            ✨ Crear mi primera rutina
+                        <h3 class="text-lg font-bold text-gray-900 mb-1">No hay rutinas públicas</h3>
+                        <p class="text-gray-500 mb-6 max-w-xs mx-auto">Comparte tus entrenamientos con la comunidad de GymPal.</p>
+                        
+                        <button 
+                            v-if="isOwnProfile"
+                            @click="$inertia.visit(route('workouts.create'))"
+                            class="px-6 py-2 bg-indigo-600 text-white rounded-full font-bold hover:bg-indigo-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                        >
+                            Crear mi primera rutina
                         </button>
                     </div>
+
+                        <!-- Button to create new workout -->
+                        <div v-if="isOwnProfile" class="mt-4">
+                            <button 
+                                @click="$inertia.visit(route('workouts.create'))"
+                                class="w-full py-4 bg-gray-50 hover:bg-white border-2 border-dashed border-gray-300 hover:border-indigo-400 text-gray-500 hover:text-indigo-600 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 group"
+                            >
+                                <span class="w-8 h-8 rounded-full bg-gray-200 group-hover:bg-indigo-100 text-gray-500 group-hover:text-indigo-600 flex items-center justify-center transition-colors">
+                                    +
+                                </span>
+                                Crear Nueva Rutina
+                            </button>
+                        </div>
                 </div>
 
                 <!-- Posts Tab (List) -->

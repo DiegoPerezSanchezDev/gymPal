@@ -1,14 +1,15 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useToast } from '@/composables/useToast';
 
-const { success, error } = useToast();
-
-defineProps({
-    title: String
+const props = defineProps({
+    title: String,
+    workout: Object
 });
+
+const { success, error } = useToast();
 
 const form = ref({
     name: '',
@@ -17,14 +18,7 @@ const form = ref({
     duration_minutes: null,
     category: 'Gym',
     is_public: true,
-    exercises: [
-        { 
-            exercise_name: '', 
-            sets_data: [{ reps: 10, weight: 0, type: 'normal' }], // Inicializamos con 1 serie
-            rest_seconds: 60, 
-            notes: '' 
-        }
-    ]
+    exercises: []
 });
 
 const isSubmitting = ref(false);
@@ -47,6 +41,30 @@ const setTypes = [
     { value: 'failure', label: 'Al fallo' },
     { value: 'drop', label: 'Drop Set' }
 ];
+
+// Initialize form with existing data
+onMounted(() => {
+    if (props.workout) {
+        form.value.name = props.workout.name;
+        form.value.description = props.workout.description;
+        form.value.difficulty_level = props.workout.difficulty_level;
+        form.value.duration_minutes = props.workout.duration_minutes;
+        form.value.category = props.workout.category;
+        form.value.is_public = !!props.workout.is_public; // Ensure boolean
+        
+        // Map exercises
+        if (props.workout.exercises && props.workout.exercises.length > 0) {
+            form.value.exercises = props.workout.exercises.map(ex => ({
+                exercise_name: ex.exercise_name,
+                sets_data: Array.isArray(ex.sets_data) ? ex.sets_data : [{ reps: 10, weight: 0, type: 'normal' }],
+                rest_seconds: ex.rest_seconds,
+                notes: ex.notes
+            }));
+        } else {
+            addExercise(); // Ensure at least one
+        }
+    }
+});
 
 const addExercise = () => {
     form.value.exercises.push({
@@ -92,13 +110,13 @@ const submit = () => {
 
     isSubmitting.value = true;
     
-    router.post(route('workouts.store'), form.value, {
+    router.put(route('workouts.update', props.workout.id), form.value, {
         onSuccess: () => {
-            success('¡Rutina creada exitosamente!');
+            success('¡Rutina actualizada exitosamente!');
         },
         onError: (errors) => {
             console.error(errors);
-            error('Error al crear la rutina');
+            error('Error al actualizar la rutina');
         },
         onFinish: () => {
             isSubmitting.value = false;
@@ -114,13 +132,13 @@ const submit = () => {
         <template #header>
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
-                    <span class="text-2xl">🏋️</span>
+                    <span class="text-2xl">✏️</span>
                 </div>
                 <div>
                     <h2 class="font-extrabold text-xl text-gray-900 leading-tight">
-                        Crear Rutina
+                        Editar Rutina
                     </h2>
-                    <p class="text-xs text-gray-500 font-medium">Diseña tu entrenamiento serie a serie</p>
+                    <p class="text-xs text-gray-500 font-medium">Modifica los detalles de tu entrenamiento</p>
                 </div>
             </div>
         </template>
@@ -355,7 +373,7 @@ const submit = () => {
                     <div class="flex gap-3 pb-8">
                         <button
                             type="button"
-                            @click="router.visit(route('profile.show.public', { user: $page.props.auth.user.username }))"
+                            @click="router.visit(route('workouts.show', workout.id))"
                             class="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 rounded-xl font-bold transition"
                         >
                             Cancelar
@@ -365,7 +383,7 @@ const submit = () => {
                             :disabled="isSubmitting"
                             class="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 transition shadow-lg"
                         >
-                            {{ isSubmitting ? 'Creando...' : '✨ Crear Rutina' }}
+                            {{ isSubmitting ? 'Guardando...' : 'Guardar Cambios' }}
                         </button>
                     </div>
 
