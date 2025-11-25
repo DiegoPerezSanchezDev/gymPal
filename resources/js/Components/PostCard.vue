@@ -9,6 +9,8 @@ import PostActionsMenu from './PostActionsMenu.vue';
 import ReportPostModal from './ReportPostModal.vue';
 import SharePostModal from './SharePostModal.vue';
 import DeletePostModal from './DeletePostModal.vue';
+import WorkoutCard from './WorkoutCard.vue';
+import WorkoutPreviewCard from './WorkoutPreviewCard.vue';
 
 const { error: showError } = useToast();
 
@@ -175,8 +177,18 @@ const submitComment = async () => {
             {{ post.content }}
         </p>
 
-        <div v-if="postImageUrl" class="bg-gray-100 max-h-[500px] overflow-hidden mb-6">
-            <img :src="postImageUrl" alt="Imagen de la publicación" class="w-full h-full object-cover"/>
+        <!-- ================== Tarjeta de Workout Log (si existe y NO hay imagen) ================== -->
+        <div v-if="post.workout_log && !postImageUrl" class="px-5 pb-4">
+            <WorkoutCard :workoutLog="post.workout_log" />
+        </div>
+
+        <!-- ================== Tarjeta de Rutina Adjunta (si existe y NO hay imagen ni workout_log) ================== -->
+        <div v-if="post.workout && !postImageUrl && !post.workout_log" class="px-5 pb-4">
+            <WorkoutPreviewCard :workout="post.workout" />
+        </div>
+
+        <div v-if="postImageUrl" class="bg-gray-100 max-h-[400px] overflow-hidden mb-6 flex items-center justify-center">
+            <img :src="postImageUrl" alt="Imagen de la publicación" class="w-full max-h-[400px] object-contain"/>
         </div>
 
         <!-- ================== Lista de Comentarios ================== -->

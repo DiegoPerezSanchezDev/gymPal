@@ -1,22 +1,36 @@
 # GymPal Enhancement Roadmap
 
-## 🎨 UI/UX Polish (Priority 1)
-- [ ] **Feed Improvements**: 
-    - Update "Populares" and "Cerca" empty states to be more encouraging.
-    - Ensure logic displays posts correctly.
-- [ ] **Profile Empty States**:
-    - "No posts" -> Link to Create Post.
-    - "No routines" -> Link to Create Routine.
-- [ ] **Post UI Refinement**:
-    - Increase margin between image and actions/comments.
-    - Reduce max-height of images or adjust aspect ratio.
-- [ ] **"Create Routine" Button Logic**:
-    - Ensure the bottom button ONLY appears if user has >= 1 routine (Empty state handles the 0 case).
-- [ ] **Global Spacing**:
-    - Standardize container padding across pages (Profile, Edit Profile, etc.) to match Post view aesthetics.
+## ✅ Completed Features
 
-## 🚀 New Features (Priority 2)
-- [ ] **Clone/Fork Routine**: Allow users to copy others' routines.
-- [ ] **Live Workout Mode**: Interface for tracking sets in real-time.
-- [ ] **PRs & Records**: Track personal bests based on logged workouts.
-- [ ] **Share as Image**: Generate shareable images for Instagram Stories.
+### UI/UX Polish (Priority 1)
+- ✅ **Feed Improvements**: Tab-specific empty states
+- ✅ **Profile Empty States**: Links to create posts/routines
+- ✅ **Post UI Refinement**: Reduced image size (400px) and improved spacing
+- ✅ **"Create Routine" Button Logic**: Only shows when user has >= 1 routine
+- ✅ **Global Spacing**: Standardized container padding
+
+### New Features (Priority 2)
+- ✅ **Clone/Fork Routine**: Copy others' routines to edit
+- ✅ **Live Workout Mode**: Track sets in real-time with rest timer
+- ✅ **Workout Logs System**: Complete history of finished workouts with:
+  - Automatic saving when finishing Live Mode
+  - Detailed view of each completed workout
+  - Statistics (duration, sets completed, exercises)
+  - Pagination and filtering
+- ✅ **PRs & Records**: Personal records tracking with:
+  - Max weight per exercise
+  - Max reps per exercise
+  - Max volume (weight × reps)
+  - Total sessions per exercise
+  - Search and filtering
+
+## 🚀 Planned Features
+
+- [ ] **Calendar History**: Default view should show the current day/month (Next Priority)
+- [ ] **Chat Image Sending Error (500)**: Bug fix from previous sessions
+- [ ] **Stories 24h**: Implement ephemeral stories for workouts
+- [ ] **Routine Reference Links**: Add clickable links to routines in stories/posts
+- [ ] **Workout Templates**: Pre-made routines for different goals
+- [ ] **Progress Charts**: Visual graphs of improvement over time
+- [ ] **Share as Image**: Fix layout/rendering issues (Moved to Backlog)
+

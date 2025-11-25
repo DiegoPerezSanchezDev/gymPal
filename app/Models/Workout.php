@@ -21,6 +21,7 @@ class Workout extends Model
         'category',
         'is_public',
         'times_saved',
+        'original_workout_id',
     ];
 
     protected $casts = [

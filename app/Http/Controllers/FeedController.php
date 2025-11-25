@@ -21,6 +21,8 @@ class FeedController extends Controller
         $postsQuery = Post::query()
         ->with([
             'user', 
+            'workoutLog',
+            'workout.exercises',
             'latestLikers',
             'latestComments.user'
         ])

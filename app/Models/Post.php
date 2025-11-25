@@ -16,7 +16,9 @@ class Post extends Model
         'user_id',
         'content',
         'image_path',
-        'likes_count'
+        'likes_count',
+        'workout_log_id',
+        'workout_id'
     ];
 
     protected $appends = ['is_liked'];
@@ -26,6 +28,16 @@ class Post extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function workoutLog()
+    {
+        return $this->belongsTo(WorkoutLog::class);
+    }
+
+    public function workout()
+    {
+        return $this->belongsTo(Workout::class);
     }
 
     public function likers(): BelongsToMany

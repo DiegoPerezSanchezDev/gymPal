@@ -15,8 +15,15 @@ class PostController extends Controller
 {
     public function create()
     {
+        $userWorkouts = Auth::user()->workouts()
+            ->select('id', 'name', 'description', 'category')
+            ->withCount('exercises')
+            ->orderBy('name')
+            ->get();
+
         return Inertia::render('Posts/Create', [
             'title' => 'Crear Nueva Publicación',
+            'userWorkouts' => $userWorkouts,
             'isLoginPage' => false,
             'isRegisterPage' => false,
         ]);
@@ -25,22 +32,28 @@ class PostController extends Controller
     public function store(Request $request)
     {
         $validatedData = $request->validate([
-            'content' => 'nullable|string|max:1000', // Contenido puede ser nulo si hay imagen
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Imagen opcional, tipos y tamaño
+            'content' => 'nullable|string|max:1000',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'image_path' => 'nullable|string',
+            'workout_log_id' => 'nullable|exists:workout_logs,id',
+            'workout_id' => 'nullable|exists:workouts,id'
         ]);
 
-        // Asegurarse de que al menos uno de los dos esté presente
-        if (empty($validatedData['content']) && !$request->hasFile('image')) {
+        // Asegurarse de que al menos uno esté presente
+        if (empty($validatedData['content']) && !$request->hasFile('image') && empty($validatedData['image_path'])) {
             return back()->withErrors(['content' => 'La publicación debe tener contenido o una imagen.']);
         }
 
         $imagePath = null;
-        if ($request->hasFile('image')) {
-            // Guardar la imagen en public/storage/posts (crea el enlace simbólico con `php artisan storage:link`)
+        
+        // Si viene image_path (imagen ya generada), usarla
+        if (!empty($validatedData['image_path'])) {
+            $imagePath = $validatedData['image_path'];
+        }
+        // Si no, procesar imagen subida
+        elseif ($request->hasFile('image')) {
             $imagePath = $request->file('image')->store('posts', 'public');
         }
-
-        
 
         $user = Auth::user();
 
@@ -52,20 +65,15 @@ class PostController extends Controller
         }
         
         // Crear el post en la base de datos
-        $user->posts()->create([ // Asume que el modelo User tiene una relación 'post()'
+        $user->posts()->create([
             'content' => $validatedData['content'] ?? null,
-            'image_path' => $imagePath, // Guarda la ruta de la imagen
+            'image_path' => $imagePath,
+            'workout_log_id' => $validatedData['workout_log_id'] ?? null,
+            'workout_id' => $validatedData['workout_id'] ?? null
         ]);
 
-        // Redirigir de vuelta al feed con un mensaje de éxito (opcional)
-        // Inertia.js maneja la redirección si haces un return redirect()->...
-        // return redirect()->route('feed.index')->with('success', '¡Publicación creada!');
-
-        return redirect()->route('feed.index'); // O a donde quieras ir después de crear
-                                             // Si quieres quedarte en la misma página y mostrar
-                                             // un mensaje de éxito, podrías hacer:
-                                             // return back()->with('success_toast', '¡Publicación creada!');
-}
+        return redirect()->route('feed.index');
+    }
 
     public function show(Post $post)
     {

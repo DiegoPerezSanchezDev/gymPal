@@ -39,6 +39,8 @@ watch(() => page.props, (newProps) => {
     }
 }, { deep: true });
 
+const showMobileMenu = ref(false);
+
 </script>
 
 <template>
@@ -89,6 +91,7 @@ watch(() => page.props, (newProps) => {
                             <template #content>
                                 <DropdownLink :href="route('profile.show.public', { user: authUser.username })">Mi Perfil</DropdownLink>
                                 <DropdownLink :href="route('profile.edit')">Editar Perfil</DropdownLink>
+                                <DropdownLink :href="route('workout-logs.index')">📊 Historial de Entrenamientos</DropdownLink>
                                 <DropdownLink :href="route('logout')" method="post" as="button">Cerrar Sesión</DropdownLink>
                             </template>
                         </Dropdown>
@@ -112,6 +115,38 @@ watch(() => page.props, (newProps) => {
     </main>
 
     <div v-if="authUser" class="pb-16 md:pb-0"></div>
+    
+    <!-- Floating Menu (Mobile) -->
+    <div v-if="showMobileMenu" @click="showMobileMenu = false" class="fixed inset-0 bg-black/50 z-40 md:hidden"></div>
+    <div v-if="showMobileMenu" class="fixed bottom-20 left-1/2 -translate-x-1/2 bg-white rounded-2xl shadow-2xl p-4 z-50 md:hidden w-80">
+        <div class="grid grid-cols-3 gap-3">
+            <Link :href="route('posts.create')" class="flex flex-col items-center gap-2 p-3 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 transition">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                <span class="text-xs font-bold">Post</span>
+            </Link>
+            <Link :href="route('workouts.create')" class="flex flex-col items-center gap-2 p-3 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 transition">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                <span class="text-xs font-bold">Rutina</span>
+            </Link>
+            <Link :href="route('workouts.saved')" class="flex flex-col items-center gap-2 p-3 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 text-white hover:from-pink-600 hover:to-rose-700 transition">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                <span class="text-xs font-bold">Guardadas</span>
+            </Link>
+            <Link :href="route('workout-logs.index')" class="flex flex-col items-center gap-2 p-3 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                <span class="text-xs font-bold">Historial</span>
+            </Link>
+            <Link :href="route('workouts.index')" class="flex flex-col items-center gap-2 p-3 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <span class="text-xs font-bold">Explorar</span>
+            </Link>
+            <Link :href="route('profile.show.public', { user: authUser.username })" class="flex flex-col items-center gap-2 p-3 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                <span class="text-xs font-bold">Mi Perfil</span>
+            </Link>
+        </div>
+    </div>
+    
     <nav v-if="authUser" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg md:hidden z-30">
         <div class="flex items-center justify-around h-16">
             <Link :href="route('feed.index')" title="Inicio" class="bottom-nav-link" :class="{'active': route().current('feed.index')}">
@@ -122,9 +157,9 @@ watch(() => page.props, (newProps) => {
                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                 <span class="text-xs mt-1">Descubrir</span>
             </Link>
-            <Link :href="route('posts.create')" title="Nuevo Post" class="bottom-nav-link -mt-1">
+            <button @click="showMobileMenu = !showMobileMenu" title="Menú" class="bottom-nav-link -mt-1">
                 <span class="inline-block p-3 bg-indigo-600 rounded-full shadow-md"><svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg></span>
-            </Link>
+            </button>
             <Link :href="route('connections.index')" title="Conexiones" class="bottom-nav-link relative" :class="{'active': route().current('connections.index')}">
                 <span v-if="pendingRequestsCount > 0" class="notification-dot-mobile"></span>
                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197M15 11a4 4 0 110-5.292M12 4.354a4 4 0 010 5.292" /></svg>

@@ -148,6 +148,15 @@ Route::middleware('auth')->group(function () {
     Route::delete('/workouts/{workout}', [\App\Http\Controllers\WorkoutController::class, 'destroy'])->name('workouts.destroy');
     Route::post('/workouts/{workout}/toggle-save', [\App\Http\Controllers\WorkoutController::class, 'toggleSave'])->name('workouts.toggle-save');
     Route::post('/workouts/{workout}/duplicate', [\App\Http\Controllers\WorkoutController::class, 'duplicate'])->name('workouts.duplicate');
+    Route::get('/workouts/{workout}/live', [\App\Http\Controllers\WorkoutController::class, 'live'])->name('workouts.live');
+
+    // Workout Logs (Historial de entrenamientos)
+    Route::get('/workout-logs', [\App\Http\Controllers\WorkoutLogController::class, 'index'])->name('workout-logs.index');
+    Route::get('/workout-logs/calendar', [\App\Http\Controllers\WorkoutLogController::class, 'calendar'])->name('workout-logs.calendar');
+    Route::post('/workout-logs', [\App\Http\Controllers\WorkoutLogController::class, 'store'])->name('workout-logs.store');
+    Route::get('/workout-logs/{workoutLog}', [\App\Http\Controllers\WorkoutLogController::class, 'show'])->name('workout-logs.show');
+    Route::delete('/workout-logs/{workoutLog}', [\App\Http\Controllers\WorkoutLogController::class, 'destroy'])->name('workout-logs.destroy');
+    Route::get('/personal-records', [\App\Http\Controllers\WorkoutLogController::class, 'personalRecords'])->name('personal-records');
 
 });
 
