@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
 import axios from 'axios';
@@ -12,6 +13,7 @@ const props = defineProps({
 
 const currentFilter = ref(new URLSearchParams(window.location.search).get('unread_only') === '1' ? 'unread' : 'all');
 const isDeleting = ref(false);
+const showDeleteAllModal = ref(false);
 
 // Observar cambios en el filtro para recargar
 watch(currentFilter, (val) => {
@@ -57,9 +59,12 @@ const markAllAsRead = async () => {
     }
 };
 
-const deleteAll = async () => {
-    if (!confirm('¿Estás seguro de que quieres eliminar todas las notificaciones? Esta acción no se puede deshacer.')) return;
-    
+const openDeleteAllModal = () => {
+    showDeleteAllModal.value = true;
+};
+
+const confirmDeleteAll = async () => {
+    showDeleteAllModal.value = false;
     isDeleting.value = true;
     try {
         await axios.delete(route('notifications.delete-all'));
@@ -143,7 +148,7 @@ const getNotificationColor = (type) => {
                     <div class="flex items-center gap-3">
                         <button
                             v-if="notifications.data.length > 0"
-                            @click="deleteAll"
+                            @click="openDeleteAllModal"
                             :disabled="isDeleting"
                             class="group flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 transition-all disabled:opacity-50"
                         >
@@ -296,6 +301,18 @@ const getNotificationColor = (type) => {
 
             </div>
         </div>
+
+        <!-- Modal de confirmación de eliminación -->
+        <ConfirmModal
+            :show="showDeleteAllModal"
+            type="danger"
+            title="¿Eliminar todas las notificaciones?"
+            message="Esta acción eliminará permanentemente todas tus notificaciones y no se puede deshacer. ¿Estás seguro?"
+            confirm-text="Sí, eliminar todo"
+            cancel-text="Cancelar"
+            @confirm="confirmDeleteAll"
+            @cancel="showDeleteAllModal = false"
+        />
     </AuthenticatedLayout>
 </template>
 

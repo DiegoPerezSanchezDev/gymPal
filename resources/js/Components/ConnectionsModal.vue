@@ -1,6 +1,7 @@
 <script setup>
 import { Link, router, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 
 const props = defineProps({
     connections: {
@@ -16,36 +17,25 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 
 const authUser = usePage().props.auth.user;
+const showDisconnectModal = ref(false);
+const userToDisconnect = ref(null);
 
-const disconnectUser = (connectionUserId) => {
-    if (!confirm('¿Estás seguro de que quieres desconectar de este usuario?')) return;
-    
-    // Necesitamos encontrar la conexión ID. 
-    // Pero espera, la lista de conexiones son USERS (gym_pals).
-    // La relación gym_pals es un BelongsToMany.
-    // Para desconectar, necesitamos el ID de la relación o el ID del usuario.
-    // La ruta connections.destroy espera el ID de la CONEXIÓN, no del usuario.
-    // Sin embargo, en el controlador ProfileController cargamos gym_pals.
-    // El modelo User tiene la relación gym_pals.
-    // Laravel devuelve los modelos User, y en el pivot suele estar la info extra.
-    // Pero si no cargamos el pivot, no tenemos el ID de la conexión.
-    // En ProfileController usamos $user->gym_pals.
-    // Deberíamos haber cargado ->withPivot('id').
-    
-    // FIX: Vamos a asumir que necesitamos pasar el usuario y buscar la conexión, 
-    // o actualizar el controlador para traer el pivot.
-    // Por ahora, usaremos una ruta que acepte el ID del usuario para desconectar?
-    // No, las rutas de resource connections usan el ID de la conexión.
-    
-    // Vamos a actualizar el controlador primero para incluir el pivot id.
-    // Pero como no puedo editar el controlador en este paso (ya lo hice),
-    // voy a asumir que el usuario hará click y recargaremos la página.
-    // Espera, si no tengo el ID de la conexión, no puedo llamar a destroy.
-    
-    // Alternativa: Usar una ruta personalizada o buscar la conexión en el frontend? No.
-    // Voy a tener que editar el controlador de nuevo para añadir ->withPivot('id').
-    
-    // MIENTRAS TANTO: Mostraré el botón solo si tengo el ID.
+const openDisconnectModal = (user) => {
+    userToDisconnect.value = user;
+    showDisconnectModal.value = true;
+};
+
+const confirmDisconnect = () => {
+    if (userToDisconnect.value?.pivot?.id) {
+        router.delete(route('connections.destroy', userToDisconnect.value.pivot.id), {
+            preserveScroll: true,
+            onFinish: () => {
+                showDisconnectModal.value = false;
+                userToDisconnect.value = null;
+                emit('close');
+            }
+        });
+    }
 };
 
 // Como voy a editar el controlador de nuevo, asumamos que tenemos connection_id.
@@ -88,7 +78,7 @@ const disconnectUser = (connectionUserId) => {
                              El usuario pidió "la x para eliminar a lo mejor".
                         -->
                         <button v-if="isOwnProfile && user.pivot && user.pivot.id" 
-                                @click="$inertia.delete(route('connections.destroy', user.pivot.id), { preserveScroll: true, onFinish: () => $emit('close') })"
+                                @click="openDisconnectModal(user)"
                                 class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors" title="Desconectar">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
@@ -98,6 +88,18 @@ const disconnectUser = (connectionUserId) => {
             
             <div v-else class="text-gray-500 text-center p-8">Este usuario aún no tiene conexiones.</div>
         </div>
+
+        <!-- Modal de confirmación de desconexión -->
+        <ConfirmModal
+            :show="showDisconnectModal"
+            type="warning"
+            title="¿Desconectar?"
+            :message="userToDisconnect ? `¿Estás seguro de que quieres desconectar de ${userToDisconnect.name}?` : ''"
+            confirm-text="Sí, desconectar"
+            cancel-text="Cancelar"
+            @confirm="confirmDisconnect"
+            @cancel="showDisconnectModal = false; userToDisconnect = null;"
+        />
     </div>
 </template>
 

@@ -1,12 +1,14 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link } from "@inertiajs/vue3";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 const props = defineProps({
     title: String,
     conversations: Object, // Objeto de paginación de Laravel
 });
+
+const searchQuery = ref('');
 
 // Un helper computado para verificar si hay conversaciones
 const hasConversations = computed(() => {
@@ -15,6 +17,22 @@ const hasConversations = computed(() => {
         props.conversations.data &&
         props.conversations.data.length > 0
     );
+});
+
+// Filtrar conversaciones según búsqueda
+const filteredConversations = computed(() => {
+    if (!hasConversations.value) return [];
+    
+    if (!searchQuery.value.trim()) {
+        return props.conversations.data;
+    }
+    
+    const query = searchQuery.value.toLowerCase();
+    return props.conversations.data.filter(convo => {
+        const titleMatch = convo.chat_title?.toLowerCase().includes(query);
+        const messageMatch = convo.last_message_body?.toLowerCase().includes(query);
+        return titleMatch || messageMatch;
+    });
 });
 
 // Helper para obtener la URL del avatar
@@ -69,14 +87,46 @@ const getAvatarUrl = (convo) => {
                 </div>
 
                 <!-- Lista de conversaciones -->
-                <div v-else class="space-y-3">
-                    <Link 
-                        v-for="convo in conversations.data" 
-                        :key="convo.id"
-                        :href="convo.other_user_username ? route('chat.show', { user: convo.other_user_username }) : '#'"
-                        class="block bg-white rounded-2xl shadow-md hover:shadow-xl border border-gray-100 transition-all duration-300 overflow-hidden group hover:scale-[1.02] transform"
-                        :class="{ 'pointer-events-none opacity-50': !convo.other_user_username }"
-                    >
+                <div v-else>
+                    <!-- Buscador -->
+                    <div class="mb-6">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
+                            <input 
+                                v-model="searchQuery"
+                                type="text"
+                                placeholder="Buscar conversaciones"
+                                class="w-full pl-12 pr-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all font-medium text-gray-900 placeholder-gray-400"
+                            >
+                            <div v-if="searchQuery" class="absolute inset-y-0 right-0 pr-4 flex items-center">
+                                <button 
+                                    @click="searchQuery = ''"
+                                    class="text-gray-400 hover:text-gray-600 transition"
+                                >
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <p v-if="searchQuery && filteredConversations.length > 0" class="mt-2 text-sm text-gray-500">
+                            {{ filteredConversations.length }} {{ filteredConversations.length === 1 ? 'resultado' : 'resultados' }}
+                        </p>
+                    </div>
+
+                    <!-- Resultados -->
+                    <div v-if="filteredConversations.length > 0" class="space-y-3">
+                        <Link 
+                            v-for="convo in filteredConversations" 
+                            :key="convo.id"
+                            :href="convo.other_user_username ? route('chat.show', { user: convo.other_user_username }) : '#'"
+                            class="block bg-white rounded-2xl shadow-md hover:shadow-xl border border-gray-100 transition-all duration-300 overflow-hidden group hover:scale-[1.02] transform"
+                            :class="{ 'pointer-events-none opacity-50': !convo.other_user_username }"
+                        >
                         <div class="p-4 flex items-center gap-4">
                             <!-- Avatar con indicador online -->
                             <div class="relative flex-shrink-0">
@@ -119,6 +169,13 @@ const getAvatarUrl = (convo) => {
                     </Link>
                 </div>
 
+                <!-- No results -->
+                <div v-if="searchQuery && filteredConversations.length === 0" class="text-center py-12">
+                    <div class="text-6xl mb-4">🔍</div>
+                    <h3 class="text-lg font-bold text-gray-900">No se encontraron conversaciones</h3>
+                    <p class="text-gray-500">Intenta con otro término de búsqueda</p>
+                </div>
+
                 <!-- Paginación -->
                 <div v-if="hasConversations && conversations.links && conversations.links.length > 3" class="mt-8 flex justify-center gap-2">
                     <template v-for="(link, key) in conversations.links" :key="key">
@@ -139,5 +196,6 @@ const getAvatarUrl = (convo) => {
                 </div>
             </div>
         </div>
-    </AuthenticatedLayout>
+    </div>
+</AuthenticatedLayout>
 </template>

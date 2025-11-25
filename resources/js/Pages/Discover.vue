@@ -124,10 +124,37 @@ const availabilitySlots = ['Mañanas', 'Tardes', 'Noches', 'Fines de semana'];
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="font-bold text-xl text-gray-800 leading-tight">
-                {{ title }}
-            </h2>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md text-white">
+                    <span class="text-2xl">🏋️</span>
+                </div>
+                <div>
+                    <h2 class="font-extrabold text-xl text-gray-900 leading-tight">
+                        Explorar
+                    </h2>
+                    <p class="text-xs text-gray-500 font-medium">Descubre contenido de la comunidad</p>
+                </div>
+            </div>
         </template>
+
+        <!-- Tabs Navigation -->
+        <div class="bg-white shadow-md border-b border-gray-100 sticky top-16 z-30">
+            <div class="max-w-7xl mx-auto px-4">
+                <nav class="flex gap-1" aria-label="Tabs">
+                    <Link :href="route('workouts.index')"
+                            class="flex-1 group inline-flex items-center justify-center py-4 px-4 text-center font-bold text-sm whitespace-nowrap transition-all duration-200 rounded-t-xl relative text-gray-500 hover:text-gray-700 hover:bg-gray-50">
+                        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                        Rutinas
+                    </Link>
+                    <Link :href="route('discover.index')"
+                            class="flex-1 group inline-flex items-center justify-center py-4 px-4 text-center font-bold text-sm whitespace-nowrap transition-all duration-200 rounded-t-xl relative text-indigo-600 bg-gradient-to-b from-indigo-50 to-transparent">
+                        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                        Personas
+                        <span class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-full"></span>
+                    </Link>
+                </nav>
+            </div>
+        </div>
 
         <div class="py-6 md:py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
@@ -144,7 +171,7 @@ const availabilitySlots = ['Mañanas', 'Tardes', 'Noches', 'Fines de semana'];
                         <input 
                             v-model="form.search" 
                             type="text" 
-                            placeholder="Buscar por nombre o usuario..." 
+                            placeholder="Buscar por nombre o usuario" 
                             class="pl-10 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-3"
                         >
                     </div>

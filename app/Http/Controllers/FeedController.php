@@ -42,9 +42,25 @@ class FeedController extends Controller
             case 'cerca':
                 // Excluir conexiones y propio usuario para fomentar descubrimiento
                 $postsQuery->whereNotIn('user_id', $gymPalIds->merge([$userId]));
-                // Lógica futura y avanzada para geolocalización.
-                // Por ahora, mostramos todos los demás.
-                $postsQuery->latest();
+                
+                if ($user->latitude && $user->longitude) {
+                    $lat = $user->latitude;
+                    $lon = $user->longitude;
+                    
+                    $postsQuery->join('users', 'posts.user_id', '=', 'users.id')
+                        ->select('posts.*')
+                        ->selectRaw("
+                            (6371 * acos(
+                                cos(radians(?)) * cos(radians(users.latitude)) * cos(radians(users.longitude) - radians(?)) + 
+                                sin(radians(?)) * sin(radians(users.latitude))
+                            )) AS distance
+                        ", [$lat, $lon, $lat])
+                        ->whereNotNull('users.latitude')
+                        ->whereNotNull('users.longitude')
+                        ->orderBy('distance');
+                } else {
+                    $postsQuery->latest();
+                }
                 break;
     
             case 'siguiendo':

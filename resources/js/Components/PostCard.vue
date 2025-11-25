@@ -32,6 +32,13 @@ const formattedDate = computed(() => {
     });
 });
 
+const formattedDistance = computed(() => {
+    if (props.post.distance === undefined || props.post.distance === null) return null;
+    const dist = parseFloat(props.post.distance);
+    if (dist < 1) return `${Math.round(dist * 1000)} m`;
+    return `${dist.toFixed(1)} km`;
+});
+
 const isLiked = ref(false);
 const localLikesCount = ref(0);
 const isProcessingLike = ref(false);
@@ -161,7 +168,13 @@ const submitComment = async () => {
                     <Link :href="route('profile.show.public', { user: post.user.username })" class="font-bold text-sm text-gray-800 hover:underline">
                         {{ post.user.name }}
                     </Link>
-                    <p class="text-xs text-gray-500">{{ formattedDate }}</p>
+                    <div class="flex items-center gap-2">
+                        <p class="text-xs text-gray-500">{{ formattedDate }}</p>
+                        <span v-if="formattedDistance" class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            A {{ formattedDistance }}
+                        </span>
+                    </div>
                 </div>
             </div>
             <PostActionsMenu 

@@ -52,6 +52,13 @@ class WorkoutLogController extends Controller
             ->unique()
             ->values();
 
+        // Estadísticas
+        $stats = [
+            'total_workouts' => Auth::user()->workoutLogs()->count(),
+            'this_month' => Auth::user()->workoutLogs()->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count(),
+            'total_minutes' => Auth::user()->workoutLogs()->sum('duration_minutes'),
+        ];
+
         return Inertia::render('Workouts/History', [
             'logs' => $logs,
             'title' => 'Historial de Entrenamientos',
@@ -61,6 +68,7 @@ class WorkoutLogController extends Controller
                 'date_to' => $dateTo
             ],
             'activityDates' => $activityDates,
+            'stats' => $stats,
         ]);
     }
 

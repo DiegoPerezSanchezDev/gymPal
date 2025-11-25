@@ -10,13 +10,13 @@ const props = defineProps({
     filters: Object
 });
 
-const searchUser = ref(props.filters.search_user || '');
+const search = ref(props.filters.search || '');
 
 // Debounce search to avoid too many requests
 const performSearch = debounce((value) => {
     router.get(route('workouts.index'), { 
         ...props.filters, 
-        search_user: value 
+        search: value 
     }, { 
         preserveState: true, 
         preserveScroll: true,
@@ -24,9 +24,20 @@ const performSearch = debounce((value) => {
     });
 }, 300);
 
-watch(searchUser, (value) => {
+watch(search, (value) => {
     performSearch(value);
 });
+
+const setDifficulty = (level) => {
+    router.get(route('workouts.index'), {
+        ...props.filters,
+        difficulty: level === props.filters.difficulty ? null : level // Toggle
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true
+    });
+};
 
 const getGradient = (level) => {
     const gradients = {
@@ -49,28 +60,73 @@ const getGradient = (level) => {
                 </div>
                 <div>
                     <h2 class="font-extrabold text-xl text-gray-900 leading-tight">
-                        Explorar Rutinas
+                        Explorar
                     </h2>
-                    <p class="text-xs text-gray-500 font-medium">Descubre rutinas de la comunidad</p>
+                    <p class="text-xs text-gray-500 font-medium">Descubre contenido de la comunidad</p>
                 </div>
             </div>
         </template>
 
+        <!-- Tabs Navigation -->
+        <div class="bg-white shadow-md border-b border-gray-100 sticky top-16 z-30">
+            <div class="max-w-7xl mx-auto px-4">
+                <nav class="flex gap-1" aria-label="Tabs">
+                    <Link :href="route('workouts.index')"
+                            class="flex-1 group inline-flex items-center justify-center py-4 px-4 text-center font-bold text-sm whitespace-nowrap transition-all duration-200 rounded-t-xl relative text-indigo-600 bg-gradient-to-b from-indigo-50 to-transparent">
+                        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                        Rutinas
+                        <span class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-full"></span>
+                    </Link>
+                    <Link :href="route('discover.index')"
+                            class="flex-1 group inline-flex items-center justify-center py-4 px-4 text-center font-bold text-sm whitespace-nowrap transition-all duration-200 rounded-t-xl relative text-gray-500 hover:text-gray-700 hover:bg-gray-50">
+                        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                        Personas
+                    </Link>
+                </nav>
+            </div>
+        </div>
+
         <div class="py-8">
             <div class="max-w-7xl mx-auto px-4">
                 
-                <!-- Buscador -->
-                <div class="mb-8">
-                    <div class="relative max-w-md mx-auto md:mx-0">
+                <!-- Buscador y Filtros -->
+                <div class="mb-8 space-y-6">
+                    <!-- Buscador -->
+                    <div class="relative max-w-2xl mx-auto">
                         <input 
-                            v-model="searchUser"
+                            v-model="search"
                             type="text"
-                            placeholder="Buscar por nombre de usuario..."
-                            class="w-full px-5 py-3 pl-12 rounded-2xl border-none bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 transition text-gray-700 placeholder-gray-400"
+                            placeholder="Buscar rutinas o usuarios"
+                            class="w-full px-6 py-4 pl-14 rounded-2xl border-2 border-gray-100 bg-white shadow-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all text-lg text-gray-700 placeholder-gray-400"
                         />
-                        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg class="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
+                    </div>
+
+                    <!-- Filtros Rápidos (Chips) -->
+                    <div class="flex flex-wrap justify-center gap-3">
+                        <button 
+                            @click="setDifficulty('principiante')"
+                            class="px-4 py-2 rounded-full text-sm font-bold transition-all border-2 flex items-center gap-2"
+                            :class="filters.difficulty === 'principiante' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-white text-gray-500 border-gray-200 hover:border-emerald-200 hover:text-emerald-600'"
+                        >
+                            🌱 Principiante
+                        </button>
+                        <button 
+                            @click="setDifficulty('intermedio')"
+                            class="px-4 py-2 rounded-full text-sm font-bold transition-all border-2 flex items-center gap-2"
+                            :class="filters.difficulty === 'intermedio' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-white text-gray-500 border-gray-200 hover:border-blue-200 hover:text-blue-600'"
+                        >
+                            ⚡ Intermedio
+                        </button>
+                        <button 
+                            @click="setDifficulty('avanzado')"
+                            class="px-4 py-2 rounded-full text-sm font-bold transition-all border-2 flex items-center gap-2"
+                            :class="filters.difficulty === 'avanzado' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-white text-gray-500 border-gray-200 hover:border-purple-200 hover:text-purple-600'"
+                        >
+                            🔥 Avanzado
+                        </button>
                     </div>
                 </div>
 

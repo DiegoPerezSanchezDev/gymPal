@@ -225,8 +225,8 @@ const submit = () => {
                             </div>
                         </div>
 
-                        <!-- Público/Privado -->
-                        <div class="mt-4">
+                        <!-- Público/Privado (solo si no es una rutina clonada) -->
+                        <div v-if="!workout.original_workout_id" class="mt-4">
                             <label class="flex items-center gap-2 cursor-pointer">
                                 <input
                                     v-model="form.is_public"

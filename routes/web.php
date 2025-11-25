@@ -142,6 +142,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/workouts/create', [\App\Http\Controllers\WorkoutController::class, 'create'])->name('workouts.create');
     Route::post('/workouts', [\App\Http\Controllers\WorkoutController::class, 'store'])->name('workouts.store');
     Route::get('/workouts/saved', [\App\Http\Controllers\WorkoutController::class, 'saved'])->name('workouts.saved');
+    Route::get('/workouts/my-workouts', [\App\Http\Controllers\WorkoutController::class, 'myWorkouts'])->name('workouts.my-workouts');
     Route::get('/workouts/{workout}', [\App\Http\Controllers\WorkoutController::class, 'show'])->name('workouts.show');
     Route::get('/workouts/{workout}/edit', [\App\Http\Controllers\WorkoutController::class, 'edit'])->name('workouts.edit');
     Route::put('/workouts/{workout}', [\App\Http\Controllers\WorkoutController::class, 'update'])->name('workouts.update');
