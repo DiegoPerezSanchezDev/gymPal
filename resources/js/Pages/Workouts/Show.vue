@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import { useToast } from '@/composables/useToast';
@@ -19,6 +20,9 @@ const isSaving = ref(false);
 const localIsSaved = ref(props.isSaved);
 const localSaveCount = ref(props.workout.times_saved);
 const expandedExercises = ref({});
+const showDuplicateModal = ref(false);
+const duplicateIsPublic = ref(false);
+const showDeleteModal = ref(false);
 
 const difficultyColors = {
     principiante: 'from-emerald-400 to-teal-500',
@@ -49,9 +53,18 @@ const categoryIcons = {
 
 const backRoute = computed(() => {
     const params = new URLSearchParams(window.location.search);
+    
+    // Si viene de notificaciones
     if (params.get('from') === 'notifications') {
         return route('notifications.index');
     }
+    
+    // Si viene de "Mis Rutinas"
+    if (params.get('from') === 'my-workouts' || document.referrer.includes('my-workouts')) {
+        return route('workouts.my-workouts');
+    }
+    
+    // Por defecto, ir al perfil del dueño en la tab de rutinas
     return route('profile.show.public', { user: props.workout.user.username }) + '?tab=rutinas';
 });
 
@@ -76,18 +89,37 @@ const toggleSave = async () => {
     }
 };
 
-const deleteWorkout = () => {
-    if (!confirm('¿Estás seguro de que quieres eliminar esta rutina? Esta acción no se puede deshacer.')) return;
+const openDeleteModal = () => {
+    showDeleteModal.value = true;
+};
+
+const confirmDelete = () => {
+    showDeleteModal.value = false;
     router.delete(route('workouts.destroy', props.workout.id));
+};
+
+const cancelDelete = () => {
+    showDeleteModal.value = false;
 };
 
 const toggleExercise = (id) => {
     expandedExercises.value[id] = !expandedExercises.value[id];
 };
 
-const duplicateWorkout = () => {
-    if (!confirm('¿Quieres crear una copia de esta rutina en tu perfil para editarla?')) return;
-    router.post(route('workouts.duplicate', props.workout.id));
+const openDuplicateModal = () => {
+    showDuplicateModal.value = true;
+    duplicateIsPublic.value = false; // Default: privado
+};
+
+const closeDuplicateModal = () => {
+    showDuplicateModal.value = false;
+};
+
+const confirmDuplicate = () => {
+    router.post(route('workouts.duplicate', props.workout.id), {
+        is_public: duplicateIsPublic.value
+    });
+    closeDuplicateModal();
 };
 </script>
 
@@ -205,7 +237,7 @@ const duplicateWorkout = () => {
                         </button>
 
                         <button 
-                            @click="duplicateWorkout"
+                            @click="openDuplicateModal"
                             class="w-full md:w-auto px-8 py-3 rounded-xl font-bold shadow-lg transition-all transform hover:scale-105 flex items-center justify-center gap-2 bg-indigo-600 text-white hover:bg-indigo-700 border border-transparent"
                         >
                             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -378,6 +410,176 @@ const duplicateWorkout = () => {
             </div>
 
         </div>
+
+        <!-- Modal de Duplicación -->
+        <Transition
+            enter-active-class="transition ease-out duration-200"
+            enter-from-class="opacity-0"
+            enter-to-class="opacity-100"
+            leave-active-class="transition ease-in duration-150"
+            leave-from-class="opacity-100"
+            leave-to-class="opacity-0"
+        >
+            <div 
+                v-if="showDuplicateModal"
+                class="fixed inset-0 z-50 overflow-y-auto"
+                @click.self="closeDuplicateModal"
+            >
+                <!-- Backdrop -->
+                <div class="fixed inset-0 bg-black/50 backdrop-blur-sm"></div>
+
+                <!-- Modal Container -->
+                <div class="flex min-h-full items-center justify-center p-4">
+                    <Transition
+                        enter-active-class="transition ease-out duration-200"
+                        enter-from-class="opacity-0 scale-95"
+                        enter-to-class="opacity-100 scale-100"
+                        leave-active-class="transition ease-in duration-150"
+                        leave-from-class="opacity-100 scale-100"
+                        leave-to-class="opacity-0 scale-95"
+                    >
+                        <div 
+                            v-if="showDuplicateModal"
+                            class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
+                        >
+                            <!-- Header -->
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                                    <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                                    </svg>
+                                </div>
+                                <div class="flex-1">
+                                    <h3 class="text-xl font-bold text-gray-900">Clonar Rutina</h3>
+                                    <p class="text-sm text-gray-500">Personaliza tu copia</p>
+                                </div>
+                                <button 
+                                    @click="closeDuplicateModal"
+                                    class="p-2 hover:bg-gray-100 rounded-lg transition"
+                                >
+                                    <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Content -->
+                            <div class="mb-6">
+                                <p class="text-gray-600 mb-4">
+                                    Vas a crear una copia de <strong class="text-gray-900">{{ workout.name }}</strong> que podrás editar libremente.
+                                </p>
+
+                                <!-- Selector de Visibilidad -->
+                                <div class="space-y-3">
+                                    <p class="text-sm font-bold text-gray-700 mb-2">Visibilidad de la rutina:</p>
+                                    
+                                    <!-- Opción Privada -->
+                                    <label 
+                                        class="flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all"
+                                        :class="!duplicateIsPublic 
+                                            ? 'border-indigo-500 bg-indigo-50 shadow-md' 
+                                            : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'"
+                                    >
+                                        <input 
+                                            type="radio" 
+                                            :value="false"
+                                            v-model="duplicateIsPublic"
+                                            class="sr-only"
+                                        />
+                                        <div class="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
+                                            :class="!duplicateIsPublic ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-400'"
+                                        >
+                                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                            </svg>
+                                        </div>
+                                        <div class="flex-1">
+                                            <p class="font-bold text-gray-900 flex items-center gap-2">
+                                                🔒 Privada
+                                                <span v-if="!duplicateIsPublic" class="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-full">Seleccionada</span>
+                                            </p>
+                                            <p class="text-sm text-gray-500">Solo visible para ti</p>
+                                        </div>
+                                        <div v-if="!duplicateIsPublic" class="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                                            <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        </div>
+                                        <div v-else class="w-6 h-6 rounded-full border-2 border-gray-300 flex-shrink-0"></div>
+                                    </label>
+
+                                    <!-- Opción Pública -->
+                                    <label 
+                                        class="flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all"
+                                        :class="duplicateIsPublic 
+                                            ? 'border-green-500 bg-green-50 shadow-md' 
+                                            : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'"
+                                    >
+                                        <input 
+                                            type="radio" 
+                                            :value="true"
+                                            v-model="duplicateIsPublic"
+                                            class="sr-only"
+                                        />
+                                        <div class="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
+                                            :class="duplicateIsPublic ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'"
+                                        >
+                                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </div>
+                                        <div class="flex-1">
+                                            <p class="font-bold text-gray-900 flex items-center gap-2">
+                                                🌐 Pública
+                                                <span v-if="duplicateIsPublic" class="text-xs bg-green-600 text-white px-2 py-0.5 rounded-full">Seleccionada</span>
+                                            </p>
+                                            <p class="text-sm text-gray-500">Visible para todos los usuarios</p>
+                                        </div>
+                                        <div v-if="duplicateIsPublic" class="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
+                                            <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        </div>
+                                        <div v-else class="w-6 h-6 rounded-full border-2 border-gray-300 flex-shrink-0"></div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="flex gap-3">
+                                <button 
+                                    @click="closeDuplicateModal"
+                                    class="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition"
+                                >
+                                    Cancelar
+                                </button>
+                                <button 
+                                    @click="confirmDuplicate"
+                                    class="flex-1 px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold hover:from-indigo-700 hover:to-purple-700 transition shadow-lg flex items-center justify-center gap-2"
+                                >
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Clonar
+                                </button>
+                            </div>
+                        </div>
+                    </Transition>
+                </div>
+            </div>
+        </Transition>
+
+        <!-- Modal de confirmación de eliminación -->
+        <ConfirmModal
+            :show="showDeleteModal"
+            type="danger"
+            title="¿Eliminar rutina?"
+            message="Esta acción no se puede deshacer. Se eliminará permanentemente esta rutina y todos sus ejercicios."
+            confirm-text="Sí, eliminar"
+            cancel-text="Cancelar"
+            @confirm="confirmDelete"
+            @cancel="cancelDelete"
+        />
     </AuthenticatedLayout>
 </template>
 

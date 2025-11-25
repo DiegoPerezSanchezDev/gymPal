@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { ref, computed, watch } from 'vue';
 import { useToast } from '@/composables/useToast';
@@ -130,6 +131,7 @@ function previousExercise() {
 const showFinishModal = ref(false);
 const workoutNotes = ref('');
 const isSubmitting = ref(false);
+const showExitModal = ref(false);
 
 function openFinishModal() {
     showFinishModal.value = true;
@@ -174,9 +176,17 @@ function confirmFinish() {
     });
 }
 
-function exitWorkout() {
-    if (!confirm('¿Seguro que quieres salir? Se perderá el progreso actual.')) return;
+function openExitModal() {
+    showExitModal.value = true;
+}
+
+function confirmExit() {
+    showExitModal.value = false;
     router.visit(route('workouts.show', props.workout.id));
+}
+
+function cancelExit() {
+    showExitModal.value = false;
 }
 
 // Limpiar intervalo al desmontar
@@ -202,7 +212,7 @@ watch(() => {}, () => {
                             <p class="text-sm text-gray-500">Ejercicio {{ currentExerciseIndex + 1 }} de {{ workout.exercises.length }}</p>
                         </div>
                         <button 
-                            @click="exitWorkout"
+                            @click="openExitModal"
                             class="p-2 text-gray-500 hover:text-red-600 transition"
                         >
                             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -419,6 +429,18 @@ watch(() => {}, () => {
                 </div>
             </div>
         </div>
+
+        <!-- Modal de confirmación de salida -->
+        <ConfirmModal
+            :show="showExitModal"
+            type="warning"
+            title="¿Salir del entrenamiento?"
+            message="Si sales ahora, perderás todo el progreso actual. ¿Estás seguro?"
+            confirm-text="Sí, salir"
+            cancel-text="Continuar"
+            @confirm="confirmExit"
+            @cancel="cancelExit"
+        />
 
     </AuthenticatedLayout>
 </template>

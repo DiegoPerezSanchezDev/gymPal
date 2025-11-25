@@ -9,7 +9,7 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue', 'range-completed']);
 
 const currentDate = ref(new Date());
 const currentMonth = computed(() => currentDate.value.getMonth());
@@ -64,7 +64,7 @@ function selectDate(date) {
     let newRange = { ...props.modelValue };
 
     if (!currentStart || (currentStart && currentEnd)) {
-        // Empezar nueva selección
+        // Empezar nueva selección (una sola fecha)
         newRange = { start: date, end: null };
     } else {
         // Completar rango
@@ -76,6 +76,9 @@ function selectDate(date) {
     }
     
     emit('update:modelValue', newRange);
+    
+    // Emitir evento siempre que se seleccione una fecha (cierra el calendario)
+    emit('range-completed');
 }
 
 function isSelected(date) {

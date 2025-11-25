@@ -5,6 +5,7 @@ import { computed, ref } from 'vue';
 
 // Componentes
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 import TagsInput from '@/Components/TagsInput.vue';
 import AvailabilityInput from '@/Components/AvailabilityInput.vue';
 import InputLabel from '@/Components/InputLabel.vue';
@@ -13,6 +14,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import CityAutocomplete from '@/Components/CityAutocomplete.vue';
 import SelectInput from '@/Components/SelectInput.vue';
+import { useToast } from '@/composables/useToast';
 
 // --- PROPS ---
 const props = defineProps({
@@ -74,6 +76,9 @@ const form = useForm({
 // --- ESTADO PARA PREVIEW DE IMAGEN ---
 const profilePicturePreview = ref(null);
 const fileInputRef = ref(null);
+const showRemovePhotoModal = ref(false);
+
+const { error: showError } = useToast();
 
 // --- COMPUTED PROPERTY PARA LA UBICACIÓN ---
 const hasLocationSaved = computed(() => form.latitude && form.longitude);
@@ -121,13 +126,13 @@ function handleProfilePictureChange(event) {
     if (file) {
         // Validar tamaño (máx 5MB)
         if (file.size > 5 * 1024 * 1024) {
-            alert('La imagen no puede superar los 5MB');
+            showError('La imagen no puede superar los 5MB');
             return;
         }
         
         // Validar tipo
         if (!file.type.startsWith('image/')) {
-            alert('Solo se permiten archivos de imagen');
+            showError('Solo se permiten archivos de imagen');
             return;
         }
         
@@ -143,16 +148,19 @@ function handleProfilePictureChange(event) {
     }
 }
 
-function removeProfilePicture() {
-    if (confirm('¿Estás seguro de que quieres eliminar tu foto de perfil?')) {
-        form.profile_picture = null;
-        form.remove_profile_picture = true;
-        profilePicturePreview.value = null;
-        if (fileInputRef.value) {
-            fileInputRef.value.value = '';
-        }
+function openRemovePhotoModal() {
+    showRemovePhotoModal.value = true;
+}
+
+function confirmRemovePhoto() {
+    form.profile_picture = null;
+    form.remove_profile_picture = true;
+    profilePicturePreview.value = null;
+    if (fileInputRef.value) {
+        fileInputRef.value.value = '';
     }
-};
+    showRemovePhotoModal.value = false;
+}
 </script>
 
 <template>
@@ -209,7 +217,7 @@ function removeProfilePicture() {
                                 <!-- Botón para eliminar foto (solo si tiene foto) -->
                                 <button 
                                     v-if="props.user.profile_picture_url || profilePicturePreview" 
-                                    @click="removeProfilePicture"
+                                    @click="openRemovePhotoModal"
                                     type="button"
                                     class="mt-3 text-xs text-red-500 hover:text-red-700 font-medium flex items-center gap-1"
                                 >
@@ -400,5 +408,17 @@ function removeProfilePicture() {
                 </form>
             </div>
         </div>
+
+        <!-- Modal de confirmación de eliminación de foto -->
+        <ConfirmModal
+            :show="showRemovePhotoModal"
+            type="warning"
+            title="¿Eliminar foto de perfil?"
+            message="¿Estás seguro de que quieres eliminar tu foto de perfil? Se mostrará un avatar generado automáticamente."
+            confirm-text="Sí, eliminar"
+            cancel-text="Cancelar"
+            @confirm="confirmRemovePhoto"
+            @cancel="showRemovePhotoModal = false"
+        />
     </AuthenticatedLayout>
 </template>

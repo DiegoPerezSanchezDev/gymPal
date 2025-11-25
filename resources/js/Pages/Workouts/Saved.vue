@@ -58,7 +58,7 @@ const getGradient = (level) => {
                         <input 
                             v-model="searchQuery"
                             type="text"
-                            placeholder="Buscar por nombre o creador..."
+                            placeholder="Buscar por nombre o creador"
                             class="w-full px-5 py-3 pl-12 rounded-2xl border-none bg-white shadow-sm focus:ring-2 focus:ring-pink-500 transition text-gray-700 placeholder-gray-400"
                         />
                         <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

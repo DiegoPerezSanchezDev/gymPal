@@ -20,9 +20,14 @@ class WorkoutController extends Controller
             ->with(['user:id,name,username,profile_picture_url', 'exercises'])
             ->public();
 
-        // Excluir rutinas propias
+        // Excluir rutinas propias y limitar a seguidos
         if (Auth::check()) {
-            $query->where('user_id', '!=', Auth::id());
+            $user = Auth::user();
+            $gymPalIds = $user->gym_pals->pluck('id');
+            
+            $query->whereIn('user_id', $gymPalIds);
+            // No hace falta excluir el propio ID si no está en gym_pals, pero por seguridad:
+            $query->where('user_id', '!=', $user->id);
         }
 
         // Filtros opcionales
@@ -34,12 +39,15 @@ class WorkoutController extends Controller
             $query->byDifficulty($request->difficulty);
         }
 
-        // Filtro por usuario (búsqueda)
-        if ($request->search_user) {
-            $searchTerm = $request->search_user;
-            $query->whereHas('user', function($q) use ($searchTerm) {
+        // Búsqueda general (nombre de rutina o usuario)
+        if ($request->search) {
+            $searchTerm = $request->search;
+            $query->where(function($q) use ($searchTerm) {
                 $q->where('name', 'like', "%{$searchTerm}%")
-                  ->orWhere('username', 'like', "%{$searchTerm}%");
+                  ->orWhereHas('user', function($q2) use ($searchTerm) {
+                      $q2->where('name', 'like', "%{$searchTerm}%")
+                         ->orWhere('username', 'like', "%{$searchTerm}%");
+                  });
             });
         }
 
@@ -53,7 +61,8 @@ class WorkoutController extends Controller
             'filters' => [
                 'category' => $request->category,
                 'difficulty' => $request->difficulty,
-                'search_user' => $request->search_user,
+                'difficulty' => $request->difficulty,
+                'search' => $request->search,
             ]
         ]);
     }
@@ -111,6 +120,15 @@ class WorkoutController extends Controller
                     'notes' => $exercise['notes'] ?? null,
                     'order' => $index,
                 ]);
+            }
+
+            // Detectar de dónde viene el usuario para redirigir apropiadamente
+            $referer = $request->headers->get('referer');
+            $redirectToMyWorkouts = $referer && str_contains($referer, 'my-workouts');
+
+            if ($redirectToMyWorkouts) {
+                return redirect()->route('workouts.my-workouts')
+                    ->with('success_toast', 'Rutina creada exitosamente');
             }
 
             return redirect()->route('profile.show.public', ['user' => Auth::user()->username])
@@ -233,6 +251,15 @@ class WorkoutController extends Controller
                 ]);
             }
 
+            // Detectar de dónde viene el usuario para redirigir apropiadamente
+            $referer = $request->headers->get('referer');
+            $redirectToMyWorkouts = $referer && str_contains($referer, 'my-workouts');
+
+            if ($redirectToMyWorkouts) {
+                return redirect()->route('workouts.my-workouts')
+                    ->with('success_toast', 'Rutina actualizada exitosamente');
+            }
+
             return redirect()->route('workouts.show', $workout)
                 ->with('success_toast', 'Rutina actualizada exitosamente');
 
@@ -338,12 +365,12 @@ class WorkoutController extends Controller
     /**
      * Duplicate a workout (Fork/Clone)
      */
-    public function duplicate(Workout $workout)
+    public function duplicate(Request $request, Workout $workout)
     {
         $newWorkout = $workout->replicate();
         $newWorkout->user_id = Auth::id();
         $newWorkout->name = $workout->name . ' (Copia)';
-        $newWorkout->is_public = false;
+        $newWorkout->is_public = $request->input('is_public', false); // Default: privado
         $newWorkout->original_workout_id = $workout->id; // Asumiendo que existe esta columna o similar para tracking
         $newWorkout->save();
 
@@ -435,6 +462,56 @@ class WorkoutController extends Controller
             'workout' => $workout,
             'personalRecords' => $personalRecords,
             'title' => 'Entrenar: ' . $workout->name,
+        ]);
+    }
+
+    /**
+     * Display user's own workouts with visibility filter
+     */
+    public function myWorkouts(Request $request)
+    {
+        $query = Workout::query()
+            ->with(['exercises'])
+            ->where('user_id', Auth::id());
+
+        // Filtro de visibilidad
+        if ($request->has('visibility')) {
+            if ($request->visibility === 'public') {
+                $query->where('is_public', true);
+            } elseif ($request->visibility === 'private') {
+                $query->where('is_public', false);
+            }
+            // Si es 'all' o no está definido, no filtramos
+        }
+
+        // Filtro de categoría
+        if ($request->category) {
+            $query->where('category', $request->category);
+        }
+
+        // Filtro de dificultad
+        if ($request->difficulty) {
+            $query->byDifficulty($request->difficulty);
+        }
+
+        $workouts = $query->latest()
+            ->paginate(12)
+            ->withQueryString();
+
+        // Contar totales
+        $totalPublic = Workout::where('user_id', Auth::id())->where('is_public', true)->count();
+        $totalPrivate = Workout::where('user_id', Auth::id())->where('is_public', false)->count();
+
+        return Inertia::render('Workouts/MyWorkouts', [
+            'workouts' => $workouts,
+            'totalPublic' => $totalPublic,
+            'totalPrivate' => $totalPrivate,
+            'title' => 'Mis Rutinas',
+            'filters' => [
+                'visibility' => $request->visibility ?? 'all',
+                'category' => $request->category,
+                'difficulty' => $request->difficulty,
+            ]
         ]);
     }
 }

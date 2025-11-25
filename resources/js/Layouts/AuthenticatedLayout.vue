@@ -91,6 +91,7 @@ const showMobileMenu = ref(false);
                             <template #content>
                                 <DropdownLink :href="route('profile.show.public', { user: authUser.username })">Mi Perfil</DropdownLink>
                                 <DropdownLink :href="route('profile.edit')">Editar Perfil</DropdownLink>
+                                <DropdownLink :href="route('workouts.my-workouts')">📚 Mis Rutinas</DropdownLink>
                                 <DropdownLink :href="route('workout-logs.index')">📊 Historial de Entrenamientos</DropdownLink>
                                 <DropdownLink :href="route('logout')" method="post" as="button">Cerrar Sesión</DropdownLink>
                             </template>
@@ -128,7 +129,12 @@ const showMobileMenu = ref(false);
                 <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                 <span class="text-xs font-bold">Rutina</span>
             </Link>
-            <Link :href="route('workouts.saved')" class="flex flex-col items-center gap-2 p-3 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 text-white hover:from-pink-600 hover:to-rose-700 transition">
+            <Link :href="route('connections.index')" class="flex flex-col items-center gap-2 p-3 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 text-white hover:from-blue-600 hover:to-cyan-700 transition relative">
+                <span v-if="pendingRequestsCount > 0" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">{{ pendingRequestsCount }}</span>
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197M15 11a4 4 0 110-5.292M12 4.354a4 4 0 010 5.292" /></svg>
+                <span class="text-xs font-bold">Conexiones</span>
+            </Link>
+            <Link :href="route('workouts.saved')" class="flex flex-col items-center gap-2 p-3 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
                 <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
                 <span class="text-xs font-bold">Guardadas</span>
             </Link>
@@ -136,13 +142,9 @@ const showMobileMenu = ref(false);
                 <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
                 <span class="text-xs font-bold">Historial</span>
             </Link>
-            <Link :href="route('workouts.index')" class="flex flex-col items-center gap-2 p-3 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
-                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                <span class="text-xs font-bold">Explorar</span>
-            </Link>
-            <Link :href="route('profile.show.public', { user: authUser.username })" class="flex flex-col items-center gap-2 p-3 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
-                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                <span class="text-xs font-bold">Mi Perfil</span>
+            <Link :href="route('progress.index')" class="flex flex-col items-center gap-2 p-3 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                <span class="text-xs font-bold">Progreso</span>
             </Link>
         </div>
     </div>
@@ -160,10 +162,9 @@ const showMobileMenu = ref(false);
             <button @click="showMobileMenu = !showMobileMenu" title="Menú" class="bottom-nav-link -mt-1">
                 <span class="inline-block p-3 bg-indigo-600 rounded-full shadow-md"><svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg></span>
             </button>
-            <Link :href="route('connections.index')" title="Conexiones" class="bottom-nav-link relative" :class="{'active': route().current('connections.index')}">
-                <span v-if="pendingRequestsCount > 0" class="notification-dot-mobile"></span>
-                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197M15 11a4 4 0 110-5.292M12 4.354a4 4 0 010 5.292" /></svg>
-                <span class="text-xs mt-1">Conexiones</span>
+            <Link :href="route('workouts.my-workouts')" title="Mis Rutinas" class="bottom-nav-link" :class="{'active': route().current('workouts.my-workouts')}">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                <span class="text-xs mt-1">Rutinas</span>
             </Link>
             <Link :href="route('profile.show.public', { user: authUser.username })" title="Perfil" class="bottom-nav-link" :class="{'active': route().current('profile.show.public')}">
                 <img :src="profilePictureUrl" alt="Perfil" class="h-6 w-6 rounded-full object-cover">

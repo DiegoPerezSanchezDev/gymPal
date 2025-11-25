@@ -10,7 +10,8 @@ const props = defineProps({
     logs: Object,
     title: String,
     filters: Object,
-    activityDates: Array
+    activityDates: Array,
+    stats: Object
 });
 
 const search = ref(props.filters?.search || '');
@@ -52,8 +53,6 @@ function formatTime(dateString) {
         minute: '2-digit'
     });
 }
-
-const totalWorkouts = computed(() => props.logs.total || 0);
 </script>
 
 <template>
@@ -86,10 +85,24 @@ const totalWorkouts = computed(() => props.logs.total || 0);
             <div class="max-w-4xl mx-auto px-4">
                 
                 <!-- Estadísticas generales -->
-                <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-8 text-white shadow-lg mb-8 text-center">
-                    <div class="text-6xl font-black mb-2">{{ totalWorkouts }}</div>
-                    <div class="text-lg text-indigo-100">Entrenamientos Completados</div>
-                    <p class="text-sm text-indigo-200 mt-2">¡Sigue así! 💪</p>
+                <div v-if="stats" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <!-- Total -->
+                    <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg text-center transform hover:scale-105 transition-transform duration-300">
+                        <div class="text-4xl font-black mb-1">{{ stats.total_workouts }}</div>
+                        <div class="text-xs text-indigo-100 font-bold uppercase tracking-wider opacity-80">Total Entrenamientos</div>
+                    </div>
+                    
+                    <!-- Este Mes -->
+                    <div class="bg-gradient-to-br from-pink-500 to-rose-600 rounded-2xl p-6 text-white shadow-lg text-center transform hover:scale-105 transition-transform duration-300">
+                        <div class="text-4xl font-black mb-1">{{ stats.this_month }}</div>
+                        <div class="text-xs text-pink-100 font-bold uppercase tracking-wider opacity-80">Este Mes</div>
+                    </div>
+
+                    <!-- Tiempo Total -->
+                    <div class="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-6 text-white shadow-lg text-center transform hover:scale-105 transition-transform duration-300">
+                        <div class="text-4xl font-black mb-1">{{ Math.round(stats.total_minutes / 60) }}h</div>
+                        <div class="text-xs text-emerald-100 font-bold uppercase tracking-wider opacity-80">Tiempo Total</div>
+                    </div>
                 </div>
 
                 <!-- Filtros (Acordeón) -->
@@ -125,6 +138,7 @@ const totalWorkouts = computed(() => props.logs.total || 0);
                             <CalendarFilter 
                                 v-model="dateRange" 
                                 :activity-dates="activityDates"
+                                @range-completed="showCalendar = false"
                             />
                         </div>
                     </div>

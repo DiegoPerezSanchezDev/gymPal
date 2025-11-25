@@ -37,7 +37,7 @@ class ConnectionController extends Controller
             'receiver_id' => $receiver->id,
         ]);
 
-        return response()->json(['message' => 'Solicitud de conexión enviada.'], 201);
+        return redirect()->back()->with('success', 'Solicitud de conexión enviada.');
     }
 
     /**
