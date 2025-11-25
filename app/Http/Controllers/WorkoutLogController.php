@@ -23,12 +23,22 @@ class WorkoutLogController extends Controller
             $query->where('workout_name', 'like', '%' . $request->search . '%');
         }
 
-        if ($request->filled('date_from')) {
-            $query->whereDate('created_at', '>=', $request->date_from);
+        // Si no hay filtros de fecha, usar HOY por defecto
+        $dateFrom = $request->date_from;
+        $dateTo = $request->date_to;
+        
+        if (!$dateFrom && !$dateTo) {
+            $today = now()->format('Y-m-d');
+            $dateFrom = $today;
+            $dateTo = $today;
         }
 
-        if ($request->filled('date_to')) {
-            $query->whereDate('created_at', '<=', $request->date_to);
+        if ($dateFrom) {
+            $query->whereDate('created_at', '>=', $dateFrom);
+        }
+
+        if ($dateTo) {
+            $query->whereDate('created_at', '<=', $dateTo);
         }
 
         $logs = $query->paginate(20)->withQueryString();
@@ -45,7 +55,11 @@ class WorkoutLogController extends Controller
         return Inertia::render('Workouts/History', [
             'logs' => $logs,
             'title' => 'Historial de Entrenamientos',
-            'filters' => $request->only(['search', 'date_from', 'date_to']),
+            'filters' => [
+                'search' => $request->search,
+                'date_from' => $dateFrom,
+                'date_to' => $dateTo
+            ],
             'activityDates' => $activityDates,
         ]);
     }

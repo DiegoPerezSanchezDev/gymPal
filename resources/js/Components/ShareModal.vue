@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 
 const props = defineProps({
     show: Boolean,
@@ -66,16 +66,93 @@ const createPost = async () => {
     isGenerating.value = true;
     
     try {
-        // Paso 1: Capturar la tarjeta como imagen usando html2canvas
+        // Estrategia de CLONADO para asegurar captura correcta
+        const originalElement = captureRef.value;
+        const clone = originalElement.cloneNode(true);
+        
+        // Configurar estilos del clon
+        Object.assign(clone.style, {
+            position: 'fixed',
+            left: '-9999px',
+            top: '0',
+            zIndex: '-1',
+            transform: 'none',
+            width: '375px',    // Ancho estándar móvil
+            minHeight: '667px', // Altura iPhone 8/SE (formato pantalla completa clásico)
+            height: 'auto',
+            visibility: 'visible',
+            display: 'flex',   
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            borderRadius: '0',
+            padding: '2.5rem'    // Más padding general
+        });
+
+        // --- AJUSTES DE ESTILO PARA EL CLON (Make it pop!) ---
+
+        // 1. Título: Más grande y centrado
+        const titleElement = clone.querySelector('h1');
+        if (titleElement) {
+            titleElement.style.background = 'none';
+            titleElement.style.webkitTextFillColor = 'white';
+            titleElement.style.color = 'white';
+            titleElement.classList.remove('text-transparent', 'bg-clip-text', 'line-clamp-2');
+            titleElement.style.fontSize = '2.25rem'; // Más grande
+            titleElement.style.lineHeight = '1.1';
+            titleElement.style.marginBottom = '2rem';
+            titleElement.style.textAlign = 'center';
+        }
+
+        // 2. Tarjetas de Estadísticas (Tiempo y Series): Más altas y espaciadas
+        const statsCards = clone.querySelectorAll('.grid > div');
+        statsCards.forEach(card => {
+            card.style.padding = '1.5rem 1rem'; // Más padding vertical
+            card.style.display = 'flex';
+            card.style.flexDirection = 'column';
+            card.style.justifyContent = 'center';
+            card.style.alignItems = 'center';
+            
+            // Números más grandes
+            const number = card.querySelector('.text-2xl');
+            if (number) number.style.fontSize = '2.5rem';
+        });
+
+        // 3. Tarjeta de Mejor Levantamiento: Más protagonista
+        const highlightCard = clone.querySelector('.relative.overflow-hidden'); // El div del mejor levantamiento
+        if (highlightCard) {
+            highlightCard.style.padding = '2rem 1.5rem';
+            highlightCard.style.marginTop = '1rem';
+            
+            const weightText = highlightCard.querySelector('.text-3xl');
+            if (weightText) weightText.style.fontSize = '3.5rem'; // Gigante
+        }
+
+        // 4. Avatar e Info Usuario
+        const footer = clone.querySelector('.mt-auto');
+        if (footer) {
+            footer.style.marginTop = '3rem'; // Separar del contenido
+        }
+        
+        document.body.appendChild(clone);
+        
+        // Pequeña pausa para asegurar renderizado del clon
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        // Paso 1: Capturar el CLON
         const html2canvas = (await import('html2canvas')).default;
         
-        const canvas = await html2canvas(captureRef.value, {
+        const canvas = await html2canvas(clone, {
             scale: 2,
-            backgroundColor: '#000000',
+            backgroundColor: null, // Fondo transparente para respetar el gradiente CSS
             logging: false,
             useCORS: true,
-            allowTaint: true
+            allowTaint: true,
+            width: 375,
+            windowWidth: 375
         });
+        
+        // Limpiar clon
+        document.body.removeChild(clone);
         
         // Paso 2: Convertir canvas a blob
         const blob = await new Promise(resolve => {
@@ -159,54 +236,54 @@ const createPost = async () => {
                         <div class="absolute bottom-0 left-0 w-80 h-80 bg-white rounded-full blur-[120px] opacity-[0.05] translate-y-1/2 -translate-x-1/2"></div>
 
                         <!-- Header -->
-                        <div class="relative z-10 flex justify-between items-start">
+                        <div class="relative z-10 flex justify-between items-center">
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center font-black text-lg border border-white/10 shadow-inner">
-                                    {{ selectedTheme.icon }}
+                                <div class="w-10 h-10 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center font-black text-lg border border-white/10 shadow-inner shrink-0">
+                                    <span class="flex items-center justify-center w-full h-full pb-0.5">{{ selectedTheme.icon }}</span>
                                 </div>
                                 <div>
-                                    <div class="font-black tracking-widest text-sm">GYMPAL</div>
-                                    <div class="text-[10px] text-white/50 uppercase tracking-widest font-bold">Workout Log</div>
+                                    <div class="font-black tracking-widest text-sm leading-none mb-0.5">GYMPAL</div>
+                                    <div class="text-[10px] text-white/50 uppercase tracking-widest font-bold leading-none">Workout Log</div>
                                 </div>
                             </div>
-                            <div class="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white/70 backdrop-blur-sm">
-                                {{ new Date(log.created_at).toLocaleDateString() }}
+                            <div class="h-8 px-3 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white/70 backdrop-blur-sm flex items-center justify-center">
+                                <span class="pt-0.5">{{ new Date(log.created_at).toLocaleDateString() }}</span>
                             </div>
                         </div>
 
                         <!-- Main Content (Centered) -->
                         <div class="relative z-10 flex-1 flex flex-col justify-center space-y-6 py-4">
                             <div>
-                                <h1 class="text-3xl font-black leading-none mb-2 text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 drop-shadow-sm line-clamp-2">
+                                <h1 class="text-3xl font-black leading-none mb-2 text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 drop-shadow-sm line-clamp-2 text-center">
                                     {{ log.workout_name }}
                                 </h1>
                             </div>
 
                             <!-- Main Stats Grid -->
                             <div class="grid grid-cols-2 gap-3">
-                                <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-3 border border-white/5 hover:bg-white/10 transition">
+                                <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-3 border border-white/5 hover:bg-white/10 transition flex flex-col items-center justify-center text-center">
                                     <div class="text-2xl font-black text-white">{{ formatTime(log.duration_minutes) }}</div>
                                     <div class="text-[9px] uppercase tracking-wider text-white/40 font-bold mt-1">Tiempo Total</div>
                                 </div>
-                                <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-3 border border-white/5 hover:bg-white/10 transition">
+                                <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-3 border border-white/5 hover:bg-white/10 transition flex flex-col items-center justify-center text-center">
                                     <div class="text-2xl font-black text-white">{{ log.completed_sets }}</div>
                                     <div class="text-[9px] uppercase tracking-wider text-white/40 font-bold mt-1">Series</div>
                                 </div>
                             </div>
 
                             <!-- Highlight Metric -->
-                            <div v-if="bestLift" class="relative overflow-hidden bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-md rounded-2xl p-5 border border-white/10 shadow-lg">
-                                <div class="absolute top-0 right-0 p-3 opacity-20">
+                            <div v-if="bestLift" class="relative overflow-hidden bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-md rounded-2xl p-5 border border-white/10 shadow-lg flex flex-col items-center justify-center text-center">
+                                <div class="absolute top-0 right-0 p-3 opacity-20 pointer-events-none">
                                     <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                                 </div>
-                                <div class="relative z-10">
+                                <div class="relative z-10 w-full">
                                     <div class="text-[9px] uppercase tracking-wider text-white/60 font-bold mb-1">Mejor Levantamiento</div>
                                     <div class="text-3xl font-black text-white mb-1 tracking-tight">{{ bestLift.weight }}<span class="text-lg font-medium text-white/60 ml-1">kg</span></div>
-                                    <div class="text-sm font-bold text-white/90 truncate">{{ bestLift.name }}</div>
+                                    <div class="text-sm font-bold text-white/90 break-words leading-tight w-full px-2">{{ bestLift.name }}</div>
                                 </div>
                             </div>
                             
-                            <div v-else class="bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-white/5">
+                            <div v-else class="bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-white/5 flex flex-col items-center justify-center text-center">
                                  <div class="text-3xl font-black text-white">{{ log.exercises_data.length }}</div>
                                  <div class="text-[9px] uppercase tracking-wider text-white/40 font-bold mt-1">Ejercicios Completados</div>
                             </div>
@@ -217,19 +294,24 @@ const createPost = async () => {
                             <div class="h-px w-full bg-gradient-to-r from-transparent via-white/20 to-transparent mb-4"></div>
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 border border-white/20 shadow-lg flex items-center justify-center">
-                                        <span class="text-white text-xs font-black">{{ user.name.charAt(0).toUpperCase() }}</span>
+                                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 border border-white/20 shadow-lg flex items-center justify-center shrink-0 overflow-hidden">
+                                        <img 
+                                            v-if="user.profile_picture_url" 
+                                            :src="'/storage/' + user.profile_picture_url" 
+                                            class="w-full h-full object-cover"
+                                            crossorigin="anonymous"
+                                            alt="Avatar"
+                                        />
+                                        <span v-else class="text-white text-xs font-black flex items-center justify-center w-full h-full pb-0.5">{{ user.name.charAt(0).toUpperCase() }}</span>
                                     </div>
                                     <div class="text-left">
                                         <div class="text-xs font-bold text-white leading-tight">{{ user.name }}</div>
-                                        <div class="text-[9px] text-white/50 font-medium">@{{ user.username }}</div>
+                                        <div class="text-[9px] text-white/50">@{{ user.username }}</div>
                                     </div>
                                 </div>
                                 <div class="text-right">
-                                    <div class="text-[9px] text-white/40 font-bold uppercase tracking-wider mb-0.5">Entrena con</div>
-                                    <div class="text-xs font-black text-white tracking-wide flex items-center justify-end gap-1">
-                                        GymPal <span class="text-[9px] opacity-50 font-normal">App</span>
-                                    </div>
+                                    <div class="text-[8px] uppercase tracking-widest text-white/40 font-bold mb-0.5">Entrena con</div>
+                                    <div class="text-xs font-black text-white tracking-wide">GymPal <span class="font-normal text-white/60">App</span></div>
                                 </div>
                             </div>
                         </div>

@@ -189,11 +189,14 @@ class ProfileController extends Controller
         // Cargar rutinas si es el propio perfil o si están conectados
         $workouts = [];
         if (($currentUser && $currentUser->id === $user->id) || $connectionStatus === 'accepted') {
-            $workouts = $user->workouts()
-                ->with('exercises')
-                ->where('is_public', true) // Solo rutinas públicas
-                ->latest()
-                ->get();
+            $query = $user->workouts()->with('exercises');
+            
+            // Si NO es tu propio perfil, solo mostrar públicas
+            if (!$currentUser || $currentUser->id !== $user->id) {
+                $query->where('is_public', true);
+            }
+            
+            $workouts = $query->latest()->get();
         }
 
         return Inertia::render('Profile/ShowPublic', [

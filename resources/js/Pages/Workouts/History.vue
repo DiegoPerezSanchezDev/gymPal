@@ -14,6 +14,8 @@ const props = defineProps({
 });
 
 const search = ref(props.filters?.search || '');
+
+// Usar los filtros que vienen del backend (ya incluyen "hoy" por defecto si no hay filtros)
 const dateRange = ref({
     start: props.filters?.date_from || null,
     end: props.filters?.date_to || null
@@ -32,6 +34,7 @@ const updateFilters = debounce(() => {
     });
 }, 300);
 
+// Observar cambios en los filtros
 watch([search, dateRange], updateFilters, { deep: true });
 
 function formatDate(dateString) {

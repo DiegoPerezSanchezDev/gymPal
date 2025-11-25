@@ -44,16 +44,23 @@ class WorkoutNotification extends Notification
      */
     public function toArray(object $notifiable): array
     {
+        $message = $this->type === 'saved' 
+            ? "guardó tu rutina" 
+            : "clonó tu rutina";
+            
         return [
+            'title' => $this->actionUser->name . ' ' . $message,
+            'message' => $message,
             'type' => 'workout_' . $this->type, // workout_saved, workout_cloned
-            'user_id' => $this->actionUser->id,
-            'user_name' => $this->actionUser->name,
-            'user_avatar' => $this->actionUser->profile_picture_url,
-            'workout_id' => $this->workout->id,
-            'workout_name' => $this->workout->name,
-            'message' => $this->type === 'saved' 
-                ? "guardó tu rutina" 
-                : "clonó tu rutina",
+            'data' => [
+                'user_id' => $this->actionUser->id,
+                'user_name' => $this->actionUser->name,
+                'user_avatar' => $this->actionUser->profile_picture_url,
+                'workout_id' => $this->workout->id,
+                'workout_name' => $this->workout->name,
+            ],
+            'notifiable_type' => Workout::class,
+            'notifiable_id' => $this->workout->id,
         ];
     }
 }

@@ -1,6 +1,8 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { ref, watch } from 'vue';
+import { debounce } from 'lodash';
 
 const props = defineProps({
     workouts: Object,
@@ -8,14 +10,32 @@ const props = defineProps({
     filters: Object
 });
 
-function getDifficultyColor(level) {
-    const colors = {
-        principiante: 'bg-emerald-100 text-emerald-700',
-        intermedio: 'bg-indigo-100 text-indigo-700',
-        avanzado: 'bg-purple-100 text-purple-700'
+const searchUser = ref(props.filters.search_user || '');
+
+// Debounce search to avoid too many requests
+const performSearch = debounce((value) => {
+    router.get(route('workouts.index'), { 
+        ...props.filters, 
+        search_user: value 
+    }, { 
+        preserveState: true, 
+        preserveScroll: true,
+        replace: true 
+    });
+}, 300);
+
+watch(searchUser, (value) => {
+    performSearch(value);
+});
+
+const getGradient = (level) => {
+    const gradients = {
+        principiante: 'from-emerald-400 to-teal-500',
+        intermedio: 'from-blue-500 to-indigo-600',
+        avanzado: 'from-purple-500 to-pink-600'
     };
-    return colors[level] || 'bg-gray-100 text-gray-700';
-}
+    return gradients[level] || 'from-gray-400 to-gray-500';
+};
 </script>
 
 <template>
@@ -24,7 +44,7 @@ function getDifficultyColor(level) {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+                <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md text-white">
                     <span class="text-2xl">🏋️</span>
                 </div>
                 <div>
@@ -39,61 +59,81 @@ function getDifficultyColor(level) {
         <div class="py-8">
             <div class="max-w-7xl mx-auto px-4">
                 
+                <!-- Buscador -->
+                <div class="mb-8">
+                    <div class="relative max-w-md mx-auto md:mx-0">
+                        <input 
+                            v-model="searchUser"
+                            type="text"
+                            placeholder="Buscar por nombre de usuario..."
+                            class="w-full px-5 py-3 pl-12 rounded-2xl border-none bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 transition text-gray-700 placeholder-gray-400"
+                        />
+                        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                </div>
+
                 <!-- Grid de rutinas -->
-                <div v-if="workouts.data.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div v-if="workouts.data.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     <Link 
                         v-for="workout in workouts.data" 
                         :key="workout.id"
                         :href="route('workouts.show', workout.id)"
-                        class="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all border-2 border-gray-100 hover:border-indigo-200 overflow-hidden group"
+                        class="group relative bg-white rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col"
                     >
-                        <!-- Header con usuario -->
-                        <div class="p-4 border-b border-gray-100 bg-gray-50">
-                            <div class="flex items-center gap-2">
-                                <img 
-                                    :src="workout.user.profile_picture_url ? `/storage/${workout.user.profile_picture_url}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(workout.user.name)}&background=random`"
-                                    class="w-8 h-8 rounded-full"
-                                    :alt="workout.user.name"
-                                />
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-bold text-gray-900 truncate">{{ workout.user.name }}</p>
-                                    <p class="text-xs text-gray-500">@{{ workout.user.username }}</p>
-                                </div>
-                            </div>
+                        <!-- Header Gradiente -->
+                        <div class="h-24 bg-gradient-to-r relative overflow-hidden" :class="getGradient(workout.difficulty_level)">
+                            <div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <!-- Patrón decorativo opcional -->
+                            <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
                         </div>
 
                         <!-- Contenido -->
-                        <div class="p-5">
-                            <div class="flex items-start justify-between mb-3">
-                                <h3 class="text-lg font-bold text-gray-900 group-hover:text-indigo-600 transition-colors flex-1 pr-2">
+                        <div class="px-6 pb-6 flex-1 flex flex-col">
+                            <!-- Avatar y Categoría -->
+                            <div class="flex justify-between items-end -mt-10 mb-4 relative z-10">
+                                <img 
+                                    :src="workout.user.profile_picture_url ? `/storage/${workout.user.profile_picture_url}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(workout.user.name)}&background=random`"
+                                    class="w-16 h-16 rounded-2xl border-4 border-white shadow-md bg-white object-cover"
+                                    :alt="workout.user.name"
+                                />
+                                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-gray-100 text-gray-600 rounded-lg">
+                                    {{ workout.category }}
+                                </span>
+                            </div>
+
+                            <!-- Título y Autor -->
+                            <div class="mb-4">
+                                <h3 class="text-xl font-black text-gray-900 leading-tight mb-1 group-hover:text-indigo-600 transition-colors line-clamp-1">
                                     {{ workout.name }}
                                 </h3>
-                                <span 
-                                    :class="['px-2 py-1 rounded-full text-xs font-bold capitalize whitespace-nowrap', getDifficultyColor(workout.difficulty_level)]"
-                                >
-                                    {{ workout.difficulty_level }}
-                                </span>
-                            </div>
-                            
-                            <p class="text-sm text-gray-600 mb-4 line-clamp-2">
-                                {{ workout.description }}
-                            </p>
-
-                            <div class="flex items-center gap-4 text-sm text-gray-500">
-                                <span class="flex items-center gap-1">
-                                    ⏱️ {{ workout.duration_minutes }} min
-                                </span>
-                                <span class="flex items-center gap-1">
-                                    💪 {{ workout.exercises?.length || 0 }} ejercicios
-                                </span>
+                                <p class="text-sm text-gray-500 font-medium">
+                                    por <span class="text-gray-700">@{{ workout.user.username }}</span>
+                                </p>
                             </div>
 
-                            <!-- Stats -->
-                            <div class="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-                                <span class="flex items-center gap-1">
+                            <!-- Stats Grid -->
+                            <div class="grid grid-cols-2 gap-3 mb-6">
+                                <div class="bg-gray-50 rounded-xl p-2 text-center">
+                                    <p class="text-xs text-gray-400 font-bold uppercase">Duración</p>
+                                    <p class="font-bold text-gray-700">{{ workout.duration_minutes }} min</p>
+                                </div>
+                                <div class="bg-gray-50 rounded-xl p-2 text-center">
+                                    <p class="text-xs text-gray-400 font-bold uppercase">Ejercicios</p>
+                                    <p class="font-bold text-gray-700">{{ workout.exercises?.length || 0 }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Botón Ver -->
+                            <div class="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
+                                <span class="text-xs font-bold text-indigo-500 flex items-center gap-1">
                                     📌 {{ workout.times_saved }} guardados
                                 </span>
-                                <span>{{ workout.category }}</span>
+                                <span class="text-sm font-bold text-gray-900 group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                                    Ver Rutina
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                                </span>
                             </div>
                         </div>
                     </Link>

@@ -26,8 +26,11 @@
 
 ## 🚀 Planned Features
 
-- [ ] **Share as Image**: Generate shareable images for Instagram Stories
+- [ ] **Calendar History**: Default view should show the current day/month (Next Priority)
+- [ ] **Chat Image Sending Error (500)**: Bug fix from previous sessions
+- [ ] **Stories 24h**: Implement ephemeral stories for workouts
+- [ ] **Routine Reference Links**: Add clickable links to routines in stories/posts
 - [ ] **Workout Templates**: Pre-made routines for different goals
 - [ ] **Progress Charts**: Visual graphs of improvement over time
-- [ ] **Chat Image Sending Error (500)**: Bug fix from previous sessions
+- [ ] **Share as Image**: Fix layout/rendering issues (Moved to Backlog)
 

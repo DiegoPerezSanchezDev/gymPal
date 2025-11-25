@@ -15,8 +15,15 @@ class PostController extends Controller
 {
     public function create()
     {
+        $userWorkouts = Auth::user()->workouts()
+            ->select('id', 'name', 'description', 'category')
+            ->withCount('exercises')
+            ->orderBy('name')
+            ->get();
+
         return Inertia::render('Posts/Create', [
             'title' => 'Crear Nueva Publicación',
+            'userWorkouts' => $userWorkouts,
             'isLoginPage' => false,
             'isRegisterPage' => false,
         ]);
@@ -27,8 +34,9 @@ class PostController extends Controller
         $validatedData = $request->validate([
             'content' => 'nullable|string|max:1000',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'image_path' => 'nullable|string', // Para imágenes ya generadas
-            'workout_log_id' => 'nullable|exists:workout_logs,id'
+            'image_path' => 'nullable|string',
+            'workout_log_id' => 'nullable|exists:workout_logs,id',
+            'workout_id' => 'nullable|exists:workouts,id'
         ]);
 
         // Asegurarse de que al menos uno esté presente
@@ -60,7 +68,8 @@ class PostController extends Controller
         $user->posts()->create([
             'content' => $validatedData['content'] ?? null,
             'image_path' => $imagePath,
-            'workout_log_id' => $validatedData['workout_log_id'] ?? null
+            'workout_log_id' => $validatedData['workout_log_id'] ?? null,
+            'workout_id' => $validatedData['workout_id'] ?? null
         ]);
 
         return redirect()->route('feed.index');

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Workout;
 use App\Models\WorkoutExercise;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -19,6 +20,11 @@ class WorkoutController extends Controller
             ->with(['user:id,name,username,profile_picture_url', 'exercises'])
             ->public();
 
+        // Excluir rutinas propias
+        if (Auth::check()) {
+            $query->where('user_id', '!=', Auth::id());
+        }
+
         // Filtros opcionales
         if ($request->category) {
             $query->where('category', $request->category);
@@ -26,6 +32,15 @@ class WorkoutController extends Controller
         
         if ($request->difficulty) {
             $query->byDifficulty($request->difficulty);
+        }
+
+        // Filtro por usuario (búsqueda)
+        if ($request->search_user) {
+            $searchTerm = $request->search_user;
+            $query->whereHas('user', function($q) use ($searchTerm) {
+                $q->where('name', 'like', "%{$searchTerm}%")
+                  ->orWhere('username', 'like', "%{$searchTerm}%");
+            });
         }
 
         $workouts = $query->latest()
@@ -38,6 +53,7 @@ class WorkoutController extends Controller
             'filters' => [
                 'category' => $request->category,
                 'difficulty' => $request->difficulty,
+                'search_user' => $request->search_user,
             ]
         ]);
     }
@@ -57,47 +73,53 @@ class WorkoutController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'difficulty_level' => 'required|in:principiante,intermedio,avanzado',
-            'duration_minutes' => 'nullable|integer|min:1',
-            'category' => 'required|string|max:100',
-            'is_public' => 'boolean',
-            'exercises' => 'required|array|min:1',
-            'exercises.*.exercise_name' => 'required|string|max:255',
-            'exercises.*.sets_data' => 'required|array|min:1',
-            'exercises.*.sets_data.*.reps' => 'required|integer|min:1',
-            'exercises.*.sets_data.*.weight' => 'nullable|numeric|min:0',
-            'exercises.*.sets_data.*.type' => 'nullable|string',
-            'exercises.*.rest_seconds' => 'nullable|integer|min:0',
-            'exercises.*.notes' => 'nullable|string',
-        ]);
-
-        $workout = Workout::create([
-            'user_id' => Auth::id(),
-            'name' => $validated['name'],
-            'description' => $validated['description'] ?? null,
-            'difficulty_level' => $validated['difficulty_level'],
-            'duration_minutes' => $validated['duration_minutes'] ?? null,
-            'category' => $validated['category'],
-            'is_public' => $validated['is_public'] ?? true,
-        ]);
-
-        // Crear ejercicios
-        foreach ($validated['exercises'] as $index => $exercise) {
-            WorkoutExercise::create([
-                'workout_id' => $workout->id,
-                'exercise_name' => $exercise['exercise_name'],
-                'sets_data' => $exercise['sets_data'],
-                'rest_seconds' => $exercise['rest_seconds'] ?? 60,
-                'notes' => $exercise['notes'] ?? null,
-                'order' => $index,
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'difficulty_level' => 'required|in:principiante,intermedio,avanzado',
+                'duration_minutes' => 'nullable|integer|min:1',
+                'category' => 'required|string|max:100',
+                'is_public' => 'boolean',
+                'exercises' => 'required|array|min:1',
+                'exercises.*.exercise_name' => 'required|string|max:255',
+                'exercises.*.sets_data' => 'required|array|min:1',
+                'exercises.*.sets_data.*.reps' => 'required|integer|min:1',
+                'exercises.*.sets_data.*.weight' => 'nullable|numeric|min:0',
+                'exercises.*.sets_data.*.type' => 'nullable|string',
+                'exercises.*.rest_seconds' => 'nullable|integer|min:0',
+                'exercises.*.notes' => 'nullable|string',
             ]);
-        }
 
-        return redirect()->route('profile.show.public', ['user' => Auth::user()->username])
-            ->with('success_toast', 'Rutina creada exitosamente');
+            $workout = Workout::create([
+                'user_id' => Auth::id(),
+                'name' => $validated['name'],
+                'description' => $validated['description'] ?? null,
+                'difficulty_level' => $validated['difficulty_level'],
+                'duration_minutes' => $validated['duration_minutes'] ?? null,
+                'category' => $validated['category'],
+                'is_public' => $validated['is_public'] ?? true,
+            ]);
+
+            // Crear ejercicios
+            foreach ($validated['exercises'] as $index => $exercise) {
+                WorkoutExercise::create([
+                    'workout_id' => $workout->id,
+                    'exercise_name' => $exercise['exercise_name'],
+                    'sets_data' => $exercise['sets_data'],
+                    'rest_seconds' => $exercise['rest_seconds'] ?? 60,
+                    'notes' => $exercise['notes'] ?? null,
+                    'order' => $index,
+                ]);
+            }
+
+            return redirect()->route('profile.show.public', ['user' => Auth::user()->username])
+                ->with('success_toast', 'Rutina creada exitosamente');
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error creating workout: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Error al guardar la rutina: ' . $e->getMessage()]);
+        }
     }
 
     /**
@@ -170,48 +192,54 @@ class WorkoutController extends Controller
             abort(403, 'No autorizado');
         }
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'difficulty_level' => 'required|in:principiante,intermedio,avanzado',
-            'duration_minutes' => 'nullable|integer|min:1',
-            'category' => 'required|string|max:100',
-            'is_public' => 'boolean',
-            'exercises' => 'required|array|min:1',
-            'exercises.*.exercise_name' => 'required|string|max:255',
-            'exercises.*.sets_data' => 'required|array|min:1',
-            'exercises.*.sets_data.*.reps' => 'required|integer|min:1',
-            'exercises.*.sets_data.*.weight' => 'nullable|numeric|min:0',
-            'exercises.*.sets_data.*.type' => 'nullable|string',
-            'exercises.*.rest_seconds' => 'nullable|integer|min:0',
-            'exercises.*.notes' => 'nullable|string',
-        ]);
-
-        $workout->update([
-            'name' => $validated['name'],
-            'description' => $validated['description'] ?? null,
-            'difficulty_level' => $validated['difficulty_level'],
-            'duration_minutes' => $validated['duration_minutes'] ?? null,
-            'category' => $validated['category'],
-            'is_public' => $validated['is_public'] ?? true,
-        ]);
-
-        // Eliminar ejercicios antiguos y recrear
-        $workout->exercises()->delete();
-
-        foreach ($validated['exercises'] as $index => $exercise) {
-            WorkoutExercise::create([
-                'workout_id' => $workout->id,
-                'exercise_name' => $exercise['exercise_name'],
-                'sets_data' => $exercise['sets_data'],
-                'rest_seconds' => $exercise['rest_seconds'] ?? 60,
-                'notes' => $exercise['notes'] ?? null,
-                'order' => $index,
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'difficulty_level' => 'required|in:principiante,intermedio,avanzado',
+                'duration_minutes' => 'nullable|integer|min:1',
+                'category' => 'required|string|max:100',
+                'is_public' => 'boolean',
+                'exercises' => 'required|array|min:1',
+                'exercises.*.exercise_name' => 'required|string|max:255',
+                'exercises.*.sets_data' => 'required|array|min:1',
+                'exercises.*.sets_data.*.reps' => 'required|integer|min:1',
+                'exercises.*.sets_data.*.weight' => 'nullable|numeric|min:0',
+                'exercises.*.sets_data.*.type' => 'nullable|string',
+                'exercises.*.rest_seconds' => 'nullable|integer|min:0',
+                'exercises.*.notes' => 'nullable|string',
             ]);
-        }
 
-        return redirect()->route('workouts.show', $workout)
-            ->with('success_toast', 'Rutina actualizada exitosamente');
+            $workout->update([
+                'name' => $validated['name'],
+                'description' => $validated['description'] ?? null,
+                'difficulty_level' => $validated['difficulty_level'],
+                'duration_minutes' => $validated['duration_minutes'] ?? null,
+                'category' => $validated['category'],
+                'is_public' => $validated['is_public'] ?? true,
+            ]);
+
+            // Eliminar ejercicios antiguos y recrear
+            $workout->exercises()->delete();
+
+            foreach ($validated['exercises'] as $index => $exercise) {
+                WorkoutExercise::create([
+                    'workout_id' => $workout->id,
+                    'exercise_name' => $exercise['exercise_name'],
+                    'sets_data' => $exercise['sets_data'],
+                    'rest_seconds' => $exercise['rest_seconds'] ?? 60,
+                    'notes' => $exercise['notes'] ?? null,
+                    'order' => $index,
+                ]);
+            }
+
+            return redirect()->route('workouts.show', $workout)
+                ->with('success_toast', 'Rutina actualizada exitosamente');
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error updating workout: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Error al actualizar la rutina: ' . $e->getMessage()]);
+        }
     }
 
     /**
@@ -235,33 +263,60 @@ class WorkoutController extends Controller
      */
     public function toggleSave(Workout $workout)
     {
-        $user = Auth::user();
-        $isSaved = $user->savedWorkouts()->where('workout_id', $workout->id)->exists();
+        try {
+            $user = Auth::user();
+            $isSaved = $user->savedWorkouts()->where('workout_id', $workout->id)->exists();
 
-        if ($isSaved) {
-            $user->savedWorkouts()->detach($workout->id);
-            $workout->decrementSaveCount();
-            $message = 'Rutina eliminada de guardados';
-        } else {
-            $user->savedWorkouts()->attach($workout->id);
-            $workout->incrementSaveCount();
-            $message = 'Rutina guardada exitosamente';
-            
-            // Notificar al dueño si no es el mismo usuario
+            if ($isSaved) {
+                $user->savedWorkouts()->detach($workout->id);
+                $workout->decrementSaveCount();
+                $message = 'Rutina eliminada de guardados';
+            } else {
+                $user->savedWorkouts()->attach($workout->id);
+                $workout->incrementSaveCount();
+                $message = 'Rutina guardada exitosamente';
+                
+                // Notificar al dueño si no es el mismo usuario
             if ($workout->user_id !== $user->id) {
-                $workout->user->notify(new \App\Notifications\WorkoutNotification($user, $workout, 'saved'));
+                try {
+                    NotificationService::create(
+                        $workout->user,
+                        'workout_saved',
+                        $user->name . ' guardó tu rutina',
+                        'guardó tu rutina',
+                        $workout,
+                        [
+                            'user_id' => $user->id,
+                            'user_name' => $user->name,
+                            'user_avatar' => $user->profile_picture_url,
+                            'workout_id' => $workout->id,
+                            'workout_name' => $workout->name,
+                        ]
+                    );
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Error sending workout notification: ' . $e->getMessage());
+                    // No fallamos la request si solo falla la notificación
+                }
+            }          }
+            
+
+            if (request()->wantsJson()) {
+                return response()->json([
+                    'is_saved' => !$isSaved,
+                    'times_saved' => $workout->times_saved,
+                    'message' => $message
+                ]);
             }
-        }
 
-        if (request()->wantsJson()) {
-            return response()->json([
-                'is_saved' => !$isSaved,
-                'times_saved' => $workout->times_saved,
-                'message' => $message
-            ]);
-        }
+            return back()->with('success', $message);
 
-        return back()->with('success', $message);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error in toggleSave: ' . $e->getMessage());
+            if (request()->wantsJson()) {
+                return response()->json(['error' => 'Error interno al guardar rutina'], 500);
+            }
+            return back()->withErrors(['error' => 'Error al guardar rutina']);
+        }
     }
 
     /**
@@ -300,10 +355,22 @@ class WorkoutController extends Controller
         }
 
         // Notificar al dueño original si no es el mismo usuario
-        if ($workout->user_id !== Auth::id()) {
-            $workout->user->notify(new \App\Notifications\WorkoutNotification(Auth::user(), $workout, 'cloned'));
-        }
-
+    if ($workout->user_id !== Auth::id()) {
+        NotificationService::create(
+            $workout->user,
+            'workout_cloned',
+            Auth::user()->name . ' clonó tu rutina',
+            'clonó tu rutina',
+            $workout,
+            [
+                'user_id' => Auth::user()->id,
+                'user_name' => Auth::user()->name,
+                'user_avatar' => Auth::user()->profile_picture_url,
+                'workout_id' => $workout->id,
+                'workout_name' => $workout->name,
+            ]
+        );
+    }
         return redirect()->route('workouts.edit', $newWorkout->id)
             ->with('success', 'Rutina clonada exitosamente. Ahora puedes editarla.');
     }

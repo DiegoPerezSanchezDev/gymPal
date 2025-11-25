@@ -22,6 +22,7 @@ class FeedController extends Controller
         ->with([
             'user', 
             'workoutLog',
+            'workout.exercises',
             'latestLikers',
             'latestComments.user'
         ])
