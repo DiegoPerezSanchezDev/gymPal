@@ -11,22 +11,12 @@ class LauraWorkoutSeeder extends Seeder
 {
     public function run(): void
     {
-        // Buscar el usuario @laurag
-        $user = User::where('username', 'laurag')->first();
+        // Buscar el usuario user_sol
+        $user = User::where('username', 'user_sol')->first();
         
         if (!$user) {
-            $this->command->warn('Usuario @laurag no encontrado. Creando usuario de ejemplo...');
-            
-            $user = User::create([
-                'name' => 'Laura García',
-                'username' => 'laurag',
-                'email' => 'laura@gympal.com',
-                'password' => bcrypt('password'),
-                'email_verified_at' => now(),
-                'experience_level' => 'Intermedio',
-                'location_city' => 'Madrid',
-                'bio' => '💪 Fitness enthusiast | 🏋️ Gym lover | 🥗 Healthy lifestyle',
-            ]);
+            $this->command->warn('⚠️  Usuario @user_sol no encontrado. Ejecuta TestUsersSeeder primero.');
+            return;
         }
 
         // Crear rutina: Push Day (Día de empuje)

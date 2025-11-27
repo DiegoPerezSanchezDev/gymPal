@@ -10,7 +10,7 @@ class FitnessInterestSeeder extends Seeder
     public function run(): void
     {
         $interests = [
-            ['name' => 'Musculación'],
+            ['name' => 'Gym'],
             ['name' => 'Crossfit'],
             ['name' => 'Running'],
             ['name' => 'Yoga'],

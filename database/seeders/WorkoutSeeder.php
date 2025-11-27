@@ -11,9 +11,14 @@ class WorkoutSeeder extends Seeder
 {
     public function run(): void
     {
-        $diego = User::where('username', 'diegoperez')->first();
-        $laura = User::where('username', 'laurag')->first();
-        $elena = User::where('username', 'elenacross')->first();
+        $diego = User::where('username', 'user_plazamayor')->first();
+        $laura = User::where('username', 'user_sol')->first();
+        $elena = User::where('username', 'user_bernabeu')->first();
+
+        if (!$diego || !$laura || !$elena) {
+            $this->command->warn('⚠️  Usuarios no encontrados. Asegúrate de ejecutar TestUsersSeeder primero.');
+            return;
+        }
 
         // Diego's Workouts
         $pushDay = Workout::create([
