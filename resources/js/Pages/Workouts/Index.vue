@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { debounce } from 'lodash';
 
 const props = defineProps({
@@ -11,6 +11,7 @@ const props = defineProps({
 });
 
 const search = ref(props.filters.search || '');
+const isLoadingMore = ref(false);
 
 // Debounce search to avoid too many requests
 const performSearch = debounce((value) => {
@@ -39,6 +40,17 @@ const setDifficulty = (level) => {
     });
 };
 
+const setSort = (sortOption) => {
+    router.get(route('workouts.index'), {
+        ...props.filters,
+        sort: sortOption
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true
+    });
+};
+
 const getGradient = (level) => {
     const gradients = {
         principiante: 'from-emerald-400 to-teal-500',
@@ -47,6 +59,39 @@ const getGradient = (level) => {
     };
     return gradients[level] || 'from-gray-400 to-gray-500';
 };
+
+// Scroll infinito
+const loadMore = () => {
+    if (isLoadingMore.value || !props.workouts.next_page_url) return;
+    
+    isLoadingMore.value = true;
+    router.get(props.workouts.next_page_url, {}, {
+        preserveState: true,
+        preserveScroll: true,
+        only: ['workouts'],
+        onFinish: () => {
+            isLoadingMore.value = false;
+        }
+    });
+};
+
+const handleScroll = () => {
+    const scrollPosition = window.innerHeight + window.scrollY;
+    const documentHeight = document.documentElement.scrollHeight;
+    
+    // Cargar más cuando estemos a 300px del final
+    if (scrollPosition >= documentHeight - 300) {
+        loadMore();
+    }
+};
+
+onMounted(() => {
+    window.addEventListener('scroll', handleScroll);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('scroll', handleScroll);
+});
 </script>
 
 <template>
@@ -127,6 +172,34 @@ const getGradient = (level) => {
                         >
                             🔥 Avanzado
                         </button>
+                    </div>
+
+                    <!-- Ordenamiento -->
+                    <div class="flex items-center justify-center gap-2">
+                        <span class="text-sm font-bold text-gray-500"></span>
+                        <div class="flex gap-2">
+                            <button 
+                                @click="setSort('popular')"
+                                class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                                :class="filters.sort === 'popular' || !filters.sort ? 'bg-indigo-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                            >
+                                🔥 Más populares
+                            </button>
+                            <button 
+                                @click="setSort('recent')"
+                                class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                                :class="filters.sort === 'recent' ? 'bg-indigo-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                            >
+                                🆕 Más recientes
+                            </button>
+                            <button 
+                                @click="setSort('exercises')"
+                                class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                                :class="filters.sort === 'exercises' ? 'bg-indigo-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                            >
+                                📊 Más completas
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -213,20 +286,20 @@ const getGradient = (level) => {
                     </Link>
                 </div>
 
-                <!-- Paginación -->
-                <div v-if="workouts.links && workouts.links.length > 3" class="mt-8 flex justify-center gap-2">
-                    <Link 
-                        v-for="(link, index) in workouts.links" 
-                        :key="index"
-                        :href="link.url"
-                        v-html="link.label"
-                        class="px-4 py-2 rounded-lg font-bold transition"
-                        :class="link.active 
-                            ? 'bg-indigo-600 text-white' 
-                            : link.url 
-                                ? 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200' 
-                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'"
-                    />
+                <!-- Indicador de carga para scroll infinito -->
+                <div v-if="isLoadingMore" class="mt-8 flex justify-center">
+                    <div class="flex items-center gap-3 px-6 py-3 bg-white rounded-xl shadow-sm border border-gray-100">
+                        <svg class="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span class="text-sm font-bold text-gray-600">Cargando más rutinas...</span>
+                    </div>
+                </div>
+
+                <!-- Mensaje de fin -->
+                <div v-else-if="workouts.data.length > 0 && !workouts.next_page_url" class="mt-8 text-center">
+                    <p class="text-sm text-gray-400 font-medium">✨ Has visto todas las rutinas disponibles</p>
                 </div>
 
             </div>

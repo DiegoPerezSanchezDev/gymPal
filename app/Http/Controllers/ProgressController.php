@@ -10,81 +10,169 @@ use Illuminate\Support\Facades\DB;
 
 class ProgressController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
 
-        // 1. Entrenamientos por semana (últimas 8 semanas)
-        $workoutsPerWeek = $user->workoutLogs()
-            ->select(
-                DB::raw('YEARWEEK(created_at, 1) as year_week'),
-                DB::raw('COUNT(*) as count'),
-                DB::raw('MIN(created_at) as week_start')
-            )
-            ->where('created_at', '>=', now()->subWeeks(8))
-            ->groupBy('year_week')
-            ->orderBy('year_week')
+        // Obtener todas las rutinas que el usuario ha completado al menos una vez
+        $completedWorkouts = $user->workoutLogs()
+            ->select('workout_name', 'workout_id', DB::raw('COUNT(*) as times_completed'))
+            ->whereNotNull('workout_name')
+            ->groupBy('workout_name', 'workout_id')
+            ->orderBy('times_completed', 'desc')
             ->get()
             ->map(function ($item) {
                 return [
-                    'week_label' => Carbon::parse($item->week_start)->format('d M'),
-                    'count' => $item->count
+                    'id' => $item->workout_id,
+                    'name' => $item->workout_name,
+                    'times_completed' => $item->times_completed
                 ];
             });
 
-        // 2. Volumen total por semana (últimas 8 semanas) - Aproximado
-        // Esto requeriría sumar sets * reps * weight de exercises_data (JSON).
-        // Como es complejo hacerlo en SQL puro con JSON, lo haremos en colección si no son muchos datos,
-        // o simplificamos mostrando "Minutos de entrenamiento" por semana.
+        // Si no hay rutinas completadas, mostrar estado vacío
+        if ($completedWorkouts->isEmpty()) {
+            return Inertia::render('Progress/Index', [
+                'title' => 'Mi Progreso',
+                'workouts' => [],
+                'selectedWorkout' => null,
+                'progressData' => null
+            ]);
+        }
+
+        // Obtener la rutina seleccionada (por defecto la más completada)
+        $selectedWorkoutName = $request->get('workout', $completedWorkouts->first()['name']);
         
-        $minutesPerWeek = $user->workoutLogs()
-            ->select(
-                DB::raw('YEARWEEK(created_at, 1) as year_week'),
-                DB::raw('SUM(duration_minutes) as total_minutes'),
-                DB::raw('MIN(created_at) as week_start')
-            )
-            ->where('created_at', '>=', now()->subWeeks(8))
-            ->groupBy('year_week')
-            ->orderBy('year_week')
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'week_label' => Carbon::parse($item->week_start)->format('d M'),
-                    'minutes' => (int)$item->total_minutes
+        // Obtener todos los logs de esta rutina específica
+        $logs = $user->workoutLogs()
+            ->where('workout_name', $selectedWorkoutName)
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        if ($logs->isEmpty()) {
+            return Inertia::render('Progress/Index', [
+                'title' => 'Mi Progreso',
+                'workouts' => $completedWorkouts,
+                'selectedWorkout' => $selectedWorkoutName,
+                'progressData' => null
+            ]);
+        }
+
+        // Analizar progreso por ejercicio
+        $exerciseProgress = [];
+        
+        foreach ($logs as $log) {
+            if (!is_array($log->exercises_data)) continue;
+            
+            $sessionDate = Carbon::parse($log->created_at)->format('d M');
+            
+            foreach ($log->exercises_data as $exercise) {
+                // Saltar si no tiene nombre (datos corruptos)
+                if (!isset($exercise['name']) || empty($exercise['name'])) {
+                    continue;
+                }
+                
+                $exerciseName = $exercise['name'];
+                
+                if (!isset($exerciseProgress[$exerciseName])) {
+                    $exerciseProgress[$exerciseName] = [
+                        'name' => $exerciseName,
+                        'sessions' => [],
+                        'max_weight' => 0,
+                        'total_volume' => 0
+                    ];
+                }
+                
+                // Calcular peso máximo y volumen de esta sesión
+                $sessionMaxWeight = 0;
+                $sessionVolume = 0;
+                
+                foreach ($exercise['sets'] as $set) {
+                    if ($set['completed'] ?? false) {
+                        $weight = (float)($set['weight'] ?? 0);
+                        $reps = (int)($set['reps'] ?? 0);
+                        
+                        $sessionMaxWeight = max($sessionMaxWeight, $weight);
+                        $sessionVolume += $weight * $reps;
+                    }
+                }
+                
+                $exerciseProgress[$exerciseName]['sessions'][] = [
+                    'date' => $sessionDate,
+                    'max_weight' => $sessionMaxWeight,
+                    'volume' => $sessionVolume
                 ];
-            });
+                
+                $exerciseProgress[$exerciseName]['max_weight'] = max(
+                    $exerciseProgress[$exerciseName]['max_weight'],
+                    $sessionMaxWeight
+                );
+                
+                $exerciseProgress[$exerciseName]['total_volume'] += $sessionVolume;
+            }
+        }
 
-        // 3. Récords Personales (Top 5 ejercicios más frecuentes)
-        // Reutilizamos lógica de WorkoutLogController pero simplificada
-        $logs = $user->workoutLogs()->latest()->take(50)->get(); // Últimos 50 logs para análisis rápido
-        $records = [];
+        // Estadísticas generales de la rutina
+        $stats = [
+            'times_completed' => $logs->count(),
+            'avg_duration' => round($logs->avg('duration_minutes')),
+            'total_volume' => array_sum(array_column($exerciseProgress, 'total_volume')),
+            'best_time' => $logs->min('duration_minutes'),
+            'last_completed' => Carbon::parse($logs->last()->created_at)->diffForHumans()
+        ];
 
+        // Calcular récords personales (mejor set por ejercicio)
+        $personalRecords = [];
+        
         foreach ($logs as $log) {
             if (!is_array($log->exercises_data)) continue;
             
             foreach ($log->exercises_data as $exercise) {
-                $name = $exercise['name'] ?? 'Ejercicio';
-                if (!isset($records[$name])) {
-                    $records[$name] = 0;
+                if (!isset($exercise['name']) || empty($exercise['name'])) continue;
+                
+                $exerciseName = $exercise['name'];
+                
+                if (!isset($personalRecords[$exerciseName])) {
+                    $personalRecords[$exerciseName] = [
+                        'name' => $exerciseName,
+                        'best_weight' => 0,
+                        'best_reps' => 0,
+                        'best_volume' => 0, // peso × reps
+                        'date' => null
+                    ];
                 }
-                // Buscamos el peso máximo en este log
+                
                 foreach ($exercise['sets'] as $set) {
-                    if (($set['completed'] ?? false) && isset($set['weight'])) {
-                        $records[$name] = max($records[$name], (float)$set['weight']);
+                    if ($set['completed'] ?? false) {
+                        $weight = (float)($set['weight'] ?? 0);
+                        $reps = (int)($set['reps'] ?? 0);
+                        $volume = $weight * $reps;
+                        
+                        // Actualizar si este set tiene mejor volumen (peso × reps)
+                        if ($volume > $personalRecords[$exerciseName]['best_volume']) {
+                            $personalRecords[$exerciseName]['best_weight'] = $weight;
+                            $personalRecords[$exerciseName]['best_reps'] = $reps;
+                            $personalRecords[$exerciseName]['best_volume'] = $volume;
+                            $personalRecords[$exerciseName]['date'] = Carbon::parse($log->created_at)->format('d M Y');
+                        }
                     }
                 }
             }
         }
         
-        // Ordenar por peso (solo como ejemplo, idealmente sería por relevancia)
-        arsort($records);
-        $topRecords = array_slice($records, 0, 5);
+        // Ordenar por volumen descendente
+        usort($personalRecords, function($a, $b) {
+            return $b['best_volume'] <=> $a['best_volume'];
+        });
 
         return Inertia::render('Progress/Index', [
             'title' => 'Mi Progreso',
-            'workoutsPerWeek' => $workoutsPerWeek,
-            'minutesPerWeek' => $minutesPerWeek,
-            'personalRecords' => $topRecords
+            'workouts' => $completedWorkouts,
+            'selectedWorkout' => $selectedWorkoutName,
+            'progressData' => [
+                'exercises' => array_values($exerciseProgress),
+                'stats' => $stats,
+                'personalRecords' => $personalRecords
+            ]
         ]);
     }
 }

@@ -37,6 +37,7 @@ Route::get('/dashboard', function () {
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::patch('/profile/banner-color', [ProfileController::class, 'updateBannerColor'])->name('profile.updateBannerColor');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // CHAT
@@ -158,6 +159,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/workout-logs/{workoutLog}', [\App\Http\Controllers\WorkoutLogController::class, 'show'])->name('workout-logs.show');
     Route::delete('/workout-logs/{workoutLog}', [\App\Http\Controllers\WorkoutLogController::class, 'destroy'])->name('workout-logs.destroy');
     Route::get('/personal-records', [\App\Http\Controllers\WorkoutLogController::class, 'personalRecords'])->name('personal-records');
+
+    // Progreso
+    Route::get('/progress', [\App\Http\Controllers\ProgressController::class, 'index'])->name('progress.index');
 
 });
 

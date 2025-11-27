@@ -16,7 +16,7 @@ class Workout extends Model
         'user_id',
         'name',
         'description',
-        'difficulty_level',
+        'difficulty',
         'duration_minutes',
         'category',
         'is_public',
@@ -56,7 +56,7 @@ class Workout extends Model
 
     public function scopeByDifficulty($query, $level)
     {
-        return $query->where('difficulty_level', $level);
+        return $query->where('difficulty', $level);
     }
 
     // --- METHODS ---

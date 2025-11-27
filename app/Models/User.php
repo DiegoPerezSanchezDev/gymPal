@@ -25,6 +25,8 @@ class User extends Authenticatable
         'username',
         'display_name',
         'profile_picture_url',
+        'banner_picture_url',
+        'banner_color',
         'bio',
         'location_city',
         'experience_level',

@@ -23,6 +23,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    showCommentAction: {
+        type: Boolean,
+        default: true,
+    },
 });
 
 // Propiedad computada para formatear la fecha de forma legible
@@ -152,7 +156,10 @@ const submitComment = async () => {
 </script>
 
 <template>
-    <div class="bg-white shadow-lg rounded-xl max-w-xl mx-auto border border-gray-200/80">
+    <div 
+        class="bg-white rounded-xl max-w-xl mx-auto"
+        :class="isDetailView ? 'shadow-none border-none' : 'shadow-lg border border-gray-200/80'"
+    >
         
         <!-- ================== Encabezado del Post ================== -->
         <div class="p-4 flex items-center justify-between">
@@ -195,13 +202,13 @@ const submitComment = async () => {
             <WorkoutCard :workoutLog="post.workout_log" />
         </div>
 
-        <!-- ================== Tarjeta de Rutina Adjunta (si existe y NO hay imagen ni workout_log) ================== -->
-        <div v-if="post.workout && !postImageUrl && !post.workout_log" class="px-5 pb-4">
+        <!-- ================== Tarjeta de Rutina Adjunta (si existe y NO hay imagen ni workout_log, O si es vista detalle) ================== -->
+        <div v-if="post.workout && (!postImageUrl || isDetailView) && !post.workout_log" class="px-5 pb-4">
             <WorkoutPreviewCard :workout="post.workout" />
         </div>
 
-        <div v-if="postImageUrl" class="bg-gray-100 max-h-[400px] overflow-hidden mb-6 flex items-center justify-center">
-            <img :src="postImageUrl" alt="Imagen de la publicación" class="w-full max-h-[400px] object-contain"/>
+        <div v-if="postImageUrl" class="overflow-hidden mb-6 flex items-center justify-center" :class="isDetailView ? 'max-h-[250px] bg-transparent' : 'max-h-[400px] bg-gray-100'">
+            <img :src="postImageUrl" alt="Imagen de la publicación" class="w-full object-contain" :class="isDetailView ? 'max-h-[250px]' : 'max-h-[400px]'"/>
         </div>
 
         <!-- ================== Lista de Comentarios ================== -->
@@ -311,12 +318,12 @@ const submitComment = async () => {
             </button>
 
             
-            <Link v-if="!isDetailView" :href="route('posts.show', post.id)" class="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all duration-200 hover:bg-indigo-50 group text-gray-500">
+            <Link v-if="!isDetailView || showCommentAction" :href="route('posts.show', post.id)" class="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all duration-200 hover:bg-indigo-50 group text-gray-500">
                 <svg class="w-6 h-6 transition-transform duration-200 group-hover:scale-110 text-gray-500 group-hover:text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
                 <span class="font-bold text-sm text-gray-600 group-hover:text-indigo-600">{{ post.comments_count > 0 ? post.comments_count : 'Comentar' }}</span>
             </Link>
             
-            <button v-if="!isDetailView" @click="showShareModal = true" class="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all duration-200 bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md hover:shadow-lg hover:opacity-95 transform hover:-translate-y-0.5">
+            <button @click="showShareModal = true" class="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all duration-200 bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md hover:shadow-lg hover:opacity-95 transform hover:-translate-y-0.5">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342A8.963 8.963 0 018 12.001c0-1.01.198-1.968.563-2.835m7.899 5.578A8.963 8.963 0 0116 12.001c0-1.01.198-1.968.563-2.835m0 5.67a8.965 8.965 0 01-7.899 0m7.899 0l-1.42 1.42m-5.058-8.54l1.42-1.42" /></svg>
                 <span class="font-bold text-sm">Compartir</span>
             </button>

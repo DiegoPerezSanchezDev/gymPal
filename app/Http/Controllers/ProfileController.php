@@ -64,6 +64,19 @@ class ProfileController extends Controller
             $user->profile_picture_url = $path;
         }
 
+        // --- MANEJO DE BANNER ---
+        // Subir nuevo banner si se proporcionó
+        if ($request->hasFile('banner_picture')) {
+            // Eliminar banner anterior si existe
+            if ($user->banner_picture_url && Storage::disk('public')->exists($user->banner_picture_url)) {
+                Storage::disk('public')->delete($user->banner_picture_url);
+            }
+
+            // Guardar nuevo banner
+            $path = $request->file('banner_picture')->store('banners', 'public');
+            $user->banner_picture_url = $path;
+        }
+
         // Actualizar campos simples
         $user->fill($data);
 
@@ -167,7 +180,9 @@ class ProfileController extends Controller
                 ->with([
                     'user:id,name,username,profile_picture_url',
                     'comments.user:id,name,username,profile_picture_url',
-                    'likers' // Corregido: likes -> likers
+                    'likers', // Corregido: likes -> likers
+                    'workout:id,name,description,difficulty,duration_minutes', // Añadido
+                    'workout.exercises:id,workout_id,exercise_name,sets_data,rest_seconds,order' // Añadido
                 ])
                 ->withCount(['comments', 'likers']) // Corregido: likes -> likers
                 ->latest()
@@ -234,4 +249,16 @@ class ProfileController extends Controller
     }
 
 
+    public function updateBannerColor(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'banner_color' => ['required', 'string', 'max:7', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+        ]);
+
+        $user = $request->user();
+        $user->banner_color = $validated['banner_color'];
+        $user->save();
+
+        return back()->with('success_toast', 'Color del banner actualizado correctamente.');
+    }
 }
