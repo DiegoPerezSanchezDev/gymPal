@@ -19,6 +19,8 @@ class DatabaseSeeder extends Seeder
         // BLOQUE 2: Usuarios de prueba
         $this->call([
             TestUsersSeeder::class,
+            UserSeeder::class,
+            DiegoTestDataSeeder::class,
         ]);
 
         // BLOQUE 3: Relaciones

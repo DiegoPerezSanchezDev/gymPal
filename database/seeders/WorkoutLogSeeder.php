@@ -16,6 +16,22 @@ class WorkoutLogSeeder extends Seeder
         $laura = User::where('username', 'laurag')->first();
         $elena = User::where('username', 'elenacross')->first();
 
+        // Si no existen esos usuarios, usar los de TestUsersSeeder
+        if (!$diego) {
+            $diego = User::where('username', 'user_plazamayor')->first();
+        }
+        if (!$laura) {
+            $laura = User::where('username', 'user_sol')->first();
+        }
+        if (!$elena) {
+            $elena = User::where('username', 'user_bernabeu')->first();
+        }
+
+        if (!$diego || !$laura || !$elena) {
+            $this->command->warn('⚠️  Usuarios no encontrados. Saltando WorkoutLogSeeder.');
+            return;
+        }
+
         $pushDay = Workout::where('name', 'Push Day - Torso Empuje')->first();
         $pullDay = Workout::where('name', 'Pull Day - Espalda y Bíceps')->first();
         $legDay = Workout::where('name', 'Leg Day - Pierna Completa')->first();
