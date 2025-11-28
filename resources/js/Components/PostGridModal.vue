@@ -94,7 +94,7 @@ watch(() => props.initialPostIndex, (newIndex) => {
 
         <!-- Post Container -->
         <div class="w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar" @click.stop>
-            <PostCard :post="currentPost" :isDetailView="true" />
+            <PostCard :post="currentPost" :isDetailView="true" :showCommentAction="true" />
         </div>
 
         <!-- Counter -->

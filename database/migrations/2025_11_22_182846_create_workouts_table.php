@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('name');
             $table->text('description')->nullable();
-            $table->enum('difficulty_level', ['principiante', 'intermedio', 'avanzado'])->default('intermedio');
+            $table->enum('difficulty', ['Principiante', 'Intermedio', 'Avanzado'])->default('Intermedio');
             $table->integer('duration_minutes')->nullable();
             $table->string('category')->default('Gym');
             $table->boolean('is_public')->default(true);

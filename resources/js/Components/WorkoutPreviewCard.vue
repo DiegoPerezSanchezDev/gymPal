@@ -22,31 +22,36 @@ const categoryIcons = {
 };
 
 const difficultyColors = {
-    principiante: 'from-emerald-500 to-teal-600',
-    intermedio: 'from-blue-500 to-indigo-600',
-    avanzado: 'from-purple-500 to-pink-600'
+    Principiante: 'from-emerald-500 to-teal-600',
+    Intermedio: 'from-blue-500 to-indigo-600',
+    Avanzado: 'from-purple-500 to-pink-600'
 };
 
 const difficultyLabel = {
-    principiante: 'Principiante',
-    intermedio: 'Intermedio',
-    avanzado: 'Avanzado'
+    Principiante: 'Principiante',
+    Intermedio: 'Intermedio',
+    Avanzado: 'Avanzado'
 };
 
 const categoryIcon = computed(() => {
+    if (!props.workout.category) return '💪';
     // Eliminar emoji del nombre de categoría si existe
     const cleanCategory = props.workout.category.replace(/[^\w\s]/gi, '').trim();
     return categoryIcons[cleanCategory] || categoryIcons[props.workout.category] || '💪';
 });
 
 const gradientClass = computed(() => {
-    return difficultyColors[props.workout.difficulty_level] || difficultyColors.intermedio;
+    return difficultyColors[props.workout.difficulty] || difficultyColors.Intermedio;
 });
 
 const workoutUrl = computed(() => {
     const isFromMyWorkouts = window.location.pathname.includes('my-workouts');
     const baseUrl = route('workouts.show', props.workout.id);
     return isFromMyWorkouts ? `${baseUrl}?from=my-workouts` : baseUrl;
+});
+const cleanCategoryName = computed(() => {
+    if (!props.workout.category) return 'General';
+    return props.workout.category.replace(/[^\w\s]/gi, '').trim();
 });
 </script>
 
@@ -105,7 +110,7 @@ const workoutUrl = computed(() => {
                 <div class="text-[8px] uppercase tracking-wider text-white/40 font-bold">Minutos</div>
             </div>
             <div class="bg-white/5 backdrop-blur-sm rounded-xl p-2 border border-white/5">
-                <div class="text-lg font-black text-white">{{ workout.category.replace(/[^\w\s]/gi, '').trim() }}</div>
+                <div class="text-lg font-black text-white">{{ cleanCategoryName }}</div>
                 <div class="text-[8px] uppercase tracking-wider text-white/40 font-bold">Categoría</div>
             </div>
         </div>

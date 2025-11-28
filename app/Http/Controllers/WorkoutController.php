@@ -51,8 +51,25 @@ class WorkoutController extends Controller
             });
         }
 
-        $workouts = $query->latest()
-            ->paginate(12)
+        // Sistema de ordenamiento
+        $sortBy = $request->get('sort', 'popular'); // Por defecto: populares
+        
+        switch ($sortBy) {
+            case 'recent':
+                $query->latest();
+                break;
+            case 'exercises':
+                // Ordenar por número de ejercicios (más completas)
+                $query->withCount('exercises')->orderBy('exercises_count', 'desc');
+                break;
+            case 'popular':
+            default:
+                // Ordenar por popularidad (más guardadas)
+                $query->orderBy('times_saved', 'desc')->latest();
+                break;
+        }
+
+        $workouts = $query->paginate(12)
             ->withQueryString();
 
         return Inertia::render('Workouts/Index', [
@@ -61,8 +78,8 @@ class WorkoutController extends Controller
             'filters' => [
                 'category' => $request->category,
                 'difficulty' => $request->difficulty,
-                'difficulty' => $request->difficulty,
                 'search' => $request->search,
+                'sort' => $sortBy,
             ]
         ]);
     }
@@ -86,7 +103,7 @@ class WorkoutController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'description' => 'nullable|string',
-                'difficulty_level' => 'required|in:principiante,intermedio,avanzado',
+                'difficulty' => 'required|in:Principiante,Intermedio,Avanzado',
                 'duration_minutes' => 'nullable|integer|min:1',
                 'category' => 'required|string|max:100',
                 'is_public' => 'boolean',
@@ -104,7 +121,7 @@ class WorkoutController extends Controller
                 'user_id' => Auth::id(),
                 'name' => $validated['name'],
                 'description' => $validated['description'] ?? null,
-                'difficulty_level' => $validated['difficulty_level'],
+                'difficulty' => $validated['difficulty'],
                 'duration_minutes' => $validated['duration_minutes'] ?? null,
                 'category' => $validated['category'],
                 'is_public' => $validated['is_public'] ?? true,
@@ -214,7 +231,7 @@ class WorkoutController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'description' => 'nullable|string',
-                'difficulty_level' => 'required|in:principiante,intermedio,avanzado',
+                'difficulty' => 'required|in:Principiante,Intermedio,Avanzado',
                 'duration_minutes' => 'nullable|integer|min:1',
                 'category' => 'required|string|max:100',
                 'is_public' => 'boolean',
@@ -231,7 +248,7 @@ class WorkoutController extends Controller
             $workout->update([
                 'name' => $validated['name'],
                 'description' => $validated['description'] ?? null,
-                'difficulty_level' => $validated['difficulty_level'],
+                'difficulty' => $validated['difficulty'],
                 'duration_minutes' => $validated['duration_minutes'] ?? null,
                 'category' => $validated['category'],
                 'is_public' => $validated['is_public'] ?? true,

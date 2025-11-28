@@ -8,7 +8,8 @@ import ConnectionsModal from '@/Components/ConnectionsModal.vue';
 import PostGridModal from '@/Components/PostGridModal.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { Head, Link, usePage, router } from '@inertiajs/vue3';
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, watch } from 'vue';
+import { useToast } from '@/composables/useToast';
 
 // Props que recibe el perfil público
 const props = defineProps({
@@ -33,11 +34,45 @@ const showPostModal = ref(false);
 const selectedPostIndex = ref(0);
 const showRejectModal = ref(false);
 const showDisconnectModal = ref(false);
+const showColorModal = ref(false); // Estado para el modal de colores
+
+// Paleta de colores predefinidos
+const bannerColors = [
+    '#6366f1', // Indigo (Default)
+    '#ef4444', // Red
+    '#f97316', // Orange
+    '#f59e0b', // Amber
+    '#84cc16', // Lime
+    '#10b981', // Emerald
+    '#06b6d4', // Cyan
+    '#3b82f6', // Blue
+    '#8b5cf6', // Violet
+    '#d946ef', // Fuchsia
+    '#ec4899', // Pink
+    '#f43f5e', // Rose
+    '#1f2937', // Gray 800
+    '#111827', // Gray 900
+    '#000000', // Black
+    '#71717a', // Zinc
+    '#78350f', // Brown
+    '#831843', // Dark Pink
+    '#1e3a8a', // Dark Blue
+    '#14532d', // Dark Green
+];
 
 // Detectar tab desde URL
 const urlParams = new URLSearchParams(window.location.search);
 const tabParam = urlParams.get('tab');
 const activeContentTab = ref(tabParam === 'rutinas' ? 'rutinas' : 'publicaciones');
+
+// Lógica para mostrar rutinas limitadas
+const showAllWorkouts = ref(false);
+const displayedWorkouts = computed(() => {
+    if (showAllWorkouts.value) {
+        return props.workouts;
+    }
+    return props.workouts.slice(0, 4);
+});
 
 const openPostModal = (post) => {
     // Find the index in the original posts array
@@ -47,6 +82,82 @@ const openPostModal = (post) => {
         showPostModal.value = true;
     }
 };
+
+const toast = useToast();
+
+const sharePost = async (post) => {
+    // Asumiendo que existe una ruta para ver el post individual, si no, usamos la actual
+    const url = route('posts.show', post.id); // Asegúrate de que esta ruta exista
+    
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: 'Publicación de GymPal',
+                text: post.content,
+                url: url
+            });
+        } catch (err) {
+            // Usuario canceló o error
+        }
+    } else {
+        navigator.clipboard.writeText(url);
+        toast.success('Enlace copiado al portapapeles');
+    }
+};
+
+const bannerInput = ref(null);
+
+const updateBannerColor = (color) => {
+    // Enviar mediante Inertia (usando PATCH en lugar de POST)
+    router.patch(route('profile.updateBannerColor'), {
+        banner_color: color
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            showColorModal.value = false; // Cerrar modal
+        },
+        onError: () => {
+            toast.error('Error al actualizar el banner');
+        }
+    });
+};
+
+// Bloquear scroll cuando el modal está abierto
+watch(showColorModal, (val) => {
+    if (val) {
+        document.body.style.overflow = 'hidden';
+    } else {
+        document.body.style.overflow = '';
+    }
+});
+
+/* FUNCIONALIDAD DE SUBIDA DE IMAGEN (COMENTADA - Para futuro)
+const uploadBanner = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Crear FormData para enviar el archivo
+    const formData = new FormData();
+    formData.append('banner_picture', file);
+
+    // Enviar mediante Inertia
+    router.post(route('profile.update'), formData, {
+        preserveScroll: true,
+        onSuccess: () => {
+            toast.success('Banner actualizado correctamente');
+        },
+        onError: () => {
+            toast.error('Error al actualizar el banner');
+        },
+        onFinish: () => {
+            // Limpiar el input
+            if (bannerInput.value) {
+                bannerInput.value.value = '';
+            }
+        }
+    });
+};
+*/
 
 onMounted(() => {
     // Simulación de carga para mostrar el Skeleton
@@ -156,7 +267,50 @@ const getExperienceLevelColor = (level) => {
                 </div>
 
                 <!-- Header Background -->
-                <div class="h-32 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
+                <div 
+                    class="h-32 relative group"
+                    :style="{ backgroundColor: profileUser.banner_color || '#6366f1' }"
+                >
+                    <!-- Banner Image si existe (COMENTADO - Funcionalidad futura) -->
+                    <!-- <img 
+                        v-if="profileUser.banner_picture_url" 
+                        :src="`/storage/${profileUser.banner_picture_url}`" 
+                        class="w-full h-full object-cover"
+                        alt="Banner"
+                    /> -->
+                    
+                    <!-- Input color oculto -->
+                    <input 
+                        v-if="isOwnProfile"
+                        ref="bannerInput"
+                        type="color"
+                        class="hidden"
+                        :value="profileUser.banner_color || '#6366f1'"
+                        @input="updateBannerColor"
+                    />
+                    
+                    <!-- Input file oculto (COMENTADO - Funcionalidad futura) -->
+                    <!-- <input 
+                        v-if="isOwnProfile"
+                        ref="bannerImageInput"
+                        type="file"
+                        accept="image/*"
+                        class="hidden"
+                        @change="uploadBanner"
+                    /> -->
+                    
+                    <!-- Botón editar banner (Abre modal) -->
+                    <button 
+                        v-if="isOwnProfile"
+                        @click="showColorModal = true"
+                        class="absolute top-4 right-4 bg-white/20 backdrop-blur-md hover:bg-white/30 text-white p-2 rounded-full shadow-sm transition-all z-20"
+                        title="Personalizar banner"
+                    >
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                        </svg>
+                    </button>
+                </div>
 
                 <div class="px-8 pb-8 flex flex-col items-center -mt-20">
                     <div class="relative">
@@ -251,14 +405,14 @@ const getExperienceLevelColor = (level) => {
                         </div>
                     </div>
                     
-                    <div v-else class="flex justify-center w-full gap-3">
-                        <Link :href="route('profile.edit')" class="btn-secondary-gradient">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                    <div v-else class="flex flex-col gap-3 w-full max-w-sm mx-auto">
+                        <Link :href="route('profile.edit')" class="w-full bg-white border-2 border-gray-200 text-gray-700 font-bold py-3 px-4 rounded-xl text-center shadow-sm flex items-center justify-center gap-2 hover:border-indigo-300 hover:text-indigo-600 transition-all active:scale-95">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                             Editar Perfil
                         </Link>
-                        <Link :href="route('logout')" method="post" as="button" class="flex-1 bg-red-50 text-red-600 font-bold py-3 px-4 rounded-xl text-center shadow-sm flex items-center justify-center gap-2">
+                        <Link href="/logout" method="post" as="button" class="w-full bg-red-50 text-red-600 font-bold py-3 px-4 rounded-xl text-center shadow-sm flex items-center justify-center gap-2 hover:bg-red-100 transition active:scale-95">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                            Salir
+                            Cerrar Sesión
                         </Link>
                     </div>
 
@@ -270,142 +424,222 @@ const getExperienceLevelColor = (level) => {
 
 
             <!-- Sección de Contenido con Tabs -->
-            <div v-if="isOwnProfile || connection_status === 'accepted'" class="max-w-2xl mx-auto mt-8">
+            <div v-if="isOwnProfile || connection_status === 'accepted'" class="max-w-2xl mx-auto mt-8 px-4 sm:px-0">
                 
-                <!-- Tabs Navigation -->
-                <div class="flex items-center justify-between mb-6 px-2">
-                    <div class="flex gap-2 bg-white rounded-xl p-1 shadow-sm border border-gray-100">
+                <!-- Tabs Navigation Moderno -->
+                <div class="flex justify-center mb-8">
+                    <div class="bg-gray-100/80 backdrop-blur-sm p-1.5 rounded-2xl inline-flex shadow-inner">
                         <button
                             @click="activeContentTab = 'rutinas'"
-                            :class="[
-                                'px-6 py-2.5 rounded-lg font-bold text-sm transition-all duration-200 flex items-center gap-2',
-                                activeContentTab === 'rutinas' 
-                                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' 
-                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                            ]"
+                            class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2 relative overflow-hidden"
+                            :class="activeContentTab === 'rutinas' ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700'"
                         >
-                            🏋️ Rutinas
-                            <span v-if="workouts.length" :class="activeContentTab === 'rutinas' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'" class="px-2 py-0.5 rounded-full text-xs font-bold">
-                                {{ workouts.length }}
+                            <span class="relative z-10 flex items-center gap-2">
+                                🏋️ Rutinas
+                                <span v-if="workouts.length" class="px-2 py-0.5 rounded-full text-[10px] font-black" :class="activeContentTab === 'rutinas' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500'">
+                                    {{ workouts.length }}
+                                </span>
                             </span>
                         </button>
                         
                         <button
                             @click="activeContentTab = 'publicaciones'"
-                            :class="[
-                                'px-6 py-2.5 rounded-lg font-bold text-sm transition-all duration-200 flex items-center gap-2',
-                                activeContentTab === 'publicaciones' 
-                                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' 
-                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                            ]"
+                            class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2 relative overflow-hidden"
+                            :class="activeContentTab === 'publicaciones' ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700'"
                         >
-                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-                            </svg>
-                            Publicaciones
-                            <span :class="activeContentTab === 'publicaciones' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'" class="px-2 py-0.5 rounded-full text-xs font-bold">
-                                {{ posts.length }}
+                            <span class="relative z-10 flex items-center gap-2">
+                                📰 Publicaciones
+                                <span v-if="posts.length" class="px-2 py-0.5 rounded-full text-[10px] font-black" :class="activeContentTab === 'publicaciones' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500'">
+                                    {{ posts.length }}
+                                </span>
                             </span>
                         </button>
                     </div>
                 </div>
 
                 <!-- Workouts Tab -->
-                <div v-if="activeContentTab === 'rutinas'">
-                    <div v-if="workouts.length > 0" class="grid grid-cols-1 gap-4">
-                        <!-- Workout cards will go here -->
-                        <div 
-                            v-for="workout in workouts" 
-                            :key="workout.id" 
-                            @click="$inertia.visit(route('workouts.show', workout.id))"
-                            class="bg-white border-2 border-gray-100 rounded-2xl p-5 hover:border-indigo-200 hover:shadow-lg transition-all cursor-pointer group"
-                        >
-                            <div class="flex items-start justify-between mb-3">
-                                <div>
-                                    <h3 class="font-bold text-lg text-gray-900 group-hover:text-indigo-600 transition-colors">{{ workout.name }}</h3>
-                                    <p class="text-sm text-gray-500 mt-1 line-clamp-2">{{ workout.description }}</p>
-                                </div>
-                                <span 
-                                    class="px-3 py-1 rounded-full text-xs font-bold capitalize"
-                                    :class="{
-                                        'bg-emerald-100 text-emerald-700': workout.difficulty_level === 'principiante',
-                                        'bg-indigo-100 text-indigo-700': workout.difficulty_level === 'intermedio',
-                                        'bg-purple-100 text-purple-700': workout.difficulty_level === 'avanzado'
-                                    }"
+                <Transition
+                    enter-active-class="transition ease-out duration-200"
+                    enter-from-class="opacity-0 translate-y-2"
+                    enter-to-class="opacity-100 translate-y-0"
+                    leave-active-class="transition ease-in duration-150"
+                    leave-from-class="opacity-100 translate-y-0"
+                    leave-to-class="opacity-0 translate-y-2"
+                    mode="out-in"
+                >
+                    <div v-if="activeContentTab === 'rutinas'" key="rutinas">
+                        <div v-if="workouts.length > 0">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <!-- Tarjetas de Rutina Compactas -->
+                                <div 
+                                    v-for="workout in displayedWorkouts" 
+                                    :key="workout.id" 
+                                    @click="$inertia.visit(route('workouts.show', workout.id))"
+                                    class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer group flex flex-col justify-between h-full relative overflow-hidden"
                                 >
-                                    {{ workout.difficulty_level }}
-                                </span>
+                                    <!-- Banda lateral de dificultad -->
+                                    <div 
+                                        class="absolute left-0 top-0 bottom-0 w-1.5"
+                                        :class="{
+                                            'bg-emerald-400': workout.difficulty === 'Principiante',
+                                            'bg-blue-500': workout.difficulty === 'Intermedio',
+                                            'bg-purple-500': workout.difficulty === 'Avanzado'
+                                        }"
+                                    ></div>
+
+                                    <div class="pl-3">
+                                        <div class="flex justify-between items-start mb-2">
+                                            <h3 class="font-bold text-gray-900 group-hover:text-indigo-600 transition-colors line-clamp-1 text-sm">{{ workout.name }}</h3>
+                                            <span class="text-[10px] font-bold text-gray-400 uppercase">{{ workout.difficulty }}</span>
+                                        </div>
+                                        
+                                        <div class="flex items-center gap-3 text-xs text-gray-500">
+                                            <span class="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md">
+                                                ⏱️ {{ workout.duration_minutes }}'
+                                            </span>
+                                            <span class="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md">
+                                                💪 {{ workout.exercises?.length || 0 }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="flex items-center gap-4 text-sm text-gray-600">
-                                <span class="flex items-center gap-1">
-                                    ⏱️ {{ workout.duration_minutes }} min
-                                </span>
-                                <span class="flex items-center gap-1">
-                                    💪 {{ workout.exercises?.length || 0 }} ejercicios
-                                </span>
+
+                            <!-- Botón Ver Más/Menos Rutinas -->
+                            <div v-if="workouts.length > 4" class="mt-4 text-center">
+                                <button 
+                                    v-if="!showAllWorkouts"
+                                    @click="showAllWorkouts = true"
+                                    class="text-sm font-bold text-indigo-600 hover:text-indigo-800 transition flex items-center justify-center gap-1 mx-auto"
+                                >
+                                    Ver todas las rutinas ({{ workouts.length }})
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                </button>
+                                <button 
+                                    v-else
+                                    @click="showAllWorkouts = false"
+                                    class="text-sm font-bold text-indigo-600 hover:text-indigo-800 transition flex items-center justify-center gap-1 mx-auto"
+                                >
+                                    Ver menos
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
+                                </button>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- Empty State -->
-                    <div v-else class="text-center py-12 bg-white rounded-2xl border-2 border-dashed border-gray-200">
-                        <div class="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
-                            🏋️
-                        </div>
-                        <h3 class="text-lg font-bold text-gray-900 mb-1">No hay rutinas públicas</h3>
-                        <p class="text-gray-500 mb-6 max-w-xs mx-auto">Comparte tus entrenamientos con la comunidad de GymPal.</p>
                         
-                        <button 
-                            v-if="isOwnProfile"
-                            @click="$inertia.visit(route('workouts.create'))"
-                            class="px-6 py-2 bg-indigo-600 text-white rounded-full font-bold hover:bg-indigo-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                        >
-                            Crear mi primera rutina
-                        </button>
+                        <!-- Empty State Rutinas -->
+                        <div v-else class="text-center py-12 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                            <div class="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center mx-auto mb-3 text-xl">
+                                🏋️
+                            </div>
+                            <p class="text-sm text-gray-500 mb-4">Sin rutinas públicas</p>
+                            
+                            <button 
+                                v-if="isOwnProfile"
+                                @click="$inertia.visit(route('workouts.create'))"
+                                class="px-4 py-2 bg-gray-900 text-white text-xs rounded-lg font-bold hover:bg-gray-800 transition"
+                            >
+                                Crear Rutina
+                            </button>
+                        </div>
+
+                        <!-- Botón crear nueva (si hay rutinas) -->
+                        <div v-if="isOwnProfile && workouts.length > 0" class="mt-4">
+                            <button 
+                                @click="$inertia.visit(route('workouts.create'))"
+                                class="w-full py-3 bg-white border border-dashed border-gray-300 hover:border-indigo-400 text-gray-400 hover:text-indigo-600 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 hover:bg-indigo-50/30"
+                            >
+                                + Nueva Rutina
+                            </button>
+                        </div>
                     </div>
 
-                    <!-- Button to create new workout -->
-                    <div v-if="isOwnProfile && workouts.length > 0" class="mt-4">
-                        <button 
-                            @click="$inertia.visit(route('workouts.create'))"
-                            class="w-full py-4 bg-gray-50 hover:bg-white border-2 border-dashed border-gray-300 hover:border-indigo-400 text-gray-500 hover:text-indigo-600 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 group"
-                        >
-                            <span class="w-8 h-8 rounded-full bg-gray-200 group-hover:bg-indigo-100 text-gray-500 group-hover:text-indigo-600 flex items-center justify-center transition-colors">
-                                +
-                            </span>
-                            Crear Nueva Rutina
-                        </button>
-                    </div>
-                </div>
+                    <!-- Posts Tab (Masonry Layout) -->
+                    <div v-else-if="activeContentTab === 'publicaciones'" key="publicaciones">
+                        <div v-if="posts && posts.length > 0" class="columns-2 md:columns-3 gap-3 space-y-3">
+                            <div 
+                                v-for="post in posts" 
+                                :key="post.id" 
+                                class="break-inside-avoid bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-all group relative"
+                            >
+                                <!-- CASO 1: Post con Imagen (Estilo Instagram) -->
+                                <div v-if="post.image_path" class="relative cursor-pointer" @click="openPostModal(post)">
+                                    <img 
+                                        :src="post.image_path.startsWith('http') ? post.image_path : `/storage/${post.image_path}`" 
+                                        class="w-full h-auto object-cover"
+                                        loading="lazy"
+                                    />
+                                    
+                                    <!-- Badge de Rutina -->
+                                    <div v-if="post.workout" class="absolute top-2 left-2 bg-black/50 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                        <span>🏋️</span> Rutina
+                                    </div>
+                                </div>
 
-                <!-- Posts Tab -->
-                <div v-else-if="activeContentTab === 'publicaciones'">
-                    <div v-if="posts && posts.length > 0" class="space-y-4">
-                        <PostCard 
-                            v-for="post in posts" 
-                            :key="post.id" 
-                            :post="post" 
-                        />
+
+
+                                <!-- CASO 2: Post solo Texto (Estilo Twitter) -->
+                                <div v-else class="p-4 flex flex-col h-full cursor-pointer" @click="openPostModal(post)">
+                                    <p class="text-sm text-gray-800 leading-relaxed font-medium mb-3 flex-1">{{ post.content }}</p>
+                                    
+                                    <!-- Link a Rutina si existe -->
+                                    <div 
+                                        v-if="post.workout" 
+                                        @click.stop="$inertia.visit(route('workouts.show', post.workout.id))"
+                                        class="mb-3 bg-indigo-50 border border-indigo-100 rounded-lg p-2 flex items-center gap-2 hover:bg-indigo-100 transition cursor-pointer"
+                                    >
+                                        <div class="w-8 h-8 bg-indigo-200 rounded-md flex items-center justify-center text-indigo-700 text-xs">🏋️</div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-xs font-bold text-indigo-900 truncate">{{ post.workout.name }}</p>
+                                            <p class="text-[10px] text-indigo-600">Ver rutina</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center justify-between text-xs text-gray-400 border-t border-gray-50 pt-3 mt-auto">
+                                        <div class="flex items-center gap-3">
+                                            <span class="flex items-center gap-1 transition-colors" :class="post.is_liked ? 'text-red-500' : 'hover:text-pink-500'">
+                                                <svg class="w-4 h-4" :class="post.is_liked ? 'fill-red-500 text-red-500' : 'fill-none stroke-current'" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                                                {{ post.likes_count || 0 }}
+                                            </span>
+                                            <span class="flex items-center gap-1 hover:text-blue-500 transition-colors">
+                                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                                                {{ post.comments_count || 0 }}
+                                            </span>
+                                        </div>
+                                        
+                                        <button 
+                                            @click.stop="sharePost(post)"
+                                            class="hover:text-gray-600 transition p-1 -mr-1 rounded-full hover:bg-gray-100"
+                                            title="Compartir"
+                                        >
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Empty State Publicaciones -->
+                        <div v-else class="text-center py-12 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                            <div class="w-12 h-12 bg-pink-50 text-pink-500 rounded-xl flex items-center justify-center mx-auto mb-3 text-xl">
+                                📷
+                            </div>
+                            <p class="text-sm text-gray-500 mb-4">Sin publicaciones</p>
+                            
+                            <button 
+                                v-if="isOwnProfile"
+                                @click="$inertia.visit(route('posts.create'))"
+                                class="px-4 py-2 bg-gray-900 text-white text-xs rounded-lg font-bold hover:bg-gray-800 transition"
+                            >
+                                Crear Post
+                            </button>
+                        </div>
                     </div>
+                </Transition>
+            </div>
                     
                     <!-- Empty State for Posts -->
-                    <div v-else class="text-center py-12 bg-white rounded-2xl border-2 border-dashed border-gray-200">
-                        <div class="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
-                            📝
-                        </div>
-                        <h3 class="text-lg font-bold text-gray-900 mb-1">Aún no hay publicaciones</h3>
-                        <p class="text-gray-500 mb-6 max-w-xs mx-auto">Comparte tu primer post para que tu perfil cobre vida</p>
-                        
-                        <button 
-                            v-if="isOwnProfile"
-                            @click="$inertia.visit(route('posts.create'))"
-                            class="px-6 py-2 bg-indigo-600 text-white rounded-full font-bold hover:bg-indigo-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                        >
-                            Crear Publicación
-                        </button>
-                    </div>
-                </div>
-            </div>
+
+
             
             <div v-else class="max-w-2xl mx-auto mt-8 text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100 px-6">
                 <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -461,6 +695,48 @@ const getExperienceLevelColor = (level) => {
             @confirm="confirmDisconnect"
             @cancel="showDisconnectModal = false"
         />
+
+        <!-- Modal de Selección de Color (Personalizado) -->
+        <div v-if="showColorModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <!-- Backdrop -->
+            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" @click="showColorModal = false"></div>
+            
+            <!-- Modal Content -->
+            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden animate-bounce-in">
+                <!-- Header -->
+                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                    <h3 class="text-lg font-black text-gray-900">Personalizar Banner</h3>
+                    <button @click="showColorModal = false" class="text-gray-400 hover:text-gray-600 transition p-1 rounded-full hover:bg-gray-200">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Body -->
+                <div class="p-6">
+                    <p class="text-sm text-gray-500 mb-4 font-medium">Elige un color que represente tu estilo:</p>
+                    
+                    <div class="grid grid-cols-5 gap-3">
+                        <button 
+                            v-for="color in bannerColors" 
+                            :key="color"
+                            @click="updateBannerColor(color)"
+                            class="w-12 h-12 rounded-full shadow-sm hover:scale-110 transition-transform duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 relative group"
+                            :style="{ backgroundColor: color }"
+                            :title="color"
+                        >
+                            <!-- Check si es el color actual -->
+                            <span v-if="profileUser.banner_color === color" class="absolute inset-0 flex items-center justify-center text-white">
+                                <svg class="w-6 h-6 drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     </AuthenticatedLayout>
 </template>

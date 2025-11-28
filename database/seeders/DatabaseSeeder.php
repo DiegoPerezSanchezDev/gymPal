@@ -11,40 +11,35 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // BLOQUE 1: Seeders de datos base (no tienen dependencias)
-        // -----------------------------------------------------------------
-        // Primero, creamos las entidades fundamentales: Usuarios e Intereses.
+        // BLOQUE 1: Seeders de datos base
         $this->call([
-            UserSeeder::class,
             FitnessInterestSeeder::class,
         ]);
 
-        // BLOQUE 2: Seeders de relaciones (dependen del bloque 1)
-        // -----------------------------------------------------------------
-        // Ahora que ya existen usuarios e intereses, podemos crear
-        // las relaciones entre ellos.
-        $this->call([
-            FitnessInterestUserSeeder::class, // Necesita Users y FitnessInterests
-            FollowerSeeder::class,           // Necesita Users
-            ConversationSeeder::class,       // Necesita Users
-        ]);
-
-        // BLOQUE 3: Seeders que dependen del bloque 2
-        // -----------------------------------------------------------------
-        // Finalmente, como ya hemos creado las conversaciones, podemos
-        // llenarlas con mensajes.
-        $this->call([
-            MessageSeeder::class,            // Necesita Conversations
-        ]);
-
-        //Bloque 4
-
+        // BLOQUE 2: Usuarios de prueba
         $this->call([
             TestUsersSeeder::class,
+            UserSeeder::class,
+            DiegoTestDataSeeder::class,
         ]);
 
-        //Seeder de Likes
-        $this->call(LikesSeeder::class);
-        
+        // BLOQUE 3: Relaciones
+        $this->call([
+            FitnessInterestUserSeeder::class,
+            FollowerSeeder::class,
+            ConversationSeeder::class,
+        ]);
+
+        // BLOQUE 4: Mensajes
+        $this->call([
+            MessageSeeder::class,
+        ]);
+
+        // BLOQUE 5: Rutinas y Logs
+        $this->call([
+            WorkoutSeeder::class,
+            LauraWorkoutSeeder::class,
+            WorkoutLogSeeder::class,
+        ]);
     }
 }

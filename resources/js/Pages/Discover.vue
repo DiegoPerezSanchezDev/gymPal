@@ -14,6 +14,18 @@ const props = defineProps({
     searchedInterestId: [String, Number],
 });
 
+const experienceOptions = [
+    { value: '', label: '✨ Todos los niveles' },
+    { value: 'Principiante', label: '🌱 Principiante' },
+    { value: 'Intermedio', label: '⚡ Intermedio' },
+    { value: 'Avanzado', label: '🔥 Avanzado' }
+];
+
+const interestOptions = computed(() => {
+    const opts = props.interests.map(i => ({ value: i.id, label: i.name }));
+    return [{ value: '', label: 'Todos los deportes' }, ...opts];
+});
+
 const form = useForm({
     search: props.filters.search || '',
     city: props.filters.city || '',
@@ -222,16 +234,12 @@ const availabilitySlots = ['Mañanas', 'Tardes', 'Noches', 'Fines de semana'];
                         <!-- Fila 1: Nivel y Ciudad -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                                    <span class="text-base">💪</span>
-                                    <span>Nivel de Experiencia</span>
-                                </label>
-                                <select v-model="form.experience_level" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 sm:text-sm bg-white font-medium">
-                                    <option value="">✨ Todos los niveles</option>
-                                    <option value="Principiante">🌱 Principiante</option>
-                                    <option value="Intermedio">⚡ Intermedio</option>
-                                    <option value="Avanzado">🔥 Avanzado</option>
-                                </select>
+                                <SelectInput
+                                    id="experience_level"
+                                    label="💪 Nivel de Experiencia"
+                                    v-model="form.experience_level"
+                                    :options="experienceOptions"
+                                />
                             </div>
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
@@ -300,12 +308,11 @@ const availabilitySlots = ['Mañanas', 'Tardes', 'Noches', 'Fines de semana'];
                             <span class="text-lg">🤝</span>
                             <span>Buscar compañero para</span>
                         </label>
-                        <select v-model="form.interest_id" class="mt-1 block w-full rounded-lg border-indigo-200 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 sm:text-sm bg-white font-medium">
-                            <option value="">🏃 Cualquier deporte</option>
-                            <option v-for="interest in interests" :key="interest.id" :value="interest.id">
-                                {{ interest.name }}
-                            </option>
-                        </select>
+                        <SelectInput
+                            id="interest_id"
+                            v-model="form.interest_id"
+                            :options="interestOptions"
+                        />
                         <p class="text-xs text-indigo-600 mt-2 flex items-center gap-1">
                             <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
                             Las tarjetas que coincidan se resaltarán automáticamente

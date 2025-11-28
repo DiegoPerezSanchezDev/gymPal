@@ -25,6 +25,7 @@
         "@heroicons/vue": "^2.2.0",
         "@vueuse/core": "^14.0.0",
         "alpinejs": "^3.14.9",
+        "chart.js": "^4.5.1",
         "dom-to-image-more": "^3.7.2",
         "html2canvas": "^1.4.1",
         "lodash.debounce": "^4.0.8"

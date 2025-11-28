@@ -11,22 +11,12 @@ class LauraWorkoutSeeder extends Seeder
 {
     public function run(): void
     {
-        // Buscar el usuario @laurag
-        $user = User::where('username', 'laurag')->first();
+        // Buscar el usuario user_sol
+        $user = User::where('username', 'user_sol')->first();
         
         if (!$user) {
-            $this->command->warn('Usuario @laurag no encontrado. Creando usuario de ejemplo...');
-            
-            $user = User::create([
-                'name' => 'Laura García',
-                'username' => 'laurag',
-                'email' => 'laura@gympal.com',
-                'password' => bcrypt('password'),
-                'email_verified_at' => now(),
-                'experience_level' => 'Intermedio',
-                'location_city' => 'Madrid',
-                'bio' => '💪 Fitness enthusiast | 🏋️ Gym lover | 🥗 Healthy lifestyle',
-            ]);
+            $this->command->warn('⚠️  Usuario @user_sol no encontrado. Ejecuta TestUsersSeeder primero.');
+            return;
         }
 
         // Crear rutina: Push Day (Día de empuje)
@@ -34,7 +24,7 @@ class LauraWorkoutSeeder extends Seeder
             'user_id' => $user->id,
             'name' => 'Push Day - Pecho, Hombros y Tríceps',
             'description' => 'Rutina de empuje enfocada en pecho, hombros y tríceps. Perfecta para desarrollar la parte superior del cuerpo.',
-            'difficulty_level' => 'intermedio',
+            'difficulty' => 'Intermedio',
             'duration_minutes' => 75,
             'category' => '🏋️ Gym',
             'is_public' => true,
@@ -152,7 +142,7 @@ class LauraWorkoutSeeder extends Seeder
             'user_id' => $user->id,
             'name' => 'Pull Day - Espalda y Bíceps',
             'description' => 'Rutina de tirón para desarrollar una espalda fuerte y bíceps definidos.',
-            'difficulty_level' => 'intermedio',
+            'difficulty' => 'Intermedio',
             'duration_minutes' => 70,
             'category' => '🏋️ Gym',
             'is_public' => true,

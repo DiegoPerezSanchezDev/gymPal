@@ -70,6 +70,10 @@ class ProfileUpdateRequest extends FormRequest
             // --- Foto de Perfil ---
             'profile_picture' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif', 'max:5120'], // 5MB máx
             'remove_profile_picture' => ['nullable', 'boolean'],
+            
+            // --- Banner de Perfil ---
+            'banner_picture' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif', 'max:10240'], // 10MB máx
+            'banner_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'], // Validar formato hexadecimal
         ];
     }
 }
