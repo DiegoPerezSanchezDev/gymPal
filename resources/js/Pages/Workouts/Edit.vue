@@ -14,7 +14,7 @@ const { success, error } = useToast();
 const form = ref({
     name: '',
     description: '',
-    difficulty_level: 'intermedio',
+    difficulty: 'Intermedio',
     duration_minutes: null,
     category: 'Gym',
     is_public: true,
@@ -35,6 +35,14 @@ const categories = [
     '💪 Otro'
 ];
 
+const categoryOptions = categories.map(cat => ({ value: cat, label: cat }));
+
+const difficultyOptions = [
+    { value: 'Principiante', label: 'Principiante' },
+    { value: 'Intermedio', label: 'Intermedio' },
+    { value: 'Avanzado', label: 'Avanzado' }
+];
+
 const setTypes = [
     { value: 'normal', label: 'Normal' },
     { value: 'warmup', label: 'Calentamiento' },
@@ -47,7 +55,7 @@ onMounted(() => {
     if (props.workout) {
         form.value.name = props.workout.name;
         form.value.description = props.workout.description;
-        form.value.difficulty_level = props.workout.difficulty_level;
+        form.value.difficulty = props.workout.difficulty;
         form.value.duration_minutes = props.workout.duration_minutes;
         form.value.category = props.workout.category;
         form.value.is_public = !!props.workout.is_public; // Ensure boolean
@@ -182,32 +190,24 @@ const submit = () => {
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <!-- Categoría -->
                             <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-2">
-                                    Categoría *
-                                </label>
-                                <select
+                                <SelectInput
+                                    id="category"
+                                    label="Categoría *"
                                     v-model="form.category"
-                                    class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    :options="categoryOptions"
                                     required
-                                >
-                                    <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
-                                </select>
+                                />
                             </div>
 
                             <!-- Dificultad -->
                             <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-2">
-                                    Dificultad *
-                                </label>
-                                <select
-                                    v-model="form.difficulty_level"
-                                    class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                <SelectInput
+                                    id="difficulty"
+                                    label="Dificultad *"
+                                    v-model="form.difficulty"
+                                    :options="difficultyOptions"
                                     required
-                                >
-                                    <option value="principiante">Principiante</option>
-                                    <option value="intermedio">Intermedio</option>
-                                    <option value="avanzado">Avanzado</option>
-                                </select>
+                                />
                             </div>
 
                             <!-- Duración -->

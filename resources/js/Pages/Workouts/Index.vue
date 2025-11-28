@@ -53,9 +53,9 @@ const setSort = (sortOption) => {
 
 const getGradient = (level) => {
     const gradients = {
-        principiante: 'from-emerald-400 to-teal-500',
-        intermedio: 'from-blue-500 to-indigo-600',
-        avanzado: 'from-purple-500 to-pink-600'
+        Principiante: 'from-emerald-400 to-teal-500',
+        Intermedio: 'from-blue-500 to-indigo-600',
+        Avanzado: 'from-purple-500 to-pink-600'
     };
     return gradients[level] || 'from-gray-400 to-gray-500';
 };
@@ -152,23 +152,23 @@ onUnmounted(() => {
                     <!-- Filtros Rápidos (Chips) -->
                     <div class="flex flex-wrap justify-center gap-3">
                         <button 
-                            @click="setDifficulty('principiante')"
+                            @click="setDifficulty('Principiante')"
                             class="px-4 py-2 rounded-full text-sm font-bold transition-all border-2 flex items-center gap-2"
-                            :class="filters.difficulty === 'principiante' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-white text-gray-500 border-gray-200 hover:border-emerald-200 hover:text-emerald-600'"
+                            :class="filters.difficulty === 'Principiante' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-white text-gray-500 border-gray-200 hover:border-emerald-200 hover:text-emerald-600'"
                         >
                             🌱 Principiante
                         </button>
                         <button 
-                            @click="setDifficulty('intermedio')"
+                            @click="setDifficulty('Intermedio')"
                             class="px-4 py-2 rounded-full text-sm font-bold transition-all border-2 flex items-center gap-2"
-                            :class="filters.difficulty === 'intermedio' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-white text-gray-500 border-gray-200 hover:border-blue-200 hover:text-blue-600'"
+                            :class="filters.difficulty === 'Intermedio' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-white text-gray-500 border-gray-200 hover:border-blue-200 hover:text-blue-600'"
                         >
                             ⚡ Intermedio
                         </button>
                         <button 
-                            @click="setDifficulty('avanzado')"
+                            @click="setDifficulty('Avanzado')"
                             class="px-4 py-2 rounded-full text-sm font-bold transition-all border-2 flex items-center gap-2"
-                            :class="filters.difficulty === 'avanzado' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-white text-gray-500 border-gray-200 hover:border-purple-200 hover:text-purple-600'"
+                            :class="filters.difficulty === 'Avanzado' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-white text-gray-500 border-gray-200 hover:border-purple-200 hover:text-purple-600'"
                         >
                             🔥 Avanzado
                         </button>
@@ -212,7 +212,7 @@ onUnmounted(() => {
                         class="group relative bg-white rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col"
                     >
                         <!-- Header Gradiente -->
-                        <div class="h-24 bg-gradient-to-r relative overflow-hidden" :class="getGradient(workout.difficulty_level)">
+                        <div class="h-24 bg-gradient-to-r relative overflow-hidden" :class="getGradient(workout.difficulty)">
                             <div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                             <!-- Patrón decorativo opcional -->
                             <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>

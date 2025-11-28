@@ -4,28 +4,38 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\FitnessInterest;
+use Illuminate\Support\Str;
 
 class FitnessInterestSeeder extends Seeder
 {
     public function run(): void
     {
         $interests = [
-            ['name' => 'Gym'],
-            ['name' => 'Crossfit'],
-            ['name' => 'Running'],
-            ['name' => 'Yoga'],
-            ['name' => 'Calistenia'],
-            ['name' => 'Powerlifting'],
-            ['name' => 'Ciclismo'],
-            ['name' => 'Natación'],
-            ['name' => 'Boxeo'],
-            ['name' => 'Pilates'],
+            'Gym',
+            'Calistenia',
+            'CrossFit',
+            'Yoga',
+            'Pilates',
+            'Running',
+            'Ciclismo',
+            'Natación',
+            'Zumba',
+            'HIIT',
+            'Entrenamiento Funcional',
+            'Powerlifting',
+            'Culturismo',
+            'Senderismo',
+            'Artes Marciales',
+            'Baile Fitness',
+            'Spinning',
+            'Escalada',
         ];
 
-        foreach ($interests as $interest) {
-            FitnessInterest::firstOrCreate($interest);
+        foreach ($interests as $interestName) {
+            FitnessInterest::firstOrCreate(
+                ['name' => $interestName],
+                ['slug' => Str::slug($interestName)]
+            );
         }
-
-        $this->command->info('✅ Fitness interests created successfully!');
     }
 }

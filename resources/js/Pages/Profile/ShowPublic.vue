@@ -481,16 +481,16 @@ const getExperienceLevelColor = (level) => {
                                     <div 
                                         class="absolute left-0 top-0 bottom-0 w-1.5"
                                         :class="{
-                                            'bg-emerald-400': workout.difficulty_level === 'principiante',
-                                            'bg-blue-500': workout.difficulty_level === 'intermedio',
-                                            'bg-purple-500': workout.difficulty_level === 'avanzado'
+                                            'bg-emerald-400': workout.difficulty === 'Principiante',
+                                            'bg-blue-500': workout.difficulty === 'Intermedio',
+                                            'bg-purple-500': workout.difficulty === 'Avanzado'
                                         }"
                                     ></div>
 
                                     <div class="pl-3">
                                         <div class="flex justify-between items-start mb-2">
                                             <h3 class="font-bold text-gray-900 group-hover:text-indigo-600 transition-colors line-clamp-1 text-sm">{{ workout.name }}</h3>
-                                            <span class="text-[10px] font-bold text-gray-400 uppercase">{{ workout.difficulty_level }}</span>
+                                            <span class="text-[10px] font-bold text-gray-400 uppercase">{{ workout.difficulty }}</span>
                                         </div>
                                         
                                         <div class="flex items-center gap-3 text-xs text-gray-500">

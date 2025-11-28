@@ -12,9 +12,8 @@ class WorkoutLogSeeder extends Seeder
 {
     public function run(): void
     {
-        $diego = User::where('username', 'diegoperez')->first();
-        $laura = User::where('username', 'laurag')->first();
-        $elena = User::where('username', 'elenacross')->first();
+        $diego = User::where('username', 'diegop')->first();
+        $laura = User::where('username', 'user_sol')->first();
 
         // Si no existen esos usuarios, usar los de TestUsersSeeder
         if (!$diego) {

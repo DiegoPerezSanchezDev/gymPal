@@ -41,10 +41,5 @@ class DatabaseSeeder extends Seeder
             LauraWorkoutSeeder::class,
             WorkoutLogSeeder::class,
         ]);
-
-        // BLOQUE 6: Conexiones
-        $this->call([
-            ConnectionSeeder::class,
-        ]);
     }
 }

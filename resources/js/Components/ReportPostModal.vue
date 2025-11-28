@@ -17,6 +17,8 @@ const reportReasons = [
     'Otro',
 ];
 
+const reasonOptions = reportReasons.map(r => ({ value: r, label: r }));
+
 const submitReport = () => {
     form.post(route('posts.report', { post: props.post.id }), {
         preserveScroll: true,
@@ -32,10 +34,12 @@ const submitReport = () => {
             <form @submit.prevent="submitReport">
                 <div class="space-y-4">
                     <div>
-                        <label for="reason" class="block text-sm font-medium text-gray-700 mb-1">Motivo de la denuncia</label>
-                        <select id="reason" v-model="form.reason" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            <option v-for="reason in reportReasons" :key="reason" :value="reason">{{ reason }}</option>
-                        </select>
+                        <SelectInput
+                            id="reason"
+                            label="Motivo de la denuncia"
+                            v-model="form.reason"
+                            :options="reasonOptions"
+                        />
                     </div>
                     <div>
                         <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Descripción (opcional)</label>

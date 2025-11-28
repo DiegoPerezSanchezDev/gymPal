@@ -56,7 +56,7 @@ class Workout extends Model
 
     public function scopeByDifficulty($query, $level)
     {
-        return $query->where('difficulty', $level);
+        return $query->whereRaw('LOWER(difficulty) = ?', [strtolower($level)]);
     }
 
     // --- METHODS ---

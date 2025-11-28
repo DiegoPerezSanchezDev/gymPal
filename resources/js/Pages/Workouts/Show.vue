@@ -25,15 +25,15 @@ const duplicateIsPublic = ref(false);
 const showDeleteModal = ref(false);
 
 const difficultyColors = {
-    principiante: 'from-emerald-400 to-teal-500',
-    intermedio: 'from-blue-500 to-indigo-600',
-    avanzado: 'from-purple-500 to-pink-600'
+    Principiante: 'from-emerald-400 to-teal-500',
+    Intermedio: 'from-blue-500 to-indigo-600',
+    Avanzado: 'from-purple-500 to-pink-600'
 };
 
 const difficultyLabel = {
-    principiante: 'Principiante',
-    intermedio: 'Intermedio',
-    avanzado: 'Avanzado'
+    Principiante: 'Principiante',
+    Intermedio: 'Intermedio',
+    Avanzado: 'Avanzado'
 };
 
 const categoryIcons = {
@@ -69,7 +69,7 @@ const backRoute = computed(() => {
 });
 
 const headerGradient = computed(() => {
-    return difficultyColors[props.workout.difficulty_level] || difficultyColors.intermedio;
+    return difficultyColors[props.workout.difficulty] || difficultyColors.Intermedio;
 });
 
 const toggleSave = async () => {
@@ -192,7 +192,7 @@ const confirmDuplicate = () => {
                             <p class="text-xs text-white/60 uppercase font-bold mb-1">Dificultad</p>
                             <p class="font-bold flex items-center gap-2">
                                 <span class="w-2 h-2 rounded-full bg-white"></span>
-                                {{ difficultyLabel[workout.difficulty_level] }}
+                                {{ difficultyLabel[workout.difficulty] }}
                             </p>
                         </div>
                         <div class="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/10">

@@ -79,9 +79,9 @@ const filteredWorkouts = computed(() => {
 
 const getGradient = (level) => {
     const gradients = {
-        principiante: 'from-emerald-400 to-teal-500',
-        intermedio: 'from-blue-500 to-indigo-600',
-        avanzado: 'from-purple-500 to-pink-600'
+        Principiante: 'from-emerald-400 to-teal-500',
+        Intermedio: 'from-blue-500 to-indigo-600',
+        Avanzado: 'from-purple-500 to-pink-600'
     };
     return gradients[level] || 'from-gray-400 to-gray-500';
 };
@@ -133,7 +133,7 @@ const getGradient = (level) => {
                             class="group relative bg-white rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col"
                         >
                             <!-- Header Gradiente -->
-                            <div class="h-24 bg-gradient-to-r relative overflow-hidden" :class="getGradient(workout.difficulty_level)">
+                            <div class="h-24 bg-gradient-to-r relative overflow-hidden" :class="getGradient(workout.difficulty)">
                                 <div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                 <!-- Patrón decorativo opcional -->
                                 <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>

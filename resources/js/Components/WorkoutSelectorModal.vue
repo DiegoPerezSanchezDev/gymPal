@@ -126,8 +126,8 @@ const categoryEmojis = {
                                         <div class="font-bold text-gray-900 truncate">{{ workout.name }}</div>
                                         <div class="flex items-center gap-2 text-xs text-gray-500">
                                             <span>{{ workout.category }}</span>
-                                            <span v-if="workout.difficulty_level" class="text-gray-400">•</span>
-                                            <span v-if="workout.difficulty_level" class="capitalize">{{ workout.difficulty_level }}</span>
+                                            <span v-if="workout.difficulty" class="text-gray-400">•</span>
+                                            <span v-if="workout.difficulty" class="capitalize">{{ workout.difficulty }}</span>
                                         </div>
                                     </div>
                                     <div v-if="localSelection === workout.id" class="text-indigo-600 shrink-0">
