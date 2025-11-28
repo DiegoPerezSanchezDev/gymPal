@@ -2,13 +2,20 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 
 const props = defineProps({
-    modelValue: [String, Number, null],
+    modelValue: {
+        type: Array,
+        default: () => []
+    },
     label: String,
     id: String,
     options: {
         type: Array,
         required: true,
         validator: (value) => value.every(opt => 'value' in opt && 'label' in opt)
+    },
+    placeholder: {
+        type: String,
+        default: 'Seleccionar...'
     }
 });
 
@@ -17,17 +24,35 @@ const emit = defineEmits(['update:modelValue']);
 const isOpen = ref(false);
 const dropdownRef = ref(null);
 
-const selectedOption = computed(() => {
-    return props.options.find(opt => opt.value === props.modelValue) || props.options[0];
+const selectedOptions = computed(() => {
+    return props.options.filter(opt => props.modelValue.includes(opt.value));
+});
+
+const selectedLabels = computed(() => {
+    if (selectedOptions.value.length === 0) return props.placeholder;
+    if (selectedOptions.value.length === 1) return selectedOptions.value[0].label;
+    return `${selectedOptions.value.length} seleccionados`;
 });
 
 const toggleDropdown = () => {
     isOpen.value = !isOpen.value;
 };
 
-const selectOption = (option) => {
-    emit('update:modelValue', option.value);
-    isOpen.value = false;
+const toggleOption = (option) => {
+    const newValue = [...props.modelValue];
+    const index = newValue.indexOf(option.value);
+    
+    if (index > -1) {
+        newValue.splice(index, 1);
+    } else {
+        newValue.push(option.value);
+    }
+    
+    emit('update:modelValue', newValue);
+};
+
+const isSelected = (option) => {
+    return props.modelValue.includes(option.value);
 };
 
 const handleClickOutside = (event) => {
@@ -61,10 +86,19 @@ onUnmounted(() => {
         >
             <div class="flex-1 min-h-[1.5rem]">
                 <div class="font-bold text-gray-900">
-                    {{ selectedOption?.label || 'Seleccionar...' }}
+                    {{ selectedLabels }}
                 </div>
-                <div v-if="selectedOption?.description" class="text-sm text-gray-500 mt-0.5">
-                    {{ selectedOption.description }}
+                <div v-if="selectedOptions.length > 1" class="text-sm text-gray-500 mt-0.5 flex flex-wrap gap-1">
+                    <span 
+                        v-for="option in selectedOptions.slice(0, 3)" 
+                        :key="option.value"
+                        class="inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700 text-xs font-medium"
+                    >
+                        {{ option.label }}
+                    </span>
+                    <span v-if="selectedOptions.length > 3" class="text-xs text-gray-500">
+                        +{{ selectedOptions.length - 3 }} más
+                    </span>
                 </div>
             </div>
             <svg 
@@ -95,28 +129,38 @@ onUnmounted(() => {
                     v-for="option in options"
                     :key="option.value"
                     type="button"
-                    @click="selectOption(option)"
-                    class="w-full px-4 py-3 text-left hover:bg-indigo-50 transition-colors flex items-center justify-between group border-b border-gray-100 last:border-b-0"
+                    @click="toggleOption(option)"
+                    class="w-full px-4 py-3 text-left hover:bg-indigo-50 transition-colors flex items-center gap-3 border-b border-gray-100 last:border-b-0"
                     :class="{
-                        'bg-indigo-50': option.value === modelValue
+                        'bg-indigo-50': isSelected(option)
                     }"
                 >
+                    <!-- Checkbox -->
+                    <div class="flex-shrink-0">
+                        <div 
+                            class="w-5 h-5 rounded border-2 flex items-center justify-center transition-all"
+                            :class="isSelected(option) 
+                                ? 'bg-indigo-600 border-indigo-600' 
+                                : 'border-gray-300 bg-white'"
+                        >
+                            <svg
+                                v-if="isSelected(option)"
+                                class="w-3 h-3 text-white"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <!-- Label -->
                     <div class="flex-1">
                         <div class="font-medium text-gray-900">
                             {{ option.label }}
                         </div>
-                        <div v-if="option.description" class="text-sm text-gray-500 mt-0.5">
-                            {{ option.description }}
-                        </div>
                     </div>
-                    <svg
-                        v-if="option.value === modelValue"
-                        class="w-5 h-5 text-indigo-600"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                    >
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                    </svg>
                 </button>
             </div>
         </Transition>

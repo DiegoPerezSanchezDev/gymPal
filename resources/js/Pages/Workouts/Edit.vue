@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { ref, onMounted } from 'vue';
+import SelectInput from '@/Components/SelectInput.vue';
 import { useToast } from '@/composables/useToast';
 
 const props = defineProps({
