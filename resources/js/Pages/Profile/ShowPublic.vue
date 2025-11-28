@@ -256,7 +256,7 @@ const getExperienceLevelColor = (level) => {
         </div>
 
         <div v-else-if="profileUser" class="container mx-auto px-4 py-8">
-            <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 relative">
+            <div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700 relative transition-colors">
                 
                 <!-- Badge de Afinidad (Si existe) -->
                 <div v-if="profileUser.affinity_score > 0" 
@@ -316,7 +316,7 @@ const getExperienceLevelColor = (level) => {
                     <div class="relative">
                         <!-- Avatar con borde gradiente -->
                         <div class="w-36 h-36 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 p-1 shadow-lg">
-                            <img :src="avatarUrl" :alt="profileUser.name" class="w-full h-full rounded-full object-cover border-4 border-white" />
+                            <img :src="avatarUrl" :alt="profileUser.name" class="w-full h-full rounded-full object-cover border-4 border-white dark:border-gray-800 transition-colors" />
                         </div>
                         <!-- Nivel de Experiencia (Badge con gradiente dinámico) -->
                         <div v-if="profileUser.experience_level" 
@@ -327,26 +327,26 @@ const getExperienceLevelColor = (level) => {
                         </div>
                     </div>
                     
-                    <h1 class="text-3xl font-extrabold text-gray-900 mt-4 mb-1 tracking-tight text-center">{{ profileUser.display_name || profileUser.name }}</h1>
-                    <p v-if="profileUser.username" class="text-md text-indigo-600 font-medium mb-4">@{{ profileUser.username }}</p>
+                    <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white mt-4 mb-1 tracking-tight text-center transition-colors">{{ profileUser.display_name || profileUser.name }}</h1>
+                    <p v-if="profileUser.username" class="text-md text-indigo-600 dark:text-indigo-400 font-medium mb-4 transition-colors">@{{ profileUser.username }}</p>
                     
                     <!-- Ubicación -->
-                    <div v-if="profileUser.location_city" class="flex items-center gap-1 text-gray-500 text-sm mb-4">
+                    <div v-if="profileUser.location_city" class="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-sm mb-4 transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                         {{ profileUser.location_city }}
                     </div>
 
-                    <p v-if="profileUser.bio" class="text-gray-600 text-center mb-6 whitespace-pre-line max-w-lg leading-relaxed italic">"{{ profileUser.bio }}"</p>
+                    <p v-if="profileUser.bio" class="text-gray-600 dark:text-gray-300 text-center mb-6 whitespace-pre-line max-w-lg leading-relaxed italic transition-colors">"{{ profileUser.bio }}"</p>
 
                     <!-- Stats -->
-                    <div class="flex gap-8 justify-center mb-8 w-full border-t border-b border-gray-100 py-4">
-                        <button @click="showConnectionsModal = true" class="text-center hover:bg-gray-50 rounded-lg px-4 py-2 transition-colors cursor-pointer">
-                            <span class="block text-2xl font-bold text-gray-800">{{ connections_count ?? 0 }}</span>
-                            <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Conexiones</span>
+                    <div class="flex gap-8 justify-center mb-8 w-full border-t border-b border-gray-100 dark:border-gray-700 py-4 transition-colors">
+                        <button @click="showConnectionsModal = true" class="text-center hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-4 py-2 transition-colors cursor-pointer">
+                            <span class="block text-2xl font-bold text-gray-800 dark:text-white transition-colors">{{ connections_count ?? 0 }}</span>
+                            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors">Conexiones</span>
                         </button>
-                        <div class="text-center border-l border-gray-100 pl-8 py-2">
-                            <span class="block text-2xl font-bold text-gray-800">{{ profileUser.posts_count ?? 0 }}</span>
-                            <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Publicaciones</span>
+                        <div class="text-center border-l border-gray-100 dark:border-gray-700 pl-8 py-2 transition-colors">
+                            <span class="block text-2xl font-bold text-gray-800 dark:text-white transition-colors">{{ profileUser.posts_count ?? 0 }}</span>
+                            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors">Publicaciones</span>
                         </div>
                     </div>
 
@@ -354,9 +354,9 @@ const getExperienceLevelColor = (level) => {
                     <div class="w-full space-y-6 mb-8">
                         <!-- Intereses -->
                         <div v-if="fitnessInterestsArray.length" class="text-center">
-                            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Intereses / Deportes</h3>
+                            <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 transition-colors">Intereses / Deportes</h3>
                             <div class="flex flex-wrap gap-2 justify-center">
-                                <span v-for="interest in fitnessInterestsArray" :key="interest.id" class="inline-block bg-indigo-50 text-indigo-700 border border-indigo-100 text-sm font-medium px-3 py-1 rounded-full">
+                                <span v-for="interest in fitnessInterestsArray" :key="interest.id" class="inline-block bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 text-sm font-medium px-3 py-1 rounded-full transition-colors">
                                     {{ interest.name }}
                                 </span>
                             </div>
@@ -364,9 +364,9 @@ const getExperienceLevelColor = (level) => {
 
                         <!-- Disponibilidad -->
                         <div v-if="profileUser.availability_general && profileUser.availability_general.length" class="text-center">
-                            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Disponibilidad Habitual</h3>
+                            <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 transition-colors">Disponibilidad Habitual</h3>
                             <div class="flex flex-wrap gap-2 justify-center">
-                                <span v-for="slot in profileUser.availability_general" :key="slot" class="inline-block bg-green-50 text-green-700 border border-green-100 text-sm font-medium px-3 py-1 rounded-lg">
+                                <span v-for="slot in profileUser.availability_general" :key="slot" class="inline-block bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-100 dark:border-green-800 text-sm font-medium px-3 py-1 rounded-lg transition-colors">
                                     {{ slot }}
                                 </span>
                             </div>
@@ -406,11 +406,11 @@ const getExperienceLevelColor = (level) => {
                     </div>
                     
                     <div v-else class="flex flex-col gap-3 w-full max-w-sm mx-auto">
-                        <Link :href="route('profile.edit')" class="w-full bg-white border-2 border-gray-200 text-gray-700 font-bold py-3 px-4 rounded-xl text-center shadow-sm flex items-center justify-center gap-2 hover:border-indigo-300 hover:text-indigo-600 transition-all active:scale-95">
+                        <Link :href="route('profile.edit')" class="w-full bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-bold py-3 px-4 rounded-xl text-center shadow-sm flex items-center justify-center gap-2 hover:border-indigo-300 dark:hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all active:scale-95">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                             Editar Perfil
                         </Link>
-                        <Link href="/logout" method="post" as="button" class="w-full bg-red-50 text-red-600 font-bold py-3 px-4 rounded-xl text-center shadow-sm flex items-center justify-center gap-2 hover:bg-red-100 transition active:scale-95">
+                        <Link href="/logout" method="post" as="button" class="w-full bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-bold py-3 px-4 rounded-xl text-center shadow-sm flex items-center justify-center gap-2 hover:bg-red-100 dark:hover:bg-red-900/40 transition active:scale-95">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                             Cerrar Sesión
                         </Link>
@@ -428,15 +428,15 @@ const getExperienceLevelColor = (level) => {
                 
                 <!-- Tabs Navigation Moderno -->
                 <div class="flex justify-center mb-8">
-                    <div class="bg-gray-100/80 backdrop-blur-sm p-1.5 rounded-2xl inline-flex shadow-inner">
+                    <div class="bg-gray-100/80 dark:bg-gray-700/80 backdrop-blur-sm p-1.5 rounded-2xl inline-flex shadow-inner transition-colors">
                         <button
                             @click="activeContentTab = 'rutinas'"
                             class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2 relative overflow-hidden"
-                            :class="activeContentTab === 'rutinas' ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700'"
+                            :class="activeContentTab === 'rutinas' ? 'bg-white dark:bg-gray-600 text-indigo-600 dark:text-indigo-300 shadow-sm ring-1 ring-black/5 dark:ring-white/10' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
                         >
                             <span class="relative z-10 flex items-center gap-2">
                                 🏋️ Rutinas
-                                <span v-if="workouts.length" class="px-2 py-0.5 rounded-full text-[10px] font-black" :class="activeContentTab === 'rutinas' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500'">
+                                <span v-if="workouts.length" class="px-2 py-0.5 rounded-full text-[10px] font-black" :class="activeContentTab === 'rutinas' ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300' : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400'">
                                     {{ workouts.length }}
                                 </span>
                             </span>
@@ -445,11 +445,11 @@ const getExperienceLevelColor = (level) => {
                         <button
                             @click="activeContentTab = 'publicaciones'"
                             class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2 relative overflow-hidden"
-                            :class="activeContentTab === 'publicaciones' ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700'"
+                            :class="activeContentTab === 'publicaciones' ? 'bg-white dark:bg-gray-600 text-indigo-600 dark:text-indigo-300 shadow-sm ring-1 ring-black/5 dark:ring-white/10' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
                         >
                             <span class="relative z-10 flex items-center gap-2">
                                 📰 Publicaciones
-                                <span v-if="posts.length" class="px-2 py-0.5 rounded-full text-[10px] font-black" :class="activeContentTab === 'publicaciones' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500'">
+                                <span v-if="posts.length" class="px-2 py-0.5 rounded-full text-[10px] font-black" :class="activeContentTab === 'publicaciones' ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300' : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400'">
                                     {{ posts.length }}
                                 </span>
                             </span>
@@ -475,7 +475,7 @@ const getExperienceLevelColor = (level) => {
                                     v-for="workout in displayedWorkouts" 
                                     :key="workout.id" 
                                     @click="$inertia.visit(route('workouts.show', workout.id))"
-                                    class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer group flex flex-col justify-between h-full relative overflow-hidden"
+                                    class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-500 transition-all cursor-pointer group flex flex-col justify-between h-full relative overflow-hidden"
                                 >
                                     <!-- Banda lateral de dificultad -->
                                     <div 
@@ -489,15 +489,15 @@ const getExperienceLevelColor = (level) => {
 
                                     <div class="pl-3">
                                         <div class="flex justify-between items-start mb-2">
-                                            <h3 class="font-bold text-gray-900 group-hover:text-indigo-600 transition-colors line-clamp-1 text-sm">{{ workout.name }}</h3>
-                                            <span class="text-[10px] font-bold text-gray-400 uppercase">{{ workout.difficulty }}</span>
+                                            <h3 class="font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-1 text-sm">{{ workout.name }}</h3>
+                                            <span class="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase">{{ workout.difficulty }}</span>
                                         </div>
                                         
-                                        <div class="flex items-center gap-3 text-xs text-gray-500">
-                                            <span class="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md">
+                                        <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                                            <span class="flex items-center gap-1 bg-gray-50 dark:bg-gray-700 px-2 py-1 rounded-md transition-colors">
                                                 ⏱️ {{ workout.duration_minutes }}'
                                             </span>
-                                            <span class="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md">
+                                            <span class="flex items-center gap-1 bg-gray-50 dark:bg-gray-700 px-2 py-1 rounded-md transition-colors">
                                                 💪 {{ workout.exercises?.length || 0 }}
                                             </span>
                                         </div>
@@ -527,16 +527,16 @@ const getExperienceLevelColor = (level) => {
                         </div>
                         
                         <!-- Empty State Rutinas -->
-                        <div v-else class="text-center py-12 bg-white rounded-2xl border border-gray-100 shadow-sm">
-                            <div class="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center mx-auto mb-3 text-xl">
+                        <div v-else class="text-center py-12 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm transition-colors">
+                            <div class="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 dark:text-indigo-400 rounded-xl flex items-center justify-center mx-auto mb-3 text-xl transition-colors">
                                 🏋️
                             </div>
-                            <p class="text-sm text-gray-500 mb-4">Sin rutinas públicas</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4 transition-colors">Sin rutinas públicas</p>
                             
                             <button 
                                 v-if="isOwnProfile"
                                 @click="$inertia.visit(route('workouts.create'))"
-                                class="px-4 py-2 bg-gray-900 text-white text-xs rounded-lg font-bold hover:bg-gray-800 transition"
+                                class="px-4 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg font-bold hover:bg-gray-800 dark:hover:bg-gray-600 transition-colors"
                             >
                                 Crear Rutina
                             </button>
@@ -546,7 +546,7 @@ const getExperienceLevelColor = (level) => {
                         <div v-if="isOwnProfile && workouts.length > 0" class="mt-4">
                             <button 
                                 @click="$inertia.visit(route('workouts.create'))"
-                                class="w-full py-3 bg-white border border-dashed border-gray-300 hover:border-indigo-400 text-gray-400 hover:text-indigo-600 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 hover:bg-indigo-50/30"
+                                class="w-full py-3 bg-white dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-600 hover:border-indigo-400 dark:hover:border-indigo-500 text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10"
                             >
                                 + Nueva Rutina
                             </button>
@@ -559,7 +559,7 @@ const getExperienceLevelColor = (level) => {
                             <div 
                                 v-for="post in posts" 
                                 :key="post.id" 
-                                class="break-inside-avoid bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-all group relative"
+                                class="break-inside-avoid bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all group relative"
                             >
                                 <!-- CASO 1: Post con Imagen (Estilo Instagram) -->
                                 <div v-if="post.image_path" class="relative cursor-pointer" @click="openPostModal(post)">
@@ -579,18 +579,18 @@ const getExperienceLevelColor = (level) => {
 
                                 <!-- CASO 2: Post solo Texto (Estilo Twitter) -->
                                 <div v-else class="p-4 flex flex-col h-full cursor-pointer" @click="openPostModal(post)">
-                                    <p class="text-sm text-gray-800 leading-relaxed font-medium mb-3 flex-1">{{ post.content }}</p>
+                                    <p class="text-sm text-gray-800 dark:text-gray-200 leading-relaxed font-medium mb-3 flex-1 transition-colors">{{ post.content }}</p>
                                     
                                     <!-- Link a Rutina si existe -->
                                     <div 
                                         v-if="post.workout" 
                                         @click.stop="$inertia.visit(route('workouts.show', post.workout.id))"
-                                        class="mb-3 bg-indigo-50 border border-indigo-100 rounded-lg p-2 flex items-center gap-2 hover:bg-indigo-100 transition cursor-pointer"
+                                        class="mb-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 rounded-lg p-2 flex items-center gap-2 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition cursor-pointer"
                                     >
-                                        <div class="w-8 h-8 bg-indigo-200 rounded-md flex items-center justify-center text-indigo-700 text-xs">🏋️</div>
+                                        <div class="w-8 h-8 bg-indigo-200 dark:bg-indigo-800 rounded-md flex items-center justify-center text-indigo-700 dark:text-indigo-300 text-xs">🏋️</div>
                                         <div class="flex-1 min-w-0">
-                                            <p class="text-xs font-bold text-indigo-900 truncate">{{ post.workout.name }}</p>
-                                            <p class="text-[10px] text-indigo-600">Ver rutina</p>
+                                            <p class="text-xs font-bold text-indigo-900 dark:text-indigo-200 truncate">{{ post.workout.name }}</p>
+                                            <p class="text-[10px] text-indigo-600 dark:text-indigo-400">Ver rutina</p>
                                         </div>
                                     </div>
 
@@ -619,16 +619,16 @@ const getExperienceLevelColor = (level) => {
                         </div>
                         
                         <!-- Empty State Publicaciones -->
-                        <div v-else class="text-center py-12 bg-white rounded-2xl border border-gray-100 shadow-sm">
-                            <div class="w-12 h-12 bg-pink-50 text-pink-500 rounded-xl flex items-center justify-center mx-auto mb-3 text-xl">
+                        <div v-else class="text-center py-12 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm transition-colors">
+                            <div class="w-12 h-12 bg-pink-50 dark:bg-pink-900/30 text-pink-500 dark:text-pink-400 rounded-xl flex items-center justify-center mx-auto mb-3 text-xl transition-colors">
                                 📷
                             </div>
-                            <p class="text-sm text-gray-500 mb-4">Sin publicaciones</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4 transition-colors">Sin publicaciones</p>
                             
                             <button 
                                 v-if="isOwnProfile"
                                 @click="$inertia.visit(route('posts.create'))"
-                                class="px-4 py-2 bg-gray-900 text-white text-xs rounded-lg font-bold hover:bg-gray-800 transition"
+                                class="px-4 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg font-bold hover:bg-gray-800 dark:hover:bg-gray-600 transition-colors"
                             >
                                 Crear Post
                             </button>
@@ -641,14 +641,14 @@ const getExperienceLevelColor = (level) => {
 
 
             
-            <div v-else class="max-w-2xl mx-auto mt-8 text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100 px-6">
-                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div v-else class="max-w-2xl mx-auto mt-8 text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 px-6 transition-colors">
+                <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors">
+                    <svg class="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                 </div>
-                <h3 class="text-lg font-bold text-gray-900 mb-2">Este perfil es privado</h3>
-                <p class="text-gray-500">Conecta con {{ profileUser.name }} para ver sus publicaciones y actividad reciente.</p>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2 transition-colors">Este perfil es privado</h3>
+                <p class="text-gray-500 dark:text-gray-400 transition-colors">Conecta con {{ profileUser.name }} para ver sus publicaciones y actividad reciente.</p>
                 <button v-if="connection_status === 'none'" @click="connect" :disabled="processingConnection" class="mt-6 btn-primary-gradient">
                     Conectar ahora
                 </button>
@@ -702,11 +702,11 @@ const getExperienceLevelColor = (level) => {
             <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" @click="showColorModal = false"></div>
             
             <!-- Modal Content -->
-            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden animate-bounce-in">
+            <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden animate-bounce-in transition-colors">
                 <!-- Header -->
-                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                    <h3 class="text-lg font-black text-gray-900">Personalizar Banner</h3>
-                    <button @click="showColorModal = false" class="text-gray-400 hover:text-gray-600 transition p-1 rounded-full hover:bg-gray-200">
+                <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-700/50 transition-colors">
+                    <h3 class="text-lg font-black text-gray-900 dark:text-white transition-colors">Personalizar Banner</h3>
+                    <button @click="showColorModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600">
                         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -715,7 +715,7 @@ const getExperienceLevelColor = (level) => {
 
                 <!-- Body -->
                 <div class="p-6">
-                    <p class="text-sm text-gray-500 mb-4 font-medium">Elige un color que represente tu estilo:</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4 font-medium transition-colors">Elige un color que represente tu estilo:</p>
                     
                     <div class="grid grid-cols-5 gap-3">
                         <button 
@@ -746,14 +746,14 @@ const getExperienceLevelColor = (level) => {
 .btn-primary-gradient {
     @apply inline-flex items-center px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:from-indigo-700 hover:to-purple-700 active:bg-indigo-900 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150 shadow-md hover:shadow-lg transform hover:-translate-y-0.5;
 }
-.btn-secondary { @apply inline-flex items-center justify-center px-4 py-3 bg-white border border-gray-300 rounded-xl font-bold text-sm text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 transition disabled:opacity-50; }
+.btn-secondary { @apply inline-flex items-center justify-center px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl font-bold text-sm text-gray-700 dark:text-gray-200 uppercase tracking-widest shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition disabled:opacity-50; }
 .btn-secondary-gradient {
-    @apply inline-flex items-center px-6 py-2.5 bg-white border border-gray-300 rounded-full font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:text-gray-500 focus:outline-none focus:border-blue-300 focus:ring ring-blue-200 active:text-gray-800 active:bg-gray-50 disabled:opacity-25 transition ease-in-out duration-150 hover:shadow-md transform hover:-translate-y-0.5;
+    @apply inline-flex items-center px-6 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-full font-semibold text-xs text-gray-700 dark:text-gray-200 uppercase tracking-widest shadow-sm hover:text-gray-500 dark:hover:text-gray-400 focus:outline-none focus:border-blue-300 focus:ring ring-blue-200 active:text-gray-800 active:bg-gray-50 disabled:opacity-25 transition ease-in-out duration-150 hover:shadow-md transform hover:-translate-y-0.5;
 }
 .btn-danger-gradient {
     @apply inline-flex items-center px-6 py-2.5 bg-gradient-to-r from-red-500 to-pink-600 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:from-red-600 hover:to-pink-700 active:bg-red-900 focus:outline-none focus:border-red-900 focus:ring ring-red-300 disabled:opacity-25 transition ease-in-out duration-150 shadow-md hover:shadow-lg transform hover:-translate-y-0.5;
 }
 .btn-disabled {
-    @apply inline-flex items-center px-6 py-2.5 bg-gray-300 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest cursor-not-allowed;
+    @apply inline-flex items-center px-6 py-2.5 bg-gray-300 dark:bg-gray-700 border border-transparent rounded-full font-semibold text-xs text-white dark:text-gray-400 uppercase tracking-widest cursor-not-allowed transition-colors;
 }
 </style>

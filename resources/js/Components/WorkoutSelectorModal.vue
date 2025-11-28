@@ -56,20 +56,20 @@ const categoryEmojis = {
             >
                 <div 
                     v-if="show"
-                    class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[85vh] flex flex-col"
+                    class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full max-h-[85vh] flex flex-col transition-colors"
                 >
                     <!-- Header -->
-                    <div class="px-6 py-5 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-purple-50 rounded-t-2xl">
-                        <h3 id="workout-selector-title" class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <div class="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-t-2xl transition-colors">
+                        <h3 id="workout-selector-title" class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
                             <span class="text-2xl">🏋️</span>
                             Vincular Rutina
                         </h3>
                         <button 
                             @click="$emit('close')" 
-                            class="p-2 hover:bg-white rounded-lg transition-colors"
+                            class="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors"
                             aria-label="Cerrar modal"
                         >
-                            <svg class="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
@@ -81,16 +81,16 @@ const categoryEmojis = {
                         <button
                             @click="selectWorkout(null)"
                             class="w-full p-4 rounded-xl border-2 transition-all text-left hover:shadow-md"
-                            :class="localSelection === null ? 'border-indigo-500 bg-indigo-50 shadow-md' : 'border-gray-200 hover:border-gray-300 bg-white'"
+                            :class="localSelection === null ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 shadow-md' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800'"
                             aria-label="Sin rutina vinculada"
                         >
                             <div class="flex items-center gap-3">
-                                <div class="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
+                                <div class="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0 transition-colors">
                                     <span class="text-2xl">🚫</span>
                                 </div>
                                 <div class="flex-1">
-                                    <div class="font-bold text-gray-900">Sin rutina vinculada</div>
-                                    <div class="text-xs text-gray-500">Publicación normal sin referencia</div>
+                                    <div class="font-bold text-gray-900 dark:text-white transition-colors">Sin rutina vinculada</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 transition-colors">Publicación normal sin referencia</div>
                                 </div>
                                 <div v-if="localSelection === null" class="text-indigo-600">
                                     <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
@@ -103,10 +103,10 @@ const categoryEmojis = {
                         <!-- Separador -->
                         <div v-if="workouts && workouts.length > 0" class="relative py-2">
                             <div class="absolute inset-0 flex items-center">
-                                <div class="w-full border-t border-gray-200"></div>
+                                <div class="w-full border-t border-gray-200 dark:border-gray-700 transition-colors"></div>
                             </div>
                             <div class="relative flex justify-center">
-                                <span class="px-3 bg-white text-xs font-bold text-gray-400 uppercase tracking-wider">Tus Rutinas</span>
+                                <span class="px-3 bg-white dark:bg-gray-800 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider transition-colors">Tus Rutinas</span>
                             </div>
                         </div>
 
@@ -115,7 +115,7 @@ const categoryEmojis = {
                             <button
                                 @click="selectWorkout(workout.id)"
                                 class="w-full p-4 rounded-xl border-2 transition-all text-left hover:shadow-md"
-                                :class="localSelection === workout.id ? 'border-indigo-500 bg-indigo-50 shadow-md' : 'border-gray-200 hover:border-gray-300 bg-white'"
+                                :class="localSelection === workout.id ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 shadow-md' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800'"
                                 :aria-label="`Seleccionar rutina ${workout.name}`"
                             >
                                 <div class="flex items-center gap-3">
@@ -123,10 +123,10 @@ const categoryEmojis = {
                                         <span class="text-2xl">{{ categoryEmojis[workout.category] || '🏋️' }}</span>
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <div class="font-bold text-gray-900 truncate">{{ workout.name }}</div>
-                                        <div class="flex items-center gap-2 text-xs text-gray-500">
+                                        <div class="font-bold text-gray-900 dark:text-white truncate transition-colors">{{ workout.name }}</div>
+                                        <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 transition-colors">
                                             <span>{{ workout.category }}</span>
-                                            <span v-if="workout.difficulty" class="text-gray-400">•</span>
+                                            <span v-if="workout.difficulty" class="text-gray-400 dark:text-gray-500">•</span>
                                             <span v-if="workout.difficulty" class="capitalize">{{ workout.difficulty }}</span>
                                         </div>
                                     </div>
@@ -142,16 +142,16 @@ const categoryEmojis = {
                         <!-- Empty state -->
                         <div v-if="!workouts || workouts.length === 0" class="text-center py-12">
                             <div class="text-6xl mb-4">🏋️</div>
-                            <p class="text-gray-700 font-bold text-lg mb-1">No tienes rutinas creadas</p>
-                            <p class="text-sm text-gray-500">Crea una rutina primero para vincularla a tus publicaciones</p>
+                            <p class="text-gray-700 dark:text-gray-200 font-bold text-lg mb-1 transition-colors">No tienes rutinas creadas</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 transition-colors">Crea una rutina primero para vincularla a tus publicaciones</p>
                         </div>
                     </div>
 
                     <!-- Footer -->
-                    <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-2xl flex gap-3">
+                    <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-b-2xl flex gap-3 transition-colors">
                         <button
                             @click="$emit('close')"
-                            class="flex-1 px-4 py-3 border-2 border-gray-300 text-gray-700 font-bold rounded-xl hover:bg-white transition-all"
+                            class="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-bold rounded-xl hover:bg-white dark:hover:bg-gray-800 transition-all"
                             aria-label="Cancelar selección"
                         >
                             Cancelar
@@ -184,12 +184,24 @@ const categoryEmojis = {
     border-radius: 10px;
 }
 
+.dark .custom-scrollbar::-webkit-scrollbar-track {
+    background: #374151;
+}
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
     background: #c7d2fe;
     border-radius: 10px;
 }
 
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #4b5563;
+}
+
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #a5b4fc;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
 }
 </style>

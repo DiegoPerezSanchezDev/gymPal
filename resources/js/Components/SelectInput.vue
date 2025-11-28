@@ -48,7 +48,7 @@ onUnmounted(() => {
 <template>
     <div ref="dropdownRef" class="relative">
         <!-- Label -->
-        <label v-if="label" :for="id" class="block text-sm font-bold text-gray-700 mb-2">
+        <label v-if="label" :for="id" class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 transition-colors">
             {{ label }}
         </label>
 
@@ -56,19 +56,19 @@ onUnmounted(() => {
         <button
             type="button"
             @click="toggleDropdown"
-            class="w-full px-4 py-4 rounded-xl border-2 border-gray-200 bg-white hover:border-indigo-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all text-left flex items-center justify-between group outline-none"
-            :class="{ 'border-indigo-500 ring-4 ring-indigo-100': isOpen }"
+            class="w-full px-4 py-4 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-indigo-300 dark:hover:border-indigo-500 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition-all text-left flex items-center justify-between group outline-none"
+            :class="{ 'border-indigo-500 ring-4 ring-indigo-100 dark:ring-indigo-900': isOpen }"
         >
             <div class="flex-1 min-h-[1.5rem]">
-                <div class="font-bold text-gray-900">
+                <div class="font-bold text-gray-900 dark:text-white transition-colors">
                     {{ selectedOption?.label || 'Seleccionar...' }}
                 </div>
-                <div v-if="selectedOption?.description" class="text-sm text-gray-500 mt-0.5">
+                <div v-if="selectedOption?.description" class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 transition-colors">
                     {{ selectedOption.description }}
                 </div>
             </div>
             <svg 
-                class="w-5 h-5 text-gray-400 transition-transform duration-200"
+                class="w-5 h-5 text-gray-400 dark:text-gray-500 transition-all duration-200"
                 :class="{ 'rotate-180': isOpen }"
                 fill="none" 
                 viewBox="0 0 24 24" 
@@ -89,29 +89,29 @@ onUnmounted(() => {
         >
             <div
                 v-if="isOpen"
-                class="absolute z-50 mt-2 w-full bg-white rounded-xl border-2 border-gray-200 shadow-xl max-h-60 overflow-y-auto"
+                class="absolute z-50 mt-2 w-full bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-600 shadow-xl max-h-60 overflow-y-auto transition-colors"
             >
                 <button
                     v-for="option in options"
                     :key="option.value"
                     type="button"
                     @click="selectOption(option)"
-                    class="w-full px-4 py-3 text-left hover:bg-indigo-50 transition-colors flex items-center justify-between group border-b border-gray-100 last:border-b-0"
+                    class="w-full px-4 py-3 text-left hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors flex items-center justify-between group border-b border-gray-100 dark:border-gray-700 last:border-b-0"
                     :class="{
-                        'bg-indigo-50': option.value === modelValue
+                        'bg-indigo-50 dark:bg-indigo-900/30': option.value === modelValue
                     }"
                 >
                     <div class="flex-1">
-                        <div class="font-medium text-gray-900">
+                        <div class="font-medium text-gray-900 dark:text-white transition-colors">
                             {{ option.label }}
                         </div>
-                        <div v-if="option.description" class="text-sm text-gray-500 mt-0.5">
+                        <div v-if="option.description" class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 transition-colors">
                             {{ option.description }}
                         </div>
                     </div>
                     <svg
                         v-if="option.value === modelValue"
-                        class="w-5 h-5 text-indigo-600"
+                        class="w-5 h-5 text-indigo-600 dark:text-indigo-400 transition-colors"
                         fill="currentColor"
                         viewBox="0 0 20 20"
                     >

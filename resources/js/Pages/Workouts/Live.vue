@@ -201,19 +201,19 @@ watch(() => {}, () => {
     <Head :title="title" />
 
     <AuthenticatedLayout>
-        <div class="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 pb-24">
+        <div class="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-gray-900 dark:to-gray-800 pb-24 transition-colors">
             
             <!-- Header fijo -->
-            <div class="sticky top-16 z-20 bg-white shadow-md border-b border-gray-200">
+            <div class="sticky top-16 z-20 bg-white dark:bg-gray-800 shadow-md border-b border-gray-200 dark:border-gray-700 transition-colors">
                 <div class="max-w-4xl mx-auto px-4 py-4">
                     <div class="flex items-center justify-between mb-3">
                         <div>
-                            <h1 class="text-xl font-bold text-gray-900">{{ workout.name }}</h1>
-                            <p class="text-sm text-gray-500">Ejercicio {{ currentExerciseIndex + 1 }} de {{ workout.exercises.length }}</p>
+                            <h1 class="text-xl font-bold text-gray-900 dark:text-white transition-colors">{{ workout.name }}</h1>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 transition-colors">Ejercicio {{ currentExerciseIndex + 1 }} de {{ workout.exercises.length }}</p>
                         </div>
                         <button 
                             @click="openExitModal"
-                            class="p-2 text-gray-500 hover:text-red-600 transition"
+                            class="p-2 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition"
                         >
                             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -223,13 +223,13 @@ watch(() => {}, () => {
                     
                     <!-- Barra de progreso -->
                     <div class="relative">
-                        <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
+                        <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden transition-colors">
                             <div 
                                 class="h-full bg-gradient-to-r from-indigo-600 to-purple-600 transition-all duration-500"
                                 :style="{ width: progressPercentage + '%' }"
                             ></div>
                         </div>
-                        <p class="text-xs text-center text-gray-600 mt-1 font-bold">
+                        <p class="text-xs text-center text-gray-600 dark:text-gray-300 mt-1 font-bold transition-colors">
                             {{ completedSetsCount }} / {{ totalSets }} series ({{ progressPercentage }}%)
                         </p>
                     </div>
@@ -241,15 +241,15 @@ watch(() => {}, () => {
                 v-if="isResting" 
                 class="fixed inset-0 bg-black/50 z-30 flex items-center justify-center backdrop-blur-sm"
             >
-                <div class="bg-white rounded-3xl p-8 shadow-2xl text-center max-w-sm mx-4 animate-pulse">
+                <div class="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-2xl text-center max-w-sm mx-4 animate-pulse transition-colors">
                     <div class="text-6xl mb-4">⏱️</div>
-                    <h3 class="text-2xl font-bold text-gray-900 mb-2">Descansa</h3>
-                    <div class="text-7xl font-black text-indigo-600 mb-6">
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2 transition-colors">Descansa</h3>
+                    <div class="text-7xl font-black text-indigo-600 dark:text-indigo-400 mb-6 transition-colors">
                         {{ restTimeRemaining }}
                     </div>
                     <button 
                         @click="skipRest"
-                        class="px-6 py-3 bg-gray-200 hover:bg-gray-300 rounded-xl font-bold transition"
+                        class="px-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-xl font-bold transition"
                     >
                         Saltar descanso
                     </button>
@@ -260,27 +260,26 @@ watch(() => {}, () => {
             <div class="max-w-4xl mx-auto px-4 py-8">
                 
                 <!-- Ejercicio actual -->
-                <div class="bg-white rounded-3xl shadow-xl p-6 mb-6 border-4 border-indigo-200">
+                <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-6 mb-6 border-4 border-indigo-200 dark:border-indigo-800 transition-colors">
                     <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-3xl font-black text-gray-900">
+                        <h2 class="text-3xl font-black text-gray-900 dark:text-white transition-colors">
                             {{ currentExercise.exercise_name }}
                         </h2>
                         <span class="text-5xl">💪</span>
                     </div>
                     
-                    <p v-if="currentExercise.notes" class="text-gray-600 mb-4 italic">
+                    <p v-if="currentExercise.notes" class="text-gray-600 dark:text-gray-300 mb-4 italic transition-colors">
                         📝 {{ currentExercise.notes }}
                     </p>
 
                     <!-- Mostrar PR actual -->
                     <div 
                         v-if="personalRecords?.[currentExercise.exercise_name.toLowerCase()]?.max_weight > 0"
-                        class="mb-6 p-3 bg-yellow-50 border border-yellow-200 rounded-xl flex items-center gap-3"
-                    >
+                        class="mb-6 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl flex items-center gap-3 transition-colors">
                         <span class="text-2xl">🏆</span>
                         <div>
-                            <p class="text-xs font-bold text-yellow-800 uppercase tracking-wider">Tu Récord Actual</p>
-                            <p class="text-sm text-yellow-900">
+                            <p class="text-xs font-bold text-yellow-800 dark:text-yellow-400 uppercase tracking-wider transition-colors">Tu Récord Actual</p>
+                            <p class="text-sm text-yellow-900 dark:text-yellow-300 transition-colors">
                                 <span class="font-black">{{ personalRecords[currentExercise.exercise_name.toLowerCase()].max_weight }}kg</span> 
                                 (máx peso) • 
                                 <span class="font-black">{{ personalRecords[currentExercise.exercise_name.toLowerCase()].max_reps }} reps</span> 
@@ -297,8 +296,8 @@ watch(() => {}, () => {
                             @click="toggleSet(currentExerciseIndex, setIndex)"
                             class="flex items-center gap-4 p-4 rounded-2xl border-2 transition-all cursor-pointer"
                             :class="completedSets[currentExerciseIndex][setIndex] 
-                                ? 'bg-green-50 border-green-400' 
-                                : 'bg-gray-50 border-gray-200 hover:border-indigo-300'"
+                                ? 'bg-green-50 dark:bg-green-900/20 border-green-400 dark:border-green-600' 
+                                : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-500'"
                         >
                             <!-- Checkbox -->
                             <div class="flex-shrink-0">
@@ -306,7 +305,7 @@ watch(() => {}, () => {
                                     class="w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all"
                                     :class="completedSets[currentExerciseIndex][setIndex] 
                                         ? 'bg-green-500 border-green-500' 
-                                        : 'border-gray-300'"
+                                        : 'border-gray-300 dark:border-gray-600'"
                                 >
                                     <svg v-if="completedSets[currentExerciseIndex][setIndex]" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
@@ -317,10 +316,10 @@ watch(() => {}, () => {
                             <!-- Info de la serie (Rediseño Vertical) -->
                             <div class="flex-1 flex flex-col items-center justify-center gap-1">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-sm font-bold text-gray-500 uppercase tracking-wider">Serie {{ setIndex + 1 }}</span>
+                                    <span class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors">Serie {{ setIndex + 1 }}</span>
                                     <span 
                                         v-if="set.type && set.type !== 'normal'"
-                                        class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700"
+                                        class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 transition-colors"
                                     >
                                         {{ setTypeLabels[set.type] || set.type }}
                                     </span>
@@ -329,33 +328,33 @@ watch(() => {}, () => {
                                 <div class="flex items-center gap-3" @click.stop>
                                     <!-- Reps -->
                                     <div class="flex flex-col items-center">
-                                        <div class="flex items-center bg-gray-50 rounded-lg px-2 py-1 border border-gray-100">
+                                        <div class="flex items-center bg-gray-50 dark:bg-gray-800 rounded-lg px-2 py-1 border border-gray-100 dark:border-gray-600 transition-colors">
                                             <input 
                                                 v-model="set.reps"
                                                 type="number"
-                                                class="w-10 bg-transparent border-none p-0 text-center font-black text-indigo-600 text-xl focus:ring-0 appearance-none"
+                                                class="w-10 bg-transparent border-none p-0 text-center font-black text-indigo-600 dark:text-indigo-400 text-xl focus:ring-0 appearance-none transition-colors"
                                                 min="0"
                                                 placeholder="0"
                                             />
                                         </div>
-                                        <span class="text-[10px] text-gray-400 font-bold uppercase mt-0.5">Reps</span>
+                                        <span class="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase mt-0.5 transition-colors">Reps</span>
                                     </div>
 
-                                    <span class="text-gray-300 text-xl font-light">/</span>
+                                    <span class="text-gray-300 dark:text-gray-600 text-xl font-light transition-colors">/</span>
 
                                     <!-- Peso -->
                                     <div class="flex flex-col items-center">
-                                        <div class="flex items-center bg-gray-50 rounded-lg px-2 py-1 border border-gray-100">
+                                        <div class="flex items-center bg-gray-50 dark:bg-gray-800 rounded-lg px-2 py-1 border border-gray-100 dark:border-gray-600 transition-colors">
                                             <input 
                                                 v-model="set.weight"
                                                 type="number"
-                                                class="w-14 bg-transparent border-none p-0 text-center font-black text-purple-600 text-xl focus:ring-0 appearance-none"
+                                                class="w-14 bg-transparent border-none p-0 text-center font-black text-purple-600 dark:text-purple-400 text-xl focus:ring-0 appearance-none transition-colors"
                                                 min="0"
                                                 step="0.5"
                                                 placeholder="0"
                                             />
                                         </div>
-                                        <span class="text-[10px] text-gray-400 font-bold uppercase mt-0.5">Kg</span>
+                                        <span class="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase mt-0.5 transition-colors">Kg</span>
                                     </div>
                                 </div>
                             </div>
@@ -367,7 +366,7 @@ watch(() => {}, () => {
                         <button 
                             @click="previousExercise"
                             :disabled="currentExerciseIndex === 0"
-                            class="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 rounded-xl font-bold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            class="flex-1 px-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-xl font-bold transition disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             ← Anterior
                         </button>
@@ -395,19 +394,19 @@ watch(() => {}, () => {
 
         <!-- Modal de Finalización con Notas -->
         <div v-if="showFinishModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-            <div class="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl animate-fadeIn">
+            <div class="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-md p-6 shadow-2xl animate-fadeIn transition-colors">
                 <div class="text-center mb-6">
                     <div class="text-6xl mb-2">🎉</div>
-                    <h2 class="text-2xl font-black text-gray-900">¡Entrenamiento Terminado!</h2>
-                    <p class="text-gray-500">Has completado {{ completedSetsCount }} de {{ totalSets }} series.</p>
+                    <h2 class="text-2xl font-black text-gray-900 dark:text-white transition-colors">¡Entrenamiento Terminado!</h2>
+                    <p class="text-gray-500 dark:text-gray-400 transition-colors">Has completado {{ completedSetsCount }} de {{ totalSets }} series.</p>
                 </div>
 
                 <div class="mb-6">
-                    <label class="block text-sm font-bold text-gray-700 mb-2">Notas del entrenamiento (opcional)</label>
+                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 transition-colors">Notas del entrenamiento (opcional)</label>
                     <textarea 
                         v-model="workoutNotes"
                         rows="4"
-                        class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+                        class="w-full rounded-xl border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500 dark:focus:ring-indigo-900 transition-colors"
                         placeholder="¿Cómo te sentiste? ¿Algún dolor? ¿Récord personal?"
                     ></textarea>
                 </div>
@@ -415,7 +414,7 @@ watch(() => {}, () => {
                 <div class="flex gap-3">
                     <button 
                         @click="showFinishModal = false"
-                        class="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition"
+                        class="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition"
                     >
                         Cancelar
                     </button>
@@ -424,7 +423,7 @@ watch(() => {}, () => {
                         class="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg"
                         :disabled="isSubmitting"
                     >
-                        {{ isSubmitting ? 'Guardando...' : 'Guardar Log' }}
+                        {{ isSubmitting ? 'Guardando...' : 'Guardar' }}
                     </button>
                 </div>
             </div>

@@ -27,6 +27,7 @@ class Notification extends Model
     // Constantes para tipos de notificación
     const TYPE_POST_SHARED = 'post_shared';
     const TYPE_NEW_MESSAGE = 'new_message';
+    const TYPE_CONNECTION_REQUEST = 'connection_request';
     const TYPE_CONNECTION_ACCEPTED = 'connection_accepted';
     const TYPE_POST_LIKED = 'post_liked';
     const TYPE_POST_COMMENTED = 'post_commented';

@@ -22,20 +22,22 @@ class ConnectionController extends Controller
             return response()->json(['message' => 'No puedes conectarte contigo mismo.'], 422);
         }
 
-        $existingConnection = Connection::where(function ($query) use ($sender, $receiver) {
-            $query->where('sender_id', $sender->id)->where('receiver_id', $receiver->id);
-        })->orWhere(function ($query) use ($sender, $receiver) {
-            $query->where('sender_id', $receiver->id)->where('receiver_id', $sender->id);
-        })->first();
+        // Verificar si YA existe una solicitud del sender al receiver
+        $existingConnection = Connection::where('sender_id', $sender->id)
+            ->where('receiver_id', $receiver->id)
+            ->first();
 
         if ($existingConnection) {
-            return response()->json(['message' => 'Ya existe una conexión o solicitud pendiente.'], 409);
+            return response()->json(['message' => 'Ya has enviado una solicitud a este usuario.'], 409);
         }
         
         $connection = Connection::create([
             'sender_id'   => $sender->id,
             'receiver_id' => $receiver->id,
         ]);
+
+        // Crear notificación para el receptor
+        NotificationService::notifyConnectionRequest($receiver, $connection, $sender);
 
         return redirect()->back()->with('success', 'Solicitud de conexión enviada.');
     }

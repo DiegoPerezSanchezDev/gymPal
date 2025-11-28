@@ -98,10 +98,10 @@ const getGradient = (level) => {
                         <span class="text-2xl">📌</span>
                     </div>
                     <div>
-                        <h2 class="font-extrabold text-xl text-gray-900 leading-tight">
+                        <h2 class="font-extrabold text-xl text-gray-900 dark:text-white leading-tight transition-colors">
                             Rutinas Guardadas
                         </h2>
-                        <p class="text-xs text-gray-500 font-medium">Tus rutinas favoritas</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 font-medium transition-colors">Tus rutinas favoritas</p>
                     </div>
                 </div>
             </template>
@@ -116,7 +116,7 @@ const getGradient = (level) => {
                                 v-model="searchQuery"
                                 type="text"
                                 placeholder="Buscar por nombre o creador"
-                                class="w-full px-5 py-3 pl-12 rounded-2xl border-none bg-white shadow-sm focus:ring-2 focus:ring-pink-500 transition text-gray-700 placeholder-gray-400"
+                                class="w-full px-5 py-3 pl-12 rounded-2xl border-none bg-white dark:bg-gray-800 shadow-sm focus:ring-2 focus:ring-pink-500 transition-colors text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500"
                             />
                             <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -130,7 +130,7 @@ const getGradient = (level) => {
                             v-for="workout in filteredWorkouts" 
                             :key="workout.id"
                             :href="route('workouts.show', workout.id)"
-                            class="group relative bg-white rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col"
+                            class="group relative bg-white dark:bg-gray-800 rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 dark:border-gray-700 flex flex-col"
                         >
                             <!-- Header Gradiente -->
                             <div class="h-24 bg-gradient-to-r relative overflow-hidden" :class="getGradient(workout.difficulty)">
@@ -148,39 +148,39 @@ const getGradient = (level) => {
                                         class="w-16 h-16 rounded-2xl border-4 border-white shadow-md bg-white object-cover"
                                         :alt="workout.user.name"
                                     />
-                                    <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-gray-100 text-gray-600 rounded-lg">
+                                    <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg transition-colors">
                                         {{ workout.category }}
                                     </span>
                                 </div>
 
                                 <!-- Título y Autor -->
                                 <div class="mb-4">
-                                    <h3 class="text-xl font-black text-gray-900 leading-tight mb-1 group-hover:text-pink-600 transition-colors line-clamp-1">
+                                    <h3 class="text-xl font-black text-gray-900 dark:text-white leading-tight mb-1 group-hover:text-pink-600 dark:group-hover:text-pink-400 transition-colors line-clamp-1">
                                         {{ workout.name }}
                                     </h3>
-                                    <p class="text-sm text-gray-500 font-medium">
-                                        por <span class="text-gray-700">@{{ workout.user.username }}</span>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 font-medium transition-colors">
+                                        por <span class="text-gray-700 dark:text-gray-300">@{{ workout.user.username }}</span>
                                     </p>
                                 </div>
 
                                 <!-- Stats Grid -->
                                 <div class="grid grid-cols-2 gap-3 mb-6">
-                                    <div class="bg-gray-50 rounded-xl p-2 text-center">
-                                        <p class="text-xs text-gray-400 font-bold uppercase">Duración</p>
-                                        <p class="font-bold text-gray-700">{{ workout.duration_minutes }} min</p>
+                                    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-2 text-center transition-colors">
+                                        <p class="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase transition-colors">Duración</p>
+                                        <p class="font-bold text-gray-700 dark:text-gray-200 transition-colors">{{ workout.duration_minutes }} min</p>
                                     </div>
-                                    <div class="bg-gray-50 rounded-xl p-2 text-center">
-                                        <p class="text-xs text-gray-400 font-bold uppercase">Ejercicios</p>
-                                        <p class="font-bold text-gray-700">{{ workout.exercises?.length || 0 }}</p>
+                                    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-2 text-center transition-colors">
+                                        <p class="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase transition-colors">Ejercicios</p>
+                                        <p class="font-bold text-gray-700 dark:text-gray-200 transition-colors">{{ workout.exercises?.length || 0 }}</p>
                                     </div>
                                 </div>
 
                                 <!-- Botón Ver -->
-                                <div class="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
-                                    <span class="text-xs font-bold text-pink-500 flex items-center gap-1">
+                                <div class="mt-auto pt-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between transition-colors">
+                                    <span class="text-xs font-bold text-pink-500 dark:text-pink-400 flex items-center gap-1 transition-colors">
                                         📌 {{ workout.times_saved }} guardados
                                     </span>
-                                    <span class="text-sm font-bold text-gray-900 group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                                    <span class="text-sm font-bold text-gray-900 dark:text-white group-hover:translate-x-1 transition-transform flex items-center gap-1">
                                         Ver Rutina
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                                     </span>
@@ -190,12 +190,12 @@ const getGradient = (level) => {
                     </div>
 
                     <!-- Empty state -->
-                    <div v-else class="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-200">
-                        <div class="w-20 h-20 bg-pink-50 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl">
+                    <div v-else class="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 transition-colors">
+                        <div class="w-20 h-20 bg-pink-50 dark:bg-pink-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl transition-colors">
                             📌
                         </div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-2">No has guardado ninguna rutina</h3>
-                        <p class="text-gray-500 mb-6 max-w-md mx-auto">
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2 transition-colors">No has guardado ninguna rutina</h3>
+                        <p class="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto transition-colors">
                             Explora rutinas de la comunidad y guarda tus favoritas para acceder rápidamente.
                         </p>
                         <Link 
@@ -209,12 +209,12 @@ const getGradient = (level) => {
 
                     <!-- Indicador de carga para scroll infinito -->
                     <div v-if="isLoadingMore" class="mt-8 flex justify-center">
-                        <div class="flex items-center gap-3 px-6 py-3 bg-white rounded-xl shadow-sm border border-gray-100">
-                            <svg class="animate-spin h-5 w-5 text-pink-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <div class="flex items-center gap-3 px-6 py-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                            <svg class="animate-spin h-5 w-5 text-pink-600 dark:text-pink-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            <span class="text-sm font-bold text-gray-600">Cargando más rutinas...</span>
+                            <span class="text-sm font-bold text-gray-600 dark:text-gray-300 transition-colors">Cargando más rutinas...</span>
                         </div>
                     </div>
                     

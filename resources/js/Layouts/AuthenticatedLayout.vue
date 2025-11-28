@@ -44,16 +44,16 @@ const showMobileMenu = ref(false);
 </script>
 
 <template>
-    <div class="min-h-screen bg-gray-100">
+    <div class="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
         <Head :title="page.props.title || 'GymPal'" />
 
-        <nav v-if="authUser" class="bg-white border-b border-gray-100 sticky top-0 z-40">
+        <nav v-if="authUser" class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 sticky top-0 z-40 transition-colors duration-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex">
                     <div class="shrink-0 flex items-center">
                         <Link :href="route('feed.index')">
-                            <ApplicationLogo class="block h-9 w-auto fill-current text-gray-800" />
+                            <ApplicationLogo class="block h-9 w-auto fill-current text-gray-800 dark:text-white transition-colors" />
                         </Link>
                     </div>
                     <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
@@ -69,7 +69,7 @@ const showMobileMenu = ref(false);
                 <div class="flex items-center">
                     <div class="hidden sm:flex sm:items-center sm:ml-6 space-x-4">
                         <!-- Chat -->
-                        <Link :href="route('chat.index')" title="Chat" class="text-gray-500 hover:text-indigo-600 p-2 rounded-full transition-colors">
+                        <Link :href="route('chat.index')" title="Chat" class="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-2 rounded-full transition-colors">
                             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3.68-3.091a1.256 1.256 0 00-.86-.317H7.812a2.25 2.25 0 01-2.25-2.25V6.982c0-1.242 1.008-2.25 2.25-2.25h8.574a2.25 2.25 0 012.25 2.25v1.529z" />
                             </svg>
@@ -80,9 +80,12 @@ const showMobileMenu = ref(false);
                             <NotificationBell />
                         </div>
                         
+                        <!-- Theme Switcher -->
+                        <ThemeSwitcher />
+                        
                         <Dropdown align="right" width="48">
                             <template #trigger>
-                                <button class="flex items-center text-sm font-medium text-gray-500 hover:text-gray-700 focus:outline-none transition">
+                                <button class="flex items-center text-sm font-medium text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white focus:outline-none transition">
                                     <img :src="profilePictureUrl" class="h-8 w-8 rounded-full object-cover mr-2" :alt="authUser.name">
                                     <span>{{ authUser.name }}</span>
                                     <svg class="ml-2 -mr-0.5 h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
@@ -102,7 +105,10 @@ const showMobileMenu = ref(false);
                         <!-- Notificaciones Móvil -->
                         <NotificationBell />
                         
-                        <Link :href="route('chat.index')" title="Chat" class="text-gray-500 hover:text-indigo-600 p-1 rounded-full">
+                        <!-- Theme Switcher Móvil -->
+                        <ThemeSwitcher />
+                        
+                        <Link :href="route('chat.index')" title="Chat" class="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-1 rounded-full transition-colors">
                             <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3.68-3.091a1.256 1.256 0 00-.86-.317H7.812a2.25 2.25 0 01-2.25-2.25V6.982c0-1.242 1.008-2.25 2.25-2.25h8.574a2.25 2.25 0 012.25 2.25v1.529z" /></svg>
                         </Link>
                     </div>
@@ -119,7 +125,7 @@ const showMobileMenu = ref(false);
     
     <!-- Floating Menu (Mobile) -->
     <div v-if="showMobileMenu" @click="showMobileMenu = false" class="fixed inset-0 bg-black/50 z-40 md:hidden"></div>
-    <div v-if="showMobileMenu" class="fixed bottom-20 left-1/2 -translate-x-1/2 bg-white rounded-2xl shadow-2xl p-4 z-50 md:hidden w-80">
+    <div v-if="showMobileMenu" class="fixed bottom-20 left-1/2 -translate-x-1/2 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-4 z-50 md:hidden w-80 transition-colors">
         <div class="grid grid-cols-3 gap-3">
             <Link :href="route('posts.create')" class="flex flex-col items-center gap-2 p-3 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 transition">
                 <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
@@ -149,7 +155,7 @@ const showMobileMenu = ref(false);
         </div>
     </div>
     
-    <nav v-if="authUser" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg md:hidden z-30">
+    <nav v-if="authUser" class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg md:hidden z-30 transition-colors">
         <div class="flex items-center justify-around h-16">
             <Link :href="route('feed.index')" title="Inicio" class="bottom-nav-link" :class="{'active': route().current('feed.index')}">
                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>

@@ -187,10 +187,10 @@ const statColors = [
                         <span class="text-2xl">📈</span>
                     </div>
                     <div>
-                        <h2 class="font-extrabold text-xl text-gray-900 leading-tight">
+                        <h2 class="font-extrabold text-xl text-gray-900 dark:text-white leading-tight transition-colors">
                             Mi Progreso
                         </h2>
-                        <p class="text-xs text-gray-500 font-medium">Evolución por rutina</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 font-medium transition-colors">Evolución por rutina</p>
                     </div>
                 </div>
             </template>
@@ -200,12 +200,12 @@ const statColors = [
                     
                     <!-- Estado vacío -->
                     <div v-if="!hasData" class="max-w-2xl mx-auto">
-                        <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-3xl p-12 text-center border-2 border-dashed border-indigo-200">
+                        <div class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-3xl p-12 text-center border-2 border-dashed border-indigo-200 dark:border-indigo-800 transition-colors">
                             <div class="w-24 h-24 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
                                 <span class="text-5xl">📊</span>
                             </div>
-                            <h3 class="text-2xl font-black text-gray-900 mb-3">¡Empieza tu viaje fitness!</h3>
-                            <p class="text-gray-600 mb-8 max-w-md mx-auto">
+                            <h3 class="text-2xl font-black text-gray-900 dark:text-white mb-3 transition-colors">¡Empieza tu viaje fitness!</h3>
+                            <p class="text-gray-600 dark:text-gray-300 mb-8 max-w-md mx-auto transition-colors">
                                 Completa tus primeras rutinas para ver gráficos de tu progreso y evolución en cada ejercicio.
                             </p>
                             <div class="flex gap-3 justify-center flex-wrap">
@@ -218,7 +218,7 @@ const statColors = [
                                 </Link>
                                 <Link 
                                     :href="route('workouts.my-workouts')"
-                                    class="inline-flex items-center gap-2 px-6 py-3 bg-white text-indigo-600 rounded-xl font-bold hover:bg-gray-50 transition shadow border-2 border-indigo-200"
+                                    class="inline-flex items-center gap-2 px-6 py-3 bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition shadow border-2 border-indigo-200 dark:border-indigo-800 transition-colors"
                                 >
                                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                                     Mis Rutinas
@@ -230,14 +230,14 @@ const statColors = [
                     <!-- Selector de Rutina y Contenido -->
                     <template v-else>
                         <!-- Selector de Rutina (Dropdown Custom) -->
-                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors">
                             <div class="flex items-center gap-4 mb-4">
                                 <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
                                     <span class="text-2xl">🎯</span>
                                 </div>
                                 <div class="flex-1">
-                                    <h3 class="text-lg font-bold text-gray-800">Selecciona una rutina</h3>
-                                    <p class="text-sm text-gray-500">Analiza tu progreso en cada ejercicio</p>
+                                    <h3 class="text-lg font-bold text-gray-800 dark:text-white transition-colors">Selecciona una rutina</h3>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 transition-colors">Analiza tu progreso en cada ejercicio</p>
                                 </div>
                             </div>
                             
@@ -254,21 +254,21 @@ const statColors = [
                         <!-- Estadísticas de la Rutina (Nuevo Diseño) -->
                         <div v-if="progressData && progressData.stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                             <!-- Veces Completada -->
-                            <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center group hover:border-indigo-200 transition-colors">
-                                <div class="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl mb-2 group-hover:scale-110 transition-transform">
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col items-center justify-center text-center group hover:border-indigo-200 dark:hover:border-indigo-500 transition-colors">
+                                <div class="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-2xl mb-2 group-hover:scale-110 transition-transform">
                                     ✅
                                 </div>
-                                <div class="text-3xl font-black text-gray-900 leading-none">{{ progressData.stats.times_completed }}</div>
-                                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">Completada</div>
+                                <div class="text-3xl font-black text-gray-900 dark:text-white leading-none transition-colors">{{ progressData.stats.times_completed }}</div>
+                                <div class="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mt-1 transition-colors">Completada</div>
                             </div>
                             
                             <!-- Minutos Promedio -->
-                            <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center group hover:border-blue-200 transition-colors">
-                                <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-2xl mb-2 group-hover:scale-110 transition-transform">
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col items-center justify-center text-center group hover:border-blue-200 dark:hover:border-blue-500 transition-colors">
+                                <div class="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-2xl mb-2 group-hover:scale-110 transition-transform">
                                     ⏱️
                                 </div>
-                                <div class="text-3xl font-black text-gray-900 leading-none">{{ progressData.stats.avg_duration }}</div>
-                                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">Minutos Promedio</div>
+                                <div class="text-3xl font-black text-gray-900 dark:text-white leading-none transition-colors">{{ progressData.stats.avg_duration }}</div>
+                                <div class="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mt-1 transition-colors">Minutos Promedio</div>
                             </div>
 
                             <!-- Récords (Botón) -->
@@ -282,12 +282,12 @@ const statColors = [
                             </button>
                             
                             <!-- Última Sesión -->
-                            <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center group hover:border-emerald-200 transition-colors">
-                                <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl mb-2 group-hover:scale-110 transition-transform">
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col items-center justify-center text-center group hover:border-emerald-200 dark:hover:border-emerald-500 transition-colors">
+                                <div class="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl mb-2 group-hover:scale-110 transition-transform">
                                     📅
                                 </div>
-                                <div class="text-lg font-black text-gray-900 leading-tight">{{ progressData.stats.last_completed || 'N/A' }}</div>
-                                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">Última Sesión</div>
+                                <div class="text-lg font-black text-gray-900 dark:text-white leading-tight transition-colors">{{ progressData.stats.last_completed || 'N/A' }}</div>
+                                <div class="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mt-1 transition-colors">Última Sesión</div>
                             </div>
                         </div>
 
@@ -296,21 +296,21 @@ const statColors = [
                             <div
                                 v-for="(exercise, index) in progressData.exercises"
                                 :key="exercise.name"
-                                class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"
+                                class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors"
                             >
                                 <div class="flex items-center justify-between mb-6">
                                     <div>
-                                        <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                        <h3 class="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2 transition-colors">
                                             <span class="w-2 h-6 bg-gradient-to-b from-indigo-500 to-purple-600 rounded-full"></span>
                                             {{ exercise.name }}
                                         </h3>
-                                        <p class="text-sm text-gray-500 mt-1">
-                                            Récord: <span class="font-bold text-indigo-600">{{ exercise.max_weight }} kg</span>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 transition-colors">
+                                            Récord: <span class="font-bold text-indigo-600 dark:text-indigo-400 transition-colors">{{ exercise.max_weight }} kg</span>
                                         </p>
                                     </div>
                                     <div class="text-right">
-                                        <div class="text-2xl font-black text-gray-900">{{ exercise.sessions.length }}</div>
-                                        <div class="text-xs text-gray-500 font-medium">sesiones</div>
+                                        <div class="text-2xl font-black text-gray-900 dark:text-white transition-colors">{{ exercise.sessions.length }}</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400 font-medium transition-colors">sesiones</div>
                                     </div>
                                 </div>
                                 
@@ -321,10 +321,10 @@ const statColors = [
                         </div>
 
                         <!-- Mensaje si no hay datos de progreso -->
-                        <div v-else class="bg-yellow-50 border-2 border-yellow-200 rounded-2xl p-8 text-center">
+                        <div v-else class="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-2xl p-8 text-center transition-colors">
                             <div class="text-4xl mb-3">⚠️</div>
-                            <h3 class="text-lg font-bold text-gray-900 mb-2">No hay datos de progreso para esta rutina</h3>
-                            <p class="text-gray-600">Completa esta rutina al menos una vez para ver tu evolución.</p>
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2 transition-colors">No hay datos de progreso para esta rutina</h3>
+                            <p class="text-gray-600 dark:text-gray-300 transition-colors">Completa esta rutina al menos una vez para ver tu evolución.</p>
                         </div>
                     </template>
 
@@ -347,7 +347,7 @@ const statColors = [
 
                         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-                        <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+                        <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
                             <div class="bg-gradient-to-r from-yellow-400 to-orange-500 px-6 py-4 flex justify-between items-center">
                                 <h3 class="text-lg leading-6 font-black text-white flex items-center gap-2" id="modal-title">
                                     <span>🏆</span> Récords Personales
@@ -360,7 +360,7 @@ const statColors = [
                             </div>
                             
                             <div class="px-6 py-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                                <p class="text-sm text-gray-500 mb-6">
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 transition-colors">
                                     Tus mejores marcas (peso × repeticiones) en esta rutina.
                                 </p>
 
@@ -368,28 +368,28 @@ const statColors = [
                                     <div 
                                         v-for="(record, index) in progressData.personalRecords" 
                                         :key="record.name"
-                                        class="flex items-center justify-between p-5 bg-gray-50 rounded-2xl border border-gray-100 hover:border-yellow-300 hover:bg-yellow-50 transition-all group"
+                                        class="flex items-center justify-between p-5 bg-gray-50 dark:bg-gray-700 rounded-2xl border border-gray-100 dark:border-gray-600 hover:border-yellow-300 dark:hover:border-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-all group"
                                     >
                                         <div class="flex items-center gap-4 flex-1 min-w-0">
                                             <div 
-                                                class="w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center font-black text-sm shadow-sm"
-                                                :class="index < 3 ? 'bg-yellow-100 text-yellow-700' : 'bg-white text-gray-500 border border-gray-200'"
+                                                class="w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center font-black text-sm shadow-sm transition-colors"
+                                                :class="index < 3 ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-400' : 'bg-white dark:bg-gray-600 text-gray-500 dark:text-gray-300 border border-gray-200 dark:border-gray-500'"
                                             >
                                                 {{ index + 1 }}
                                             </div>
                                             <div class="min-w-0 truncate pr-2">
-                                                <div class="font-bold text-gray-900 text-base truncate">{{ record.name }}</div>
-                                                <div class="text-xs text-gray-500 font-medium">{{ record.date }}</div>
+                                                <div class="font-bold text-gray-900 dark:text-white text-base truncate transition-colors">{{ record.name }}</div>
+                                                <div class="text-xs text-gray-500 dark:text-gray-400 font-medium transition-colors">{{ record.date }}</div>
                                             </div>
                                         </div>
                                         
                                         <div class="text-right pl-4 flex-shrink-0">
                                             <div class="flex items-baseline justify-end gap-1">
-                                                <span class="font-black text-2xl text-gray-900 group-hover:text-orange-600 transition-colors tracking-tight">
+                                                <span class="font-black text-2xl text-gray-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors tracking-tight">
                                                     {{ record.best_weight }}<span class="text-lg">kg</span>
                                                 </span>
-                                                <span class="text-gray-400 font-medium text-sm mx-1">×</span>
-                                                <span class="font-black text-2xl text-gray-900 group-hover:text-orange-600 transition-colors">
+                                                <span class="text-gray-400 dark:text-gray-500 font-medium text-sm mx-1 transition-colors">×</span>
+                                                <span class="font-black text-2xl text-gray-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
                                                     {{ record.best_reps }}
                                                 </span>
                                             </div>
@@ -398,11 +398,11 @@ const statColors = [
                                 </div>
                                 <div v-else class="text-center py-12">
                                     <div class="text-4xl mb-3 opacity-50">📊</div>
-                                    <p class="text-gray-400 font-medium">No hay récords registrados aún.</p>
+                                    <p class="text-gray-400 dark:text-gray-500 font-medium transition-colors">No hay récords registrados aún.</p>
                                 </div>
                             </div>
                             
-                            <div class="bg-gray-50 px-6 py-4">
+                            <div class="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 transition-colors">
                                 <button 
                                     type="button" 
                                     class="w-full inline-flex justify-center items-center rounded-xl border border-transparent shadow-lg px-4 py-3.5 bg-gray-900 text-base font-bold text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 transition-transform active:scale-95"

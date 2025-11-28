@@ -87,24 +87,24 @@ function closeDeleteModal() {
                     </svg>
                 </div>
                 <div>
-                    <h2 class="font-extrabold text-xl text-gray-900 leading-tight">
+                    <h2 class="font-extrabold text-xl text-gray-900 dark:text-white leading-tight transition-colors">
                         Feed
                     </h2>
-                    <p class="text-xs text-gray-500 font-medium">Descubre contenido</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium transition-colors">Descubre contenido</p>
                 </div>
             </div>
         </template>
 
         <!-- Sección de Pestañas (Tabs) - Mejorada -->
-        <div class="bg-white shadow-md border-b border-gray-100 sticky top-16 z-30">
+        <div class="bg-white dark:bg-gray-800 shadow-md border-b border-gray-100 dark:border-gray-700 sticky top-16 z-30 transition-colors">
             <div class="max-w-7xl mx-auto px-4">
                 <nav class="flex gap-1" aria-label="Tabs">
                     <button @click="setActiveTab('siguiendo')"
                             :class="[
                                 'flex-1 group inline-flex items-center justify-center py-4 px-4 text-center font-bold text-sm whitespace-nowrap transition-all duration-200 rounded-t-xl relative',
                                 props.activeTab === 'siguiendo' 
-                                    ? 'text-indigo-600 bg-gradient-to-b from-indigo-50 to-transparent' 
-                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                                    ? 'text-indigo-600 dark:text-indigo-400 bg-gradient-to-b from-indigo-50 dark:from-indigo-900/30 to-transparent' 
+                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
                             ]">
                         <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                         Siguiendo
@@ -114,8 +114,8 @@ function closeDeleteModal() {
                             :class="[
                                 'flex-1 group inline-flex items-center justify-center py-4 px-4 text-center font-bold text-sm whitespace-nowrap transition-all duration-200 rounded-t-xl relative',
                                 props.activeTab === 'populares' 
-                                    ? 'text-indigo-600 bg-gradient-to-b from-indigo-50 to-transparent' 
-                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                                    ? 'text-indigo-600 dark:text-indigo-400 bg-gradient-to-b from-indigo-50 dark:from-indigo-900/30 to-transparent' 
+                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
                             ]">
                         <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" /></svg>
                         Populares
@@ -125,8 +125,8 @@ function closeDeleteModal() {
                             :class="[
                                 'flex-1 group inline-flex items-center justify-center py-4 px-4 text-center font-bold text-sm whitespace-nowrap transition-all duration-200 rounded-t-xl relative',
                                 props.activeTab === 'cerca' 
-                                    ? 'text-indigo-600 bg-gradient-to-b from-indigo-50 to-transparent' 
-                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                                    ? 'text-indigo-600 dark:text-indigo-400 bg-gradient-to-b from-indigo-50 dark:from-indigo-900/30 to-transparent' 
+                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
                             ]">
                         <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                         Cerca
@@ -138,7 +138,7 @@ function closeDeleteModal() {
 
         <!-- Contenido del Feed -->
         <div class="container mx-auto px-2 sm:px-4 py-4 md:py-8">
-            <h2 v-if="title" class="text-2xl font-bold text-gray-800 mb-6 hidden md:block text-center">{{ title }}</h2>
+            <h2 v-if="title" class="text-2xl font-bold text-gray-800 dark:text-white mb-6 hidden md:block text-center transition-colors">{{ title }}</h2>
 
             <!-- Estado de Carga (Skeletons) -->
             <div v-if="isLoading" class="space-y-6 max-w-2xl mx-auto">
@@ -173,19 +173,19 @@ function closeDeleteModal() {
             </div>
         
             <!-- Estado Vacío -->
-            <div v-else class="text-center py-12 max-w-lg mx-auto bg-white shadow-sm rounded-xl border border-gray-100 p-8">
-                <div class="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+            <div v-else class="text-center py-12 max-w-lg mx-auto bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-100 dark:border-gray-700 p-8 transition-colors">
+                <div class="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 dark:text-indigo-400 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl transition-colors">
                     {{ activeTab === 'populares' ? '🔥' : (activeTab === 'cerca' ? '📍' : '📭') }}
                 </div>
                 
-                <h3 class="mt-2 text-xl font-bold text-gray-900">
+                <h3 class="mt-2 text-xl font-bold text-gray-900 dark:text-white transition-colors">
                     {{ 
                         activeTab === 'populares' ? 'Aún no hay tendencias' : 
                         (activeTab === 'cerca' ? 'No hay actividad cercana' : 'Tu feed está tranquilo') 
                     }}
                 </h3>
                 
-                <p class="mt-2 text-gray-500 max-w-sm mx-auto">
+                <p class="mt-2 text-gray-500 dark:text-gray-400 max-w-sm mx-auto transition-colors">
                     {{ 
                         activeTab === 'populares' ? 'Las publicaciones más destacadas de la comunidad aparecerán aquí. ¡Crea contenido genial para ser el primero!' : 
                         (activeTab === 'cerca' ? 'Parece que no hay GymPals activos cerca de tu ubicación por ahora.' : 'Sigue a más atletas o crea tu primera publicación para empezar.') 
@@ -196,7 +196,7 @@ function closeDeleteModal() {
                     <Link :href="route('posts.create')" class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent shadow-lg text-sm font-bold rounded-xl text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transform hover:-translate-y-0.5 transition-all">
                         ✨ Crear Publicación
                     </Link>
-                    <Link v-if="activeTab === 'siguiendo'" :href="route('discover.index')" class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border-2 border-gray-100 shadow-sm text-sm font-bold rounded-xl text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-200 transition-all">
+                    <Link v-if="activeTab === 'siguiendo'" :href="route('discover.index')" class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border-2 border-gray-100 dark:border-gray-600 shadow-sm text-sm font-bold rounded-xl text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-gray-200 dark:hover:border-gray-500 transition-all">
                         🔍 Descubrir Personas
                     </Link>
                 </div>

@@ -97,54 +97,16 @@ class ChatController extends Controller
             $q->where('users.id', $user->id);
         })
         // Asegurar que la conversación tenga EXACTAMENTE 2 participantes
-        ->withCount('users')
-        ->having('users_count', '=', 2) // Usamos HAVING para filtrar por el resultado de una función agregada (COUNT)
+        ->has('users', '=', 2)
         ->first();
 
-        if (!$conversation) {
-            // Crear una nueva conversación si no existe una exclusiva entre ellos
-            // Usar una transacción para asegurar la atomicidad
-            $conversation = DB::transaction(function () use ($currentUser, $user) {
-                // ----- DEBUG -----
-                if (!$currentUser) {
-                    Log::error('ChatController@show: $currentUser es NULL dentro de la transacción. Revisa middleware auth.');
-                    // Considera lanzar una excepción o redirigir si esto ocurre,
-                    // aunque el middleware 'auth' debería prevenirlo.
-                    // Por ahora, para depurar, podemos detener:
-                    dd('ERROR FATAL: $currentUser es NULL dentro de la transacción. Revisa middleware auth.');
-                }
-                if (!$user || !$user->exists) { // $otherUser->exists para confirmar que es un modelo persistido
-                    Log::error('ChatController@show: $user es NULL o no existe en la DB. Revisa Route Model Binding o middlewares.');
-                    // El RBM debería haber lanzado 404, esto sería muy raro.
-                    dd('ERROR FATAL: $user es NULL o no existe en la DB. Revisa Route Model Binding o middlewares.', $user);
-                }
-                
-                Log::info("ChatController@show DEBUG: Intentando crear conversación. CurrentUser ID: " . $user->id . ", OtherUser ID: " . $user->id);
-                // ----- /DEBUG -----
-    
-                // Asegúrate de que 'last_message_at' sea fillable en el modelo Conversation
-                // o usa forceCreate si estás seguro de los atributos.
-                $newConversation = Conversation::create(['last_message_at' => now()]); 
-                Log::info("ChatController@show DEBUG: Nueva conversación creada con ID: " . $newConversation->id);
-                
-                $idsToAttach = [$currentUser->id, $user->id];
-                Log::info("ChatController@show DEBUG: IDs para adjuntar: " . print_r($idsToAttach, true));
-                
-                // ----- DEBUG MÁS PROFUNDO -----
-                if (in_array(null, $idsToAttach, true)) {
-                    Log::error('ChatController@show: ¡ALERTA! Uno de los IDs es NULL antes de attach(). IDs: ' . print_r($idsToAttach, true));
-                    Log::error('ChatController@show: CurrentUser Object: ' . print_r($currentUser->toArray(), true)); // Loguear el objeto completo puede ser mucho, usa ->id si es suficiente
-                    Log::error('ChatController@show: OtherUser Object: ' . print_r($user->toArray(), true));
-                    Log::error('ChatController@show: NewConversation Object: ' . print_r($newConversation->toArray(), true));
-                    dd('¡ALERTA! Uno de los IDs es NULL antes de attach()', $idsToAttach, $currentUser, $user, $newConversation);
-                }
-                // ----- /DEBUG MÁS PROFUNDO -----
-    
-                $newConversation->users()->attach($idsToAttach); // Esta sería la línea 96
-                Log::info("ChatController@show DEBUG: Usuarios adjuntados a la conversación ID " . $newConversation->id);
-                
-                return $newConversation;
-            });
+    if (!$conversation) {
+        // Crear una nueva conversación si no existe una exclusiva entre ellos
+        $conversation = DB::transaction(function () use ($currentUser, $user) {
+            $newConversation = Conversation::create(['last_message_at' => now()]);
+            $newConversation->users()->attach([$currentUser->id, $user->id]);
+            return $newConversation;
+        });
     }
 
     // Marcar mensajes como leídos (si el usuario actual no es el remitente)

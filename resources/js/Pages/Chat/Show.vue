@@ -121,12 +121,12 @@ watch(() => props.messages, (newMessages) => {
     <Head :title="title || `Chat con ${chatWithUser.name}`" />
 
     <AuthenticatedLayout>
-        <div class="flex flex-col h-[calc(100vh-65px)] bg-gradient-to-b from-gray-50 to-gray-100">
+        <div class="flex flex-col h-[calc(100vh-65px)] bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 transition-colors">
             
             <!-- Header del Chat (Sticky) -->
-            <div class="bg-white shadow-md border-b border-gray-200 px-4 py-4 flex items-center justify-between sticky top-0 z-10">
+            <div class="bg-white dark:bg-gray-800 shadow-md border-b border-gray-200 dark:border-gray-700 px-4 py-4 flex items-center justify-between sticky top-0 z-10 transition-colors">
                 <div class="flex items-center gap-3">
-                    <Link :href="route('chat.index')" class="text-gray-500 hover:text-indigo-600 transition-all p-2 rounded-full hover:bg-indigo-50">
+                    <Link :href="route('chat.index')" class="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all p-2 rounded-full hover:bg-indigo-50 dark:hover:bg-indigo-900/30">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
                         </svg>
@@ -134,14 +134,14 @@ watch(() => props.messages, (newMessages) => {
                     
                     <Link :href="route('profile.show.public', { user: chatWithUser.username })" class="flex items-center gap-3 group">
                         <div class="relative">
-                            <img v-if="chatWithUser.profile_picture_url" :src="`/storage/${chatWithUser.profile_picture_url}`" :alt="chatWithUser.name" class="w-11 h-11 rounded-full object-cover border-2 border-indigo-100 group-hover:border-indigo-300 transition-all shadow-sm">
-                            <img v-else :src="`https://ui-avatars.com/api/?name=${encodeURIComponent(chatWithUser.name)}&background=random&color=fff&size=128`" :alt="chatWithUser.name" class="w-11 h-11 rounded-full border-2 border-indigo-100 group-hover:border-indigo-300 transition-all shadow-sm">
+                            <img v-if="chatWithUser.profile_picture_url" :src="`/storage/${chatWithUser.profile_picture_url}`" :alt="chatWithUser.name" class="w-11 h-11 rounded-full object-cover border-2 border-indigo-100 dark:border-indigo-800 group-hover:border-indigo-300 dark:group-hover:border-indigo-500 transition-all shadow-sm">
+                            <img v-else :src="`https://ui-avatars.com/api/?name=${encodeURIComponent(chatWithUser.name)}&background=random&color=fff&size=128`" :alt="chatWithUser.name" class="w-11 h-11 rounded-full border-2 border-indigo-100 dark:border-indigo-800 group-hover:border-indigo-300 dark:group-hover:border-indigo-500 transition-all shadow-sm">
                             <!-- Indicador de estado online -->
-                            <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+                            <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></span>
                         </div>
                         <div>
-                            <h3 class="font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">{{ chatWithUser.name }}</h3>
-                            <p class="text-xs text-gray-500">@{{ chatWithUser.username }}</p>
+                            <h3 class="font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{{ chatWithUser.name }}</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 transition-colors">@{{ chatWithUser.username }}</p>
                         </div>
                     </Link>
                 </div>
@@ -164,7 +164,7 @@ watch(() => props.messages, (newMessages) => {
                                 :class="[
                                     message.user_id === authUserId 
                                         ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl rounded-tr-md' 
-                                        : 'bg-white text-gray-900 border border-gray-200 rounded-2xl rounded-tl-md',
+                                        : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 rounded-2xl rounded-tl-md transition-colors',
                                     message.image_url ? '' : 'px-4 py-2.5'
                                 ]"
                             >
@@ -188,10 +188,10 @@ watch(() => props.messages, (newMessages) => {
 
                             <!-- Post Compartido -->
                             <div v-else class="w-full">
-                                <div v-if="message.body" class="mb-2 text-xs text-gray-500 font-medium" :class="message.user_id === authUserId ? 'text-right' : 'text-left'">
+                                <div v-if="message.body" class="mb-2 text-xs text-gray-500 dark:text-gray-400 font-medium transition-colors" :class="message.user_id === authUserId ? 'text-right' : 'text-left'">
                                     {{ message.body }}
                                 </div>
-                                <div class="overflow-hidden rounded-xl border border-gray-200 shadow-md bg-white">
+                                <div class="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 shadow-md bg-white dark:bg-gray-800 transition-colors">
                                     <SharedPostCard :postData="message.metadata || {}" />
                                 </div>
                                 <p class="text-[10px] text-gray-400 mt-1.5 text-right">
@@ -204,18 +204,18 @@ watch(() => props.messages, (newMessages) => {
                 
                 <!-- Estado Vacío -->
                 <div v-else class="h-full flex flex-col items-center justify-center text-center p-8">
-                    <div class="w-24 h-24 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center mb-4 shadow-inner">
-                        <svg class="w-12 h-12 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div class="w-24 h-24 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-full flex items-center justify-center mb-4 shadow-inner transition-colors">
+                        <svg class="w-12 h-12 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                         </svg>
                     </div>
-                    <p class="text-gray-900 font-bold text-lg">¡Saluda a {{ chatWithUser.name }}!</p>
-                    <p class="text-sm text-gray-500 mt-1">Comienza la conversación 💬</p>
+                    <p class="text-gray-900 dark:text-white font-bold text-lg transition-colors">¡Saluda a {{ chatWithUser.name }}!</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 transition-colors">Comienza la conversación 💬</p>
                 </div>
             </div>
 
             <!-- Input Flotante -->
-            <div class="bg-white p-4 border-t border-gray-200 shadow-lg">
+            <div class="bg-white dark:bg-gray-800 p-4 border-t border-gray-200 dark:border-gray-700 shadow-lg transition-colors">
                 <!-- Preview de imagen -->
                 <div v-if="imagePreview" class="mb-3 relative inline-block">
                     <img :src="imagePreview" class="h-20 w-20 object-cover rounded-lg border-2 border-indigo-200">
@@ -227,7 +227,7 @@ watch(() => props.messages, (newMessages) => {
                 <form @submit.prevent="sendMessage" class="flex items-end gap-3 max-w-4xl mx-auto">
                     <input type="file" ref="fileInputRef" @change="handleImageSelect" accept="image/*" class="hidden">
                     
-                    <button @click="fileInputRef.click()" type="button" class="p-2.5 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 transition-all rounded-full">
+                    <button @click="fileInputRef.click()" type="button" class="p-2.5 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-all rounded-full">
                         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
@@ -238,7 +238,7 @@ watch(() => props.messages, (newMessages) => {
                             type="text"
                             v-model="newMessage"
                             placeholder="Escribe un mensaje..."
-                            class="w-full border-0 bg-gray-100 rounded-full px-5 py-3 focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all shadow-inner font-medium"
+                            class="w-full border-0 bg-gray-100 dark:bg-gray-700 rounded-full px-5 py-3 focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-gray-600 text-gray-900 dark:text-white dark:placeholder-gray-400 transition-all shadow-inner font-medium"
                             autocomplete="off"
                         />
                     </div>

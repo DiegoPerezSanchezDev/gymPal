@@ -157,8 +157,8 @@ const submitComment = async () => {
 
 <template>
     <div 
-        class="bg-white rounded-xl max-w-xl mx-auto"
-        :class="isDetailView ? 'shadow-none border-none' : 'shadow-lg border border-gray-200/80'"
+        class="bg-white dark:bg-gray-800 rounded-xl max-w-xl mx-auto transition-colors"
+        :class="isDetailView ? 'shadow-none border-none' : 'shadow-lg border border-gray-200/80 dark:border-gray-700'"
     >
         
         <!-- ================== Encabezado del Post ================== -->
@@ -168,16 +168,16 @@ const submitComment = async () => {
                     <img
                         :src="post.user.profile_picture_url ? '/storage/' + post.user.profile_picture_url : 'https://ui-avatars.com/api/?name=' + post.user.name + '&background=random'"
                         alt="Avatar del usuario"
-                        class="w-11 h-11 rounded-full object-cover ring-2 ring-gray-100"
+                        class="w-11 h-11 rounded-full object-cover ring-2 ring-gray-100 dark:ring-gray-700 transition-all"
                     />
                 </Link>
                 <div class="ml-3">
-                    <Link :href="route('profile.show.public', { user: post.user.username })" class="font-bold text-sm text-gray-800 hover:underline">
+                    <Link :href="route('profile.show.public', { user: post.user.username })" class="font-bold text-sm text-gray-800 dark:text-white hover:underline transition-colors">
                         {{ post.user.name }}
                     </Link>
                     <div class="flex items-center gap-2">
-                        <p class="text-xs text-gray-500">{{ formattedDate }}</p>
-                        <span v-if="formattedDistance" class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 transition-colors">{{ formattedDate }}</p>
+                        <span v-if="formattedDistance" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full flex items-center gap-1 transition-colors">
                             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                             A {{ formattedDistance }}
                         </span>
@@ -193,7 +193,7 @@ const submitComment = async () => {
         </div>
 
         <!-- ================== Contenido del Post ================== -->
-        <p v-if="post.content" class="px-5 pb-4 text-gray-700 whitespace-pre-line text-[15px] leading-relaxed">
+        <p v-if="post.content" class="px-5 pb-4 text-gray-700 dark:text-gray-300 whitespace-pre-line text-[15px] leading-relaxed transition-colors">
             {{ post.content }}
         </p>
 
@@ -207,34 +207,34 @@ const submitComment = async () => {
             <WorkoutPreviewCard :workout="post.workout" />
         </div>
 
-        <div v-if="postImageUrl" class="overflow-hidden mb-6 flex items-center justify-center" :class="isDetailView ? 'max-h-[250px] bg-transparent' : 'max-h-[400px] bg-gray-100'">
+        <div v-if="postImageUrl" class="overflow-hidden mb-6 flex items-center justify-center" :class="isDetailView ? 'max-h-[250px] bg-transparent' : 'max-h-[400px] bg-gray-100 dark:bg-gray-700 transition-colors'">
             <img :src="postImageUrl" alt="Imagen de la publicación" class="w-full object-contain" :class="isDetailView ? 'max-h-[250px]' : 'max-h-[400px]'"/>
         </div>
 
         <!-- ================== Lista de Comentarios ================== -->
         <div v-if="!isDetailView && post.latest_comments && post.latest_comments.length" class="px-5 pb-4 pt-4 space-y-3">
-            <div class="mb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
+            <div class="mb-2 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider transition-colors">
                 Comentarios recientes
             </div>
             <div v-for="comment in post.latest_comments" :key="comment.id" class="flex gap-3 group">
                 <Link :href="comment.user ? route('profile.show.public', { user: comment.user.username }) : '#'" class="flex-shrink-0">
                     <img :src="comment.user && comment.user.profile_picture_url ? '/storage/' + comment.user.profile_picture_url : 'https://ui-avatars.com/api/?name=' + (comment.user ? comment.user.name : 'Anon') + '&background=random'" 
                         alt="Avatar" 
-                        class="w-8 h-8 rounded-full object-cover ring-2 ring-transparent group-hover:ring-indigo-100 transition-all" />
+                        class="w-8 h-8 rounded-full object-cover ring-2 ring-transparent group-hover:ring-indigo-100 dark:group-hover:ring-indigo-900 transition-all" />
                 </Link>
-                <div class="flex-1 bg-gray-50 rounded-2xl rounded-tl-none px-4 py-2 text-sm hover:bg-gray-100 transition-colors">
+                <div class="flex-1 bg-gray-50 dark:bg-gray-700 rounded-2xl rounded-tl-none px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
                     <div class="flex justify-between items-baseline">
-                        <span class="font-bold text-gray-900 mr-2">{{ comment.user ? comment.user.name : 'Anon' }}</span>
+                        <span class="font-bold text-gray-900 dark:text-white mr-2 transition-colors">{{ comment.user ? comment.user.name : 'Anon' }}</span>
                         <!-- <span class="text-[10px] text-gray-400">{{ new Date(comment.created_at).toLocaleDateString() }}</span> -->
                     </div>
-                    <p class="text-gray-700 leading-relaxed mt-0.5">{{ comment.body }}</p>
+                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed mt-0.5 transition-colors">{{ comment.body }}</p>
                 </div>
             </div>
             
             <Link
                 v-if="post.comments_count > (post.latest_comments.length || 0)"
                 :href="route('posts.show', post.id)"
-                class="text-indigo-600 hover:text-indigo-700 text-sm font-semibold mt-2 block pl-11 hover:underline"
+                class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-sm font-semibold mt-2 block pl-11 hover:underline transition-colors"
             >
                 Ver los {{ post.comments_count }} comentarios
             </Link>
@@ -246,14 +246,14 @@ const submitComment = async () => {
                     v-if="$page.props.auth && $page.props.auth.user"
                     :src="$page.props.auth.user.profile_picture_url ? '/storage/' + $page.props.auth.user.profile_picture_url : 'https://ui-avatars.com/api/?name=' + $page.props.auth.user.name + '&background=random'"
                     alt="Tu avatar"
-                    class="w-10 h-10 rounded-full object-cover ring-2 ring-indigo-100 mt-1 transition-all duration-200"
+                    class="w-10 h-10 rounded-full object-cover ring-2 ring-indigo-100 dark:ring-indigo-900 mt-1 transition-all duration-200"
                 />
                 <div class="flex-1">
                     <textarea
                         v-model="newCommentBody"
                         rows="2"
                         placeholder="Escribe un comentario..."
-                        class="w-full rounded-lg border border-gray-200 p-2 min-h-[45px] text-[15px] transition-colors duration-200 bg-gray-50 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 shadow resize-none"
+                        class="w-full rounded-lg border border-gray-200 dark:border-gray-600 p-2 min-h-[45px] text-[15px] transition-colors duration-200 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:bg-white dark:focus:bg-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 shadow resize-none"
                         :disabled="submittingComment"
                     ></textarea>
                     <div class="flex justify-end mt-1">
@@ -271,7 +271,7 @@ const submitComment = async () => {
 
         <!-- 1. NUEVA SECCIÓN VISUAL DE LIKES -->
         <div v-if="localLikesCount > 0 && post.latest_likers && post.latest_likers.length > 0" 
-            class="px-5 pt-3 pb-2 border-t border-gray-100"
+            class="px-5 pt-3 pb-2 border-t border-gray-100 dark:border-gray-700 transition-colors"
         >
             <button @click="showLikesModal = true" class="flex items-center w-full text-left group focus:outline-none">
                 <!-- Contenedor de avatares apilados -->
@@ -280,12 +280,12 @@ const submitComment = async () => {
                         :src="liker.profile_picture_url ? '/storage/' + liker.profile_picture_url : 'https://ui-avatars.com/api/?name=' + liker.name + '&background=random'"
                         :title="liker.name"
                         alt="Avatar"
-                        class="w-6 h-6 rounded-full object-cover border-2 border-white group-hover:border-indigo-200 transition-all duration-200"
+                        class="w-6 h-6 rounded-full object-cover border-2 border-white dark:border-gray-800 group-hover:border-indigo-200 dark:group-hover:border-indigo-900 transition-all duration-200"
                     />
                 </div>
                 
                 <!-- Texto descriptivo -->
-                <span class="ml-3 text-sm text-gray-600 group-hover:text-indigo-600 transition-colors">
+                <span class="ml-3 text-sm text-gray-600 dark:text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                     A 
                     <strong class="font-semibold">{{ post.latest_likers[0].name }}</strong>
                     <span v-if="post.likers_count > 1">
@@ -297,13 +297,13 @@ const submitComment = async () => {
         </div>
         
         <!-- ================== Acciones del Post ================== -->
-        <div class="px-4 py-3 flex justify-between items-center border-t border-gray-100 gap-4">
+        <div class="px-4 py-3 flex justify-between items-center border-t border-gray-100 dark:border-gray-700 gap-4 transition-colors">
             
             <button 
                 @click="toggleLike" 
                 :disabled="isProcessingLike"
-                class="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all duration-200 hover:bg-red-50 group disabled:opacity-70" 
-                :class="{ 'text-red-500': isLiked, 'text-gray-500': !isLiked }"
+                class="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all duration-200 group disabled:opacity-70" 
+                :class="{ 'text-red-500': isLiked, 'text-gray-500 dark:text-gray-400': !isLiked }"
             >
                 <svg 
                     class="w-6 h-6 transition-transform duration-200"
@@ -312,22 +312,22 @@ const submitComment = async () => {
                     stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.5l1.318-1.182a4.5 4.5 0 116.364 6.364L12 21l-7.682-7.682a4.5 4.5 0 010-6.364z"></path>
                 </svg>
-                <span class="font-bold text-sm" :class="isLiked ? 'text-red-600' : 'text-gray-600 group-hover:text-red-500'">
+                <span class="font-bold text-sm" :class="isLiked ? 'text-red-600' : 'text-gray-600 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200'">
                     {{ localLikesCount > 0 ? localLikesCount : 'Me gusta' }}
                 </span>
             </button>
 
             
-            <Link v-if="!isDetailView || showCommentAction" :href="route('posts.show', post.id)" class="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all duration-200 hover:bg-indigo-50 group text-gray-500">
-                <svg class="w-6 h-6 transition-transform duration-200 group-hover:scale-110 text-gray-500 group-hover:text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                <span class="font-bold text-sm text-gray-600 group-hover:text-indigo-600">{{ post.comments_count > 0 ? post.comments_count : 'Comentar' }}</span>
+            <Link v-if="!isDetailView || showCommentAction" :href="route('posts.show', post.id)" class="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all duration-200 group text-gray-500 dark:text-gray-400">
+                <svg class="w-6 h-6 transition-transform duration-200 group-hover:scale-110 text-gray-500 dark:text-gray-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                <span class="font-bold text-sm text-gray-600 dark:text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">{{ post.comments_count > 0 ? post.comments_count : 'Comentar' }}</span>
             </Link>
             
-            <button @click="showShareModal = true" class="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all duration-200 hover:bg-green-50 group text-gray-500">
-                <svg class="w-6 h-6 transition-transform duration-200 group-hover:scale-110 text-gray-500 group-hover:text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button @click="showShareModal = true" class="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all duration-200 group text-gray-500 dark:text-gray-400">
+                <svg class="w-6 h-6 transition-transform duration-200 group-hover:scale-110 text-gray-500 dark:text-gray-400 group-hover:text-green-500 dark:group-hover:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                 </svg>
-                <span class="font-bold text-sm text-gray-600 group-hover:text-green-600">Compartir</span>
+                <span class="font-bold text-sm text-gray-600 dark:text-gray-400 group-hover:text-green-600 dark:group-hover:text-green-400">Compartir</span>
             </button>
         </div>
         <LikesModal v-if="showLikesModal" :postId="post.id" @close="showLikesModal = false" />
