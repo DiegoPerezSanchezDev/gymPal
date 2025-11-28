@@ -101,17 +101,25 @@ const cleanCategoryName = computed(() => {
 
         <!-- Stats -->
         <div class="relative z-10 grid grid-cols-3 gap-2">
-            <div class="bg-white/5 backdrop-blur-sm rounded-xl p-2 border border-white/5">
-                <div class="text-lg font-black text-white">{{ workout.exercises?.length || 0 }}</div>
-                <div class="text-[8px] uppercase tracking-wider text-white/40 font-bold">Ejercicios</div>
+            <!-- Ejercicios -->
+            <div class="bg-black/20 backdrop-blur-sm rounded-xl p-2 border border-white/10 flex flex-col items-center justify-center text-center">
+                <span class="text-lg mb-1">🏋️</span>
+                <div class="text-base font-black text-white leading-none">{{ workout.exercises?.length || 0 }}</div>
+                <div class="text-[8px] uppercase tracking-wider text-white/70 font-bold mt-1">Ejercicios</div>
             </div>
-            <div v-if="workout.duration_minutes" class="bg-white/5 backdrop-blur-sm rounded-xl p-2 border border-white/5">
-                <div class="text-lg font-black text-white">{{ workout.duration_minutes }}</div>
-                <div class="text-[8px] uppercase tracking-wider text-white/40 font-bold">Minutos</div>
+            
+            <!-- Duración -->
+            <div class="bg-black/20 backdrop-blur-sm rounded-xl p-2 border border-white/10 flex flex-col items-center justify-center text-center">
+                <span class="text-lg mb-1">⏱️</span>
+                <div class="text-base font-black text-white leading-none">{{ workout.duration_minutes || '--' }}</div>
+                <div class="text-[8px] uppercase tracking-wider text-white/70 font-bold mt-1">Minutos</div>
             </div>
-            <div class="bg-white/5 backdrop-blur-sm rounded-xl p-2 border border-white/5">
-                <div class="text-lg font-black text-white">{{ cleanCategoryName }}</div>
-                <div class="text-[8px] uppercase tracking-wider text-white/40 font-bold">Categoría</div>
+
+            <!-- Dificultad -->
+            <div class="bg-black/20 backdrop-blur-sm rounded-xl p-2 border border-white/10 flex flex-col items-center justify-center text-center">
+                <span class="text-lg mb-1">⚡</span>
+                <div class="text-base font-black text-white leading-none truncate w-full px-1">{{ workout.difficulty || 'N/A' }}</div>
+                <div class="text-[8px] uppercase tracking-wider text-white/70 font-bold mt-1">Nivel</div>
             </div>
         </div>
 

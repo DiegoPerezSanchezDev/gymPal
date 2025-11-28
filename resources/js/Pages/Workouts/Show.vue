@@ -187,25 +187,50 @@ const confirmDuplicate = () => {
                     <p class="text-white/90 text-lg max-w-2xl leading-relaxed">{{ workout.description }}</p>
 
                     <!-- Stats Grid -->
+                    <!-- Stats Grid -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-                        <div class="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/10">
-                            <p class="text-xs text-white/60 uppercase font-bold mb-1">Dificultad</p>
-                            <p class="font-bold flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-white"></span>
-                                {{ difficultyLabel[workout.difficulty] }}
-                            </p>
+                        <!-- Dificultad -->
+                        <div class="bg-black/20 backdrop-blur-md rounded-2xl p-4 border border-white/10 flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xl">
+                                ⚡
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-white/60 uppercase font-bold tracking-wider">Dificultad</p>
+                                <p class="font-bold text-lg leading-none">{{ workout.difficulty }}</p>
+                            </div>
                         </div>
-                        <div class="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/10">
-                            <p class="text-xs text-white/60 uppercase font-bold mb-1">Duración</p>
-                            <p class="font-bold">⏱️ {{ workout.duration_minutes || '--' }} min</p>
+
+                        <!-- Duración -->
+                        <div class="bg-black/20 backdrop-blur-md rounded-2xl p-4 border border-white/10 flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xl">
+                                ⏱️
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-white/60 uppercase font-bold tracking-wider">Duración</p>
+                                <p class="font-bold text-lg leading-none">{{ workout.duration_minutes || '--' }} min</p>
+                            </div>
                         </div>
-                        <div class="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/10">
-                            <p class="text-xs text-white/60 uppercase font-bold mb-1">Categoría</p>
-                            <p class="font-bold">{{ categoryIcons[workout.category] || '💪' }} {{ workout.category }}</p>
+
+                        <!-- Categoría -->
+                        <div class="bg-black/20 backdrop-blur-md rounded-2xl p-4 border border-white/10 flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xl">
+                                🏷️
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-white/60 uppercase font-bold tracking-wider">Categoría</p>
+                                <p class="font-bold text-lg leading-none">{{ workout.category || 'General' }}</p>
+                            </div>
                         </div>
-                        <div class="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/10">
-                            <p class="text-xs text-white/60 uppercase font-bold mb-1">Guardados</p>
-                            <p class="font-bold">🔖 {{ localSaveCount }} veces</p>
+
+                        <!-- Ejercicios -->
+                        <div class="bg-black/20 backdrop-blur-md rounded-2xl p-4 border border-white/10 flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xl">
+                                🏋️
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-white/60 uppercase font-bold tracking-wider">Ejercicios</p>
+                                <p class="font-bold text-lg leading-none">{{ workout.exercises?.length || 0 }}</p>
+                            </div>
                         </div>
                     </div>
 

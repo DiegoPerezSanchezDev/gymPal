@@ -72,9 +72,10 @@ class DiscoverController extends Controller
                     case 'nuevos_en_ciudad':
                         // Este filtro SÓLO tiene sentido si el usuario actual tiene una ciudad definida.
                         if ($usuarioActual && $usuarioActual->location_city) {
-                            $ciudad = $usuarioActual->location_city;
+                            $ciudad = strtolower(trim($usuarioActual->location_city));
                             
-                            $usersQuery->where('location_city', $ciudad)
+                            $usersQuery->whereNotNull('location_city')
+                                    ->whereRaw('LOWER(location_city) = ?', [$ciudad])
                                     ->where('created_at', '>=', now()->subDays(30));
     
                             // Paso 2: Si además tenemos coordenadas, calculamos distancia y la usamos para ordenar.
@@ -87,9 +88,9 @@ class DiscoverController extends Controller
                                                             cos( radians( longitude ) - radians(?) ) +
                                                             sin( radians(?) ) * sin( radians( latitude ) ) )
                                                         ) AS distance", [$lat, $lon, $lat])
+                                        ->whereNotNull(['latitude', 'longitude'])
                                         ->orderBy('distance', 'asc');
                             } else {
-
                                 $usersQuery->orderBy('created_at', 'desc');
                             }
                         } else {
@@ -99,18 +100,35 @@ class DiscoverController extends Controller
                 
                 case 'buscando_companero':
                     $usersQuery->whereNotNull('looking_for_interest_id');
-                    if ($usuarioActual && $usuarioActual->latitude && $usuarioActual->longitude) {
-                        $usersQuery->selectRaw("users.*,
-                                CASE WHEN looking_for_interest_id = ? THEN 1 ELSE 0 END AS is_matching_interest,
-                                CASE WHEN location_city = ? THEN 1 ELSE 0 END AS is_in_my_city,
-                                ( 6371 * acos( cos( radians(?) ) *
-                                    cos( radians( latitude ) ) *
-                                    cos( radians( longitude ) - radians(?) ) +
-                                    sin( radians(?) ) * sin( radians( latitude ) )
-                                ) ) AS distance", [$searchedInterestId, $usuarioActual->location_city, $usuarioActual->latitude, $usuarioActual->longitude, $usuarioActual->latitude])
-                                ->orderBy('is_in_my_city', 'desc')
-                                ->orderBy('is_matching_interest', 'desc')
-                                ->orderBy('distance', 'asc');
+                    
+                    if ($usuarioActual) {
+                        $ciudad = $usuarioActual->location_city ? strtolower(trim($usuarioActual->location_city)) : null;
+                        
+                        if ($usuarioActual->latitude && $usuarioActual->longitude) {
+                            $usersQuery->selectRaw("users.*,
+                                    CASE WHEN looking_for_interest_id = ? THEN 1 ELSE 0 END AS is_matching_interest,
+                                    CASE WHEN LOWER(location_city) = ? THEN 1 ELSE 0 END AS is_in_my_city,
+                                    ( 6371 * acos( cos( radians(?) ) *
+                                        cos( radians( latitude ) ) *
+                                        cos( radians( longitude ) - radians(?) ) +
+                                        sin( radians(?) ) * sin( radians( latitude ) )
+                                    ) ) AS distance", [$searchedInterestId, $ciudad, $usuarioActual->latitude, $usuarioActual->longitude, $usuarioActual->latitude])
+                                    ->whereNotNull(['latitude', 'longitude'])
+                                    ->orderBy('is_in_my_city', 'desc')
+                                    ->orderBy('is_matching_interest', 'desc')
+                                    ->orderBy('distance', 'asc');
+                        } else {
+                            // Fallback: ordenar por coincidencia de interés y ciudad sin geolocalización
+                            $usersQuery->selectRaw("users.*,
+                                    CASE WHEN looking_for_interest_id = ? THEN 1 ELSE 0 END AS is_matching_interest,
+                                    CASE WHEN LOWER(location_city) = ? THEN 1 ELSE 0 END AS is_in_my_city", 
+                                    [$searchedInterestId, $ciudad])
+                                    ->orderBy('is_in_my_city', 'desc')
+                                    ->orderBy('is_matching_interest', 'desc')
+                                    ->orderBy('created_at', 'desc');
+                        }
+                    } else {
+                        $usersQuery->orderBy('created_at', 'desc');
                     }
                     break;
             }
@@ -147,15 +165,38 @@ class DiscoverController extends Controller
                 });
             }
 
-            // Si no se aplicó ningún filtro, usamos la vista "automática"
-            if (!$appliedSpecificFilter && !$filtrosManualesAplicados) {
-                if ($usuarioActual && $usuarioActual->location_city) {
-                    $usersQuery->selectRaw("users.*, CASE WHEN location_city = ? THEN 1 ELSE 0 END AS is_in_my_city", [$usuarioActual->location_city])
-                            ->orderBy('is_in_my_city', 'desc')
-                            ->orderBy('last_activity_at', 'desc');
+            // Si no se aplicó ningún filtro, usamos el ALGORITMO DE RECOMENDACIÓN
+            if (!$appliedSpecificFilter && !$filtrosManualesAplicados && $usuarioActual) {
+                
+                // 1. Preparar datos de intereses para el cálculo
+                $myInterestIds = $usuarioActual->fitnessInterests->pluck('id')->toArray();
+                $idsString = !empty($myInterestIds) ? implode(',', $myInterestIds) : '0';
+
+                // 2. Calcular coincidencias de intereses en SQL
+                if (!empty($myInterestIds)) {
+                    $usersQuery->selectRaw("users.*, 
+                        (SELECT COUNT(*) FROM fitness_interest_user WHERE fitness_interest_user.user_id = users.id AND fitness_interest_user.fitness_interest_id IN ($idsString)) as interest_matches
+                    ");
                 } else {
-                    $usersQuery->orderBy('last_activity_at', 'desc');
+                    $usersQuery->selectRaw("users.*, 0 as interest_matches");
                 }
+
+                // 3. ORDENACIÓN JERÁRQUICA
+                // Nivel 1: Mi Ciudad (Prioridad Absoluta)
+                if ($usuarioActual->location_city) {
+                    $city = strtolower(trim($usuarioActual->location_city));
+                    $usersQuery->orderByRaw("CASE WHEN LOWER(location_city) = ? THEN 1 ELSE 0 END DESC", [$city]);
+                }
+
+                // Nivel 2: Afinidad (Más intereses en común primero)
+                $usersQuery->orderBy('interest_matches', 'desc');
+
+                // Nivel 3: Actividad reciente
+                $usersQuery->orderBy('last_activity_at', 'desc');
+
+            } elseif (!$appliedSpecificFilter && !$filtrosManualesAplicados) {
+                // Fallback para usuarios sin sesión
+                $usersQuery->orderBy('last_activity_at', 'desc');
             }
         }
 

@@ -323,8 +323,8 @@ const availabilitySlots = ['Mañanas', 'Tardes', 'Noches', 'Fines de semana'];
                         <div v-for="user in users.data" :key="user.id" 
                              class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col h-full group relative transform scale-[0.98]"
                              :class="{
-                                 'border-2 border-indigo-500 ring-2 ring-indigo-200': form.interest_id && user.looking_for_interest_id == form.interest_id,
-                                 'border border-gray-100': !form.interest_id || user.looking_for_interest_id != form.interest_id
+                                 'border-2 border-indigo-500 ring-2 ring-indigo-200': form.filtro_rapido === 'buscando_companero' && form.interest_id && user.looking_for_interest_id == form.interest_id,
+                                 'border border-gray-100': !(form.filtro_rapido === 'buscando_companero' && form.interest_id && user.looking_for_interest_id == form.interest_id)
                              }">
                             
                             <!-- Badge de Nivel de Experiencia (Top Left) -->
@@ -393,14 +393,16 @@ const availabilitySlots = ['Mañanas', 'Tardes', 'Noches', 'Fines de semana'];
                                 <div class="w-full mt-2">
                                     <p class="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-2 text-center">Practica</p>
                                     <div class="flex flex-wrap justify-center gap-1.5">
-                                        <span v-for="interest in user.fitness_interests.slice(0, 3)" :key="interest.id" class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-50 text-gray-700 border border-gray-200">
+                                        <span v-for="interest in user.fitness_interests.slice(0, 3)" :key="interest.id" 
+                                              class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 shadow-sm">
                                             {{ interest.name }}
                                         </span>
-                                        <span v-if="user.fitness_interests.length > 3" class="text-xs text-gray-400 font-medium flex items-center px-1">
+                                        <span v-if="user.fitness_interests.length > 3" class="text-[10px] text-gray-400 font-bold flex items-center justify-center bg-gray-50 rounded-full border border-gray-100 h-6 w-6">
                                             +{{ user.fitness_interests.length - 3 }}
                                         </span>
                                     </div>
                                 </div>
+
 
                                 <!-- Disponibilidad (Si existe) -->
                                 <div v-if="user.availability_general && user.availability_general.length" class="w-full mt-4">
