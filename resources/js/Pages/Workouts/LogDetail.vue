@@ -89,37 +89,37 @@ const setTypeLabels = {
                 </div>
 
                 <!-- Notas del entrenamiento -->
-                <div v-if="log.notes" class="bg-yellow-50 border-2 border-yellow-200 rounded-2xl p-6 mb-6">
-                    <h3 class="text-lg font-bold text-yellow-800 mb-2 flex items-center gap-2">
+                <div v-if="log.notes" class="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-2xl p-6 mb-6 transition-colors">
+                    <h3 class="text-lg font-bold text-yellow-800 dark:text-yellow-400 mb-2 flex items-center gap-2 transition-colors">
                         <span>📝</span> Notas Personales
                     </h3>
-                    <p class="text-yellow-900 italic whitespace-pre-line">{{ log.notes }}</p>
+                    <p class="text-yellow-900 dark:text-yellow-200 italic whitespace-pre-line transition-colors">{{ log.notes }}</p>
                 </div>
 
                 <!-- Ejercicios -->
-                <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
-                    <h3 class="text-2xl font-bold text-gray-900 mb-6">Detalle del Entrenamiento</h3>
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-6 transition-colors">
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 transition-colors">Detalle del Entrenamiento</h3>
                     
                     <div class="space-y-6">
                         <div 
                             v-for="(exercise, index) in log.exercises_data" 
                             :key="index"
-                            class="border-2 border-gray-100 rounded-xl p-5"
+                            class="border-2 border-gray-100 dark:border-gray-700 rounded-xl p-5 transition-colors"
                         >
-                            <h4 class="text-xl font-bold text-gray-900 mb-4">{{ exercise.name }}</h4>
+                            <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-4 transition-colors">{{ exercise.name }}</h4>
                             
                             <div class="space-y-3">
                                 <div 
                                     v-for="(set, setIndex) in exercise.sets" 
                                     :key="setIndex"
-                                    class="flex items-center gap-4 p-3 rounded-xl border border-gray-100"
-                                    :class="set.completed ? 'bg-green-50/50' : 'bg-gray-50'"
+                                    class="flex items-center gap-4 p-3 rounded-xl border border-gray-100 dark:border-gray-700 transition-colors"
+                                    :class="set.completed ? 'bg-green-50/50 dark:bg-green-900/20' : 'bg-gray-50 dark:bg-gray-700'"
                                 >
                                     <!-- Check Icon -->
                                     <div class="flex-shrink-0">
                                         <div 
                                             class="w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors"
-                                            :class="set.completed ? 'bg-green-500 border-green-500' : 'border-gray-300 bg-white'"
+                                            :class="set.completed ? 'bg-green-500 border-green-500' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'"
                                         >
                                             <svg v-if="set.completed" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
@@ -130,10 +130,10 @@ const setTypeLabels = {
                                     <!-- Set Info (Vertical Design) -->
                                     <div class="flex-1 flex flex-col items-center justify-center gap-1">
                                         <div class="flex items-center gap-2">
-                                            <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Serie {{ setIndex + 1 }}</span>
+                                            <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors">Serie {{ setIndex + 1 }}</span>
                                             <span 
                                                 v-if="set.type && set.type !== 'normal'"
-                                                class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700"
+                                                class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 transition-colors"
                                             >
                                                 {{ setTypeLabels[set.type] || set.type }}
                                             </span>
@@ -142,20 +142,20 @@ const setTypeLabels = {
                                         <div class="flex items-center gap-3">
                                             <!-- Reps -->
                                             <div class="flex flex-col items-center">
-                                                <div class="text-xl font-black text-indigo-600 leading-none">
+                                                <div class="text-xl font-black text-indigo-600 dark:text-indigo-400 leading-none transition-colors">
                                                     {{ set.reps || 0 }}
                                                 </div>
-                                                <span class="text-[10px] text-gray-400 font-bold uppercase mt-0.5">Reps</span>
+                                                <span class="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase mt-0.5 transition-colors">Reps</span>
                                             </div>
 
-                                            <span class="text-gray-300 text-xl font-light">/</span>
+                                            <span class="text-gray-300 dark:text-gray-600 text-xl font-light transition-colors">/</span>
 
                                             <!-- Peso -->
                                             <div class="flex flex-col items-center">
-                                                <div class="text-xl font-black text-purple-600 leading-none">
+                                                <div class="text-xl font-black text-purple-600 dark:text-purple-400 leading-none transition-colors">
                                                     {{ set.weight || 0 }}
                                                 </div>
-                                                <span class="text-[10px] text-gray-400 font-bold uppercase mt-0.5">Kg</span>
+                                                <span class="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase mt-0.5 transition-colors">Kg</span>
                                             </div>
                                         </div>
                                     </div>
@@ -169,14 +169,14 @@ const setTypeLabels = {
                 <div class="flex gap-4">
                     <Link 
                         :href="route('workout-logs.index')" 
-                        class="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 rounded-xl font-bold text-center transition"
+                        class="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl font-bold text-center transition-colors"
                     >
                         Ver Historial
                     </Link>
                     <Link 
                         v-if="log.workout_id"
                         :href="route('workouts.show', log.workout_id)" 
-                        class="flex-1 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-center transition"
+                        class="flex-1 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-xl font-bold text-center transition-colors"
                     >
                         Ver Rutina
                     </Link>

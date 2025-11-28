@@ -130,7 +130,7 @@ const confirmDuplicate = () => {
         <div class="max-w-4xl mx-auto pb-24">
             
             <!-- Hero Header -->
-            <div class="relative overflow-hidden bg-white shadow-xl rounded-b-3xl mb-8">
+            <div class="relative overflow-hidden bg-white dark:bg-gray-800 shadow-xl rounded-b-3xl mb-8 transition-colors">
                 <!-- Gradient Background -->
                 <div :class="['absolute inset-0 bg-gradient-to-br opacity-90', headerGradient]"></div>
                 
@@ -253,7 +253,7 @@ const confirmDuplicate = () => {
                         <button 
                             @click="toggleSave"
                             class="w-full md:w-auto px-8 py-3 rounded-xl font-bold shadow-lg transition-all transform hover:scale-105 flex items-center justify-center gap-2"
-                            :class="localIsSaved ? 'bg-pink-100 text-pink-600 hover:bg-pink-200' : 'bg-white text-gray-700 hover:text-indigo-600 hover:bg-gray-50'"
+                            :class="localIsSaved ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 hover:bg-pink-200 dark:hover:bg-pink-900/50' : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-600'"
                         >
                             <svg class="w-6 h-6" :class="localIsSaved ? 'fill-current' : 'fill-none stroke-current'" viewBox="0 0 24 24" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
@@ -276,15 +276,15 @@ const confirmDuplicate = () => {
 
             <!-- Exercises List -->
             <div class="px-4">
-                <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                    <span class="bg-indigo-100 text-indigo-600 p-2 rounded-lg">💪</span>
+                <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2 transition-colors">
+                    <span class="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 p-2 rounded-lg transition-colors">💪</span>
                     Ejercicios
                     <span class="text-sm font-normal text-gray-500 ml-2">({{ workout.exercises.length }} total)</span>
                 </h3>
 
                 <div class="relative space-y-6">
                     <!-- Vertical Line -->
-                    <div class="absolute left-4 top-4 bottom-4 w-0.5 bg-gray-200"></div>
+                    <div class="absolute left-4 top-4 bottom-4 w-0.5 bg-gray-200 dark:bg-gray-700 transition-colors"></div>
 
                     <div 
                         v-for="(exercise, index) in workout.exercises" 
@@ -293,10 +293,10 @@ const confirmDuplicate = () => {
                     >
                         <!-- Number Bubble -->
                         <div 
-                            class="absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm border-4 border-gray-50 z-10"
+                            class="absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm border-4 border-gray-50 dark:border-gray-900 z-10 transition-colors"
                             :class="[
-                                'bg-white shadow-sm',
-                                index % 2 === 0 ? 'text-indigo-600' : 'text-purple-600'
+                                'bg-white dark:bg-gray-800 shadow-sm',
+                                index % 2 === 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-purple-600 dark:text-purple-400'
                             ]"
                         >
                             {{ index + 1 }}
@@ -305,15 +305,15 @@ const confirmDuplicate = () => {
                         <!-- Exercise Card (Clickable) -->
                         <div 
                             @click="toggleExercise(exercise.id)"
-                            class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all cursor-pointer group"
-                            :class="{'ring-2 ring-indigo-100': expandedExercises[exercise.id]}"
+                            class="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all cursor-pointer group"
+                            :class="{'ring-2 ring-indigo-100 dark:ring-indigo-900': expandedExercises[exercise.id]}"
                         >
                             <div class="flex justify-between items-center mb-2">
-                                <h4 class="text-lg font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                                <h4 class="text-lg font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                                     {{ exercise.exercise_name }}
                                 </h4>
                                 <div class="flex items-center gap-2">
-                                    <span class="text-xs font-bold uppercase tracking-wider text-gray-400 bg-gray-100 px-2 py-1 rounded">
+                                    <span class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded transition-colors">
                                         {{ exercise.sets_data ? exercise.sets_data.length : 0 }} Series
                                     </span>
                                     <svg 
@@ -327,35 +327,35 @@ const confirmDuplicate = () => {
                             </div>
 
                             <!-- Resumen rápido (si está colapsado) -->
-                            <div v-if="!expandedExercises[exercise.id]" class="text-sm text-gray-500 truncate">
+                            <div v-if="!expandedExercises[exercise.id]" class="text-sm text-gray-500 dark:text-gray-400 truncate transition-colors">
                                 <span v-if="exercise.rest_seconds">⏱️ {{ exercise.rest_seconds }}s descanso</span>
                                 <span v-if="exercise.notes" class="ml-3">📝 {{ exercise.notes }}</span>
                             </div>
 
                             <!-- Detalle Expandido -->
-                            <div v-if="expandedExercises[exercise.id]" class="mt-4 pt-4 border-t border-gray-100 animate-fadeIn">
+                            <div v-if="expandedExercises[exercise.id]" class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 animate-fadeIn transition-colors">
                                 <div class="space-y-2">
                                     <div 
                                         v-for="(set, setIndex) in exercise.sets_data" 
                                         :key="setIndex"
-                                        class="flex items-center justify-between p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                                        class="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                     >
                                         <div class="flex items-center gap-3">
-                                            <span class="text-xs font-bold text-gray-400 w-6">#{{ setIndex + 1 }}</span>
-                                            <span class="font-semibold text-gray-800">{{ set.reps }} reps</span>
-                                            <span class="text-gray-400">x</span>
-                                            <span class="font-semibold text-gray-800">{{ set.weight }} kg</span>
+                                            <span class="text-xs font-bold text-gray-400 dark:text-gray-500 w-6 transition-colors">#{{ setIndex + 1 }}</span>
+                                            <span class="font-semibold text-gray-800 dark:text-gray-200 transition-colors">{{ set.reps }} reps</span>
+                                            <span class="text-gray-400 dark:text-gray-500 transition-colors">x</span>
+                                            <span class="font-semibold text-gray-800 dark:text-gray-200 transition-colors">{{ set.weight }} kg</span>
                                         </div>
                                         <span 
                                             v-if="set.type && set.type !== 'normal'"
-                                            class="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700"
+                                            class="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 transition-colors"
                                         >
                                             {{ set.type }}
                                         </span>
                                     </div>
                                 </div>
 
-                                <div class="mt-4 grid grid-cols-2 gap-4 text-sm text-gray-600">
+                                <div class="mt-4 grid grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400 transition-colors">
                                     <div v-if="exercise.rest_seconds" class="flex items-center gap-2">
                                         <span class="text-gray-400">⏱️</span>
                                         <span>Descanso: <strong>{{ exercise.rest_seconds }}s</strong></span>
@@ -372,7 +372,7 @@ const confirmDuplicate = () => {
             </div>
 
             <!-- Empty State -->
-            <div v-if="workout.exercises.length === 0" class="text-center py-12 text-gray-500">
+            <div v-if="workout.exercises.length === 0" class="text-center py-12 text-gray-500 dark:text-gray-400 transition-colors">
                 <p>Esta rutina no tiene ejercicios asignados aún.</p>
             </div>
 
@@ -385,13 +385,13 @@ const confirmDuplicate = () => {
                                 <span class="text-xl">📊</span>
                             </div>
                             <div>
-                                <h3 class="text-2xl font-bold text-gray-800">Tu Historial</h3>
-                                <p class="text-sm text-gray-500">Has completado esta rutina {{ logsCount }} {{ logsCount === 1 ? 'vez' : 'veces' }}</p>
+                                <h3 class="text-2xl font-bold text-gray-800 dark:text-white transition-colors">Tu Historial</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 transition-colors">Has completado esta rutina {{ logsCount }} {{ logsCount === 1 ? 'vez' : 'veces' }}</p>
                             </div>
                         </div>
                         <Link 
                             :href="route('workout-logs.index')"
-                            class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition text-sm"
+                            class="px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg font-bold hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors text-sm shadow-md hover:shadow-lg"
                         >
                             Ver todo
                         </Link>
@@ -403,30 +403,30 @@ const confirmDuplicate = () => {
                             v-for="log in recentLogs" 
                             :key="log.id"
                             :href="route('workout-logs.show', log.id)"
-                            class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all border-2 border-gray-100 hover:border-indigo-200 p-5 group"
+                            class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all border-2 border-gray-100 dark:border-gray-700 hover:border-indigo-200 dark:hover:border-indigo-900 p-5 group"
                         >
                             <div class="flex items-center justify-between mb-3">
-                                <span class="text-xs text-gray-500 font-medium">
+                                <span class="text-xs text-gray-500 dark:text-gray-400 font-medium transition-colors">
                                     {{ new Date(log.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) }}
                                 </span>
                                 <div 
                                     class="w-12 h-12 rounded-full font-black text-sm flex items-center justify-center"
                                     :class="log.completed_sets === log.total_sets 
-                                        ? 'bg-green-100 text-green-600' 
-                                        : 'bg-yellow-100 text-yellow-600'"
+                                        ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' 
+                                        : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400'"
                                 >
                                     {{ Math.round((log.completed_sets / log.total_sets) * 100) }}%
                                 </div>
                             </div>
                             
                             <div class="grid grid-cols-2 gap-3">
-                                <div class="bg-gray-50 rounded-lg p-2">
-                                    <div class="text-lg font-bold text-indigo-600">{{ log.duration_minutes || '--' }}</div>
-                                    <div class="text-xs text-gray-500">min</div>
+                                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2 transition-colors">
+                                    <div class="text-lg font-bold text-indigo-600 dark:text-indigo-400 transition-colors">{{ log.duration_minutes || '--' }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 transition-colors">min</div>
                                 </div>
-                                <div class="bg-gray-50 rounded-lg p-2">
-                                    <div class="text-lg font-bold text-purple-600">{{ log.completed_sets }}</div>
-                                    <div class="text-xs text-gray-500">series</div>
+                                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2 transition-colors">
+                                    <div class="text-lg font-bold text-purple-600 dark:text-purple-400 transition-colors">{{ log.completed_sets }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 transition-colors">series</div>
                                 </div>
                             </div>
                         </Link>
@@ -465,7 +465,7 @@ const confirmDuplicate = () => {
                     >
                         <div 
                             v-if="showDuplicateModal"
-                            class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
+                            class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 transition-colors"
                         >
                             <!-- Header -->
                             <div class="flex items-center gap-3 mb-4">
@@ -475,14 +475,14 @@ const confirmDuplicate = () => {
                                     </svg>
                                 </div>
                                 <div class="flex-1">
-                                    <h3 class="text-xl font-bold text-gray-900">Clonar Rutina</h3>
-                                    <p class="text-sm text-gray-500">Personaliza tu copia</p>
+                                    <h3 class="text-xl font-bold text-gray-900 dark:text-white transition-colors">Clonar Rutina</h3>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 transition-colors">Personaliza tu copia</p>
                                 </div>
                                 <button 
                                     @click="closeDuplicateModal"
-                                    class="p-2 hover:bg-gray-100 rounded-lg transition"
+                                    class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                                 >
-                                    <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg class="w-5 h-5 text-gray-400 dark:text-gray-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                     </svg>
                                 </button>
@@ -490,20 +490,20 @@ const confirmDuplicate = () => {
 
                             <!-- Content -->
                             <div class="mb-6">
-                                <p class="text-gray-600 mb-4">
-                                    Vas a crear una copia de <strong class="text-gray-900">{{ workout.name }}</strong> que podrás editar libremente.
+                                <p class="text-gray-600 dark:text-gray-300 mb-4 transition-colors">
+                                    Vas a crear una copia de <strong class="text-gray-900 dark:text-white">{{ workout.name }}</strong> que podrás editar libremente.
                                 </p>
 
                                 <!-- Selector de Visibilidad -->
                                 <div class="space-y-3">
-                                    <p class="text-sm font-bold text-gray-700 mb-2">Visibilidad de la rutina:</p>
+                                    <p class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 transition-colors">Visibilidad de la rutina:</p>
                                     
                                     <!-- Opción Privada -->
                                     <label 
                                         class="flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all"
                                         :class="!duplicateIsPublic 
-                                            ? 'border-indigo-500 bg-indigo-50 shadow-md' 
-                                            : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'"
+                                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 shadow-md' 
+                                            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'"
                                     >
                                         <input 
                                             type="radio" 
@@ -512,18 +512,18 @@ const confirmDuplicate = () => {
                                             class="sr-only"
                                         />
                                         <div class="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
-                                            :class="!duplicateIsPublic ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-400'"
+                                            :class="!duplicateIsPublic ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400' : 'bg-gray-100 dark:bg-gray-600 text-gray-400 dark:text-gray-500'"
                                         >
                                             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                             </svg>
                                         </div>
                                         <div class="flex-1">
-                                            <p class="font-bold text-gray-900 flex items-center gap-2">
+                                            <p class="font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
                                                 🔒 Privada
                                                 <span v-if="!duplicateIsPublic" class="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-full">Seleccionada</span>
                                             </p>
-                                            <p class="text-sm text-gray-500">Solo visible para ti</p>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400 transition-colors">Solo visible para ti</p>
                                         </div>
                                         <div v-if="!duplicateIsPublic" class="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0">
                                             <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
@@ -537,8 +537,8 @@ const confirmDuplicate = () => {
                                     <label 
                                         class="flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all"
                                         :class="duplicateIsPublic 
-                                            ? 'border-green-500 bg-green-50 shadow-md' 
-                                            : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'"
+                                            ? 'border-green-500 bg-green-50 dark:bg-green-900/30 shadow-md' 
+                                            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'"
                                     >
                                         <input 
                                             type="radio" 
@@ -547,18 +547,18 @@ const confirmDuplicate = () => {
                                             class="sr-only"
                                         />
                                         <div class="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
-                                            :class="duplicateIsPublic ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'"
+                                            :class="duplicateIsPublic ? 'bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-600 text-gray-400 dark:text-gray-500'"
                                         >
                                             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
                                         </div>
                                         <div class="flex-1">
-                                            <p class="font-bold text-gray-900 flex items-center gap-2">
+                                            <p class="font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
                                                 🌐 Pública
                                                 <span v-if="duplicateIsPublic" class="text-xs bg-green-600 text-white px-2 py-0.5 rounded-full">Seleccionada</span>
                                             </p>
-                                            <p class="text-sm text-gray-500">Visible para todos los usuarios</p>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400 transition-colors">Visible para todos los usuarios</p>
                                         </div>
                                         <div v-if="duplicateIsPublic" class="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
                                             <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
@@ -574,7 +574,7 @@ const confirmDuplicate = () => {
                             <div class="flex gap-3">
                                 <button 
                                     @click="closeDuplicateModal"
-                                    class="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition"
+                                    class="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                                 >
                                     Cancelar
                                 </button>

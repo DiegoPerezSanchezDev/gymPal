@@ -73,15 +73,15 @@ else { document.removeEventListener('click', handleClickOutside); }
         <input
             type="text"
             v-model="searchQuery"
-            class="block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+            class="block w-full rounded-md border-0 py-1.5 text-gray-900 dark:text-white bg-white dark:bg-gray-700 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6 transition-colors"
             placeholder="Empieza a escribir una ciudad..."
             autocomplete="off"
         />
-        <div v-if="isOpen && (suggestions.length > 0 || isLoading)" class="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg">
-            <div v-if="isLoading" class="px-4 py-2 text-sm text-gray-500">Buscando...</div>
+        <div v-if="isOpen && (suggestions.length > 0 || isLoading)" class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg transition-colors">
+            <div v-if="isLoading" class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">Buscando...</div>
             <ul v-else>
-                <li v-for="suggestion in suggestions" :key="suggestion.place_id" class="border-b last:border-b-0">
-                    <button type="button" class="w-full text-left px-4 py-2 text-sm hover:bg-indigo-50" @click="selectSuggestion(suggestion)">
+                <li v-for="suggestion in suggestions" :key="suggestion.place_id" class="border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors">
+                    <button type="button" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors" @click="selectSuggestion(suggestion)">
                         {{ suggestion.formatted }}
                     </button>
                 </li>

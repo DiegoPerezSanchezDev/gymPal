@@ -83,17 +83,17 @@ const submit = () => {
             <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
                 
                 <!-- Card Principal -->
-                <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700 transition-colors">
                     
                     <!-- Header -->
-                    <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-indigo-50 to-purple-50">
+                    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 transition-colors">
                         <div class="flex items-center gap-3">
-                            <Link :href="route('feed.index')" class="text-gray-500 hover:text-gray-700 p-2 -ml-2 rounded-full hover:bg-white/50 transition-colors">
+                            <Link :href="route('feed.index')" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-2 -ml-2 rounded-full hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors">
                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                                 </svg>
                             </Link>
-                            <h1 class="text-xl font-extrabold text-gray-900">✨ Crear Publicación</h1>
+                            <h1 class="text-xl font-extrabold text-gray-900 dark:text-white transition-colors">✨ Crear Publicación</h1>
                         </div>
                         <button 
                             @click="submit"
@@ -117,8 +117,8 @@ const submit = () => {
                         <div class="flex items-center gap-3 mb-6">
                             <img :src="avatarUrl" alt="Avatar" class="w-12 h-12 rounded-full object-cover border-2 border-indigo-100 shadow-sm">
                             <div>
-                                <p class="font-bold text-gray-900">{{ user.display_name || user.name }}</p>
-                                <div class="flex items-center text-xs text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full w-fit mt-1">
+                                <p class="font-bold text-gray-900 dark:text-white transition-colors">{{ user.display_name || user.name }}</p>
+                                <div class="flex items-center text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2.5 py-1 rounded-full w-fit mt-1 transition-colors">
                                     <svg class="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                     🌍 Público
                                 </div>
@@ -128,7 +128,7 @@ const submit = () => {
                         <!-- Textarea -->
                         <textarea
                             v-model="form.content"
-                            class="w-full border-none focus:ring-0 text-lg placeholder-gray-400 resize-none p-0 min-h-[180px] font-medium"
+                            class="w-full border-none focus:ring-0 text-lg placeholder-gray-400 dark:placeholder-gray-500 bg-transparent text-gray-900 dark:text-white resize-none p-0 min-h-[180px] font-medium transition-colors"
                             :placeholder="`¿Qué estás pensando, ${user.name.split(' ')[0]}?`"
                             autofocus
                         ></textarea>
@@ -145,7 +145,7 @@ const submit = () => {
                         </div>
 
                         <!-- Previsualización de Rutina Seleccionada -->
-                        <div v-if="selectedWorkout" class="mt-6 p-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border-2 border-indigo-200 relative group">
+                        <div v-if="selectedWorkout" class="mt-6 p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl border-2 border-indigo-200 dark:border-indigo-800 relative group transition-colors">
                             <button 
                                 @click="removeWorkout"
                                 class="absolute top-3 right-3 p-1.5 bg-white text-indigo-600 rounded-full hover:bg-red-50 hover:text-red-600 transition-all shadow-md transform hover:scale-110"
@@ -157,12 +157,12 @@ const submit = () => {
                                     <span class="text-2xl">💪</span>
                                 </div>
                                 <div class="flex-1">
-                                    <p class="text-xs text-indigo-600 font-bold uppercase tracking-wider mb-1">Rutina adjunta</p>
-                                    <h4 class="font-bold text-gray-900 mb-1">{{ selectedWorkout.name }}</h4>
-                                    <p v-if="selectedWorkout.description" class="text-sm text-gray-600 line-clamp-2">{{ selectedWorkout.description }}</p>
+                                    <p class="text-xs text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wider mb-1 transition-colors">Rutina adjunta</p>
+                                    <h4 class="font-bold text-gray-900 dark:text-white mb-1 transition-colors">{{ selectedWorkout.name }}</h4>
+                                    <p v-if="selectedWorkout.description" class="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 transition-colors">{{ selectedWorkout.description }}</p>
                                     <div class="flex items-center gap-3 mt-2">
-                                        <span class="text-xs bg-white px-2 py-1 rounded-full font-semibold text-indigo-600">{{ selectedWorkout.category }}</span>
-                                        <span class="text-xs text-gray-500">{{ selectedWorkout.exercises_count || 0 }} ejercicios</span>
+                                        <span class="text-xs bg-white dark:bg-gray-700 px-2 py-1 rounded-full font-semibold text-indigo-600 dark:text-indigo-400 transition-colors">{{ selectedWorkout.category }}</span>
+                                        <span class="text-xs text-gray-500 dark:text-gray-400 transition-colors">{{ selectedWorkout.exercises_count || 0 }} ejercicios</span>
                                     </div>
                                 </div>
                             </div>
@@ -178,13 +178,13 @@ const submit = () => {
                     </div>
 
                     <!-- Barra de Herramientas Inferior -->
-                    <div class="px-6 py-4 border-t border-gray-100 bg-gray-50">
+                    <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 transition-colors">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <button 
                                     @click="triggerFileInput"
                                     type="button"
-                                    class="p-2.5 text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-indigo-200"
+                                    class="p-2.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-indigo-200 dark:hover:border-indigo-700"
                                     title="Añadir foto"
                                 >
                                     <svg class="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -197,7 +197,7 @@ const submit = () => {
                                 <button 
                                     @click="showWorkoutModal = true"
                                     type="button"
-                                    class="p-2.5 text-purple-600 hover:bg-purple-50 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-purple-200"
+                                    class="p-2.5 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-purple-200 dark:hover:border-purple-700"
                                     title="Adjuntar rutina"
                                 >
                                     <svg class="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -241,21 +241,21 @@ const submit = () => {
 
         <!-- Modal de Selección de Rutinas -->
         <div v-if="showWorkoutModal" @click.self="showWorkoutModal = false" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-            <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[80vh] overflow-hidden shadow-2xl animate-fadeIn">
+            <div class="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-2xl max-h-[80vh] overflow-hidden shadow-2xl animate-fadeIn transition-colors">
                 <!-- Header del Modal -->
-                <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-purple-50">
+                <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 transition-colors">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
                                 <span class="text-xl">💪</span>
                             </div>
                             <div>
-                                <h2 class="text-xl font-black text-gray-900">Seleccionar Rutina</h2>
-                                <p class="text-xs text-gray-500">Elige una rutina para adjuntar a tu publicación</p>
+                                <h2 class="text-xl font-black text-gray-900 dark:text-white transition-colors">Seleccionar Rutina</h2>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 transition-colors">Elige una rutina para adjuntar a tu publicación</p>
                             </div>
                         </div>
-                        <button @click="showWorkoutModal = false" class="p-2 hover:bg-white/50 rounded-full transition">
-                            <svg class="w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <button @click="showWorkoutModal = false" class="p-2 hover:bg-white/50 dark:hover:bg-gray-700/50 rounded-full transition text-gray-500 dark:text-gray-400">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
@@ -269,17 +269,17 @@ const submit = () => {
                             v-for="workout in userWorkouts" 
                             :key="workout.id"
                             @click="selectWorkout(workout)"
-                            class="w-full p-4 bg-white hover:bg-gradient-to-br hover:from-indigo-50 hover:to-purple-50 rounded-xl border-2 border-gray-100 hover:border-indigo-300 transition-all text-left group"
+                            class="w-full p-4 bg-white dark:bg-gray-800 hover:bg-gradient-to-br hover:from-indigo-50 hover:to-purple-50 dark:hover:from-indigo-900/20 dark:hover:to-purple-900/20 rounded-xl border-2 border-gray-100 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-500 transition-all text-left group"
                         >
                             <div class="flex items-start gap-3">
-                                <div class="w-12 h-12 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                                <div class="w-12 h-12 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/50 dark:to-purple-900/50 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
                                     <span class="text-2xl">🏋️</span>
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <h3 class="font-bold text-gray-900 group-hover:text-indigo-600 transition-colors truncate">{{ workout.name }}</h3>
-                                    <p v-if="workout.description" class="text-sm text-gray-600 line-clamp-1 mt-0.5">{{ workout.description }}</p>
+                                    <h3 class="font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">{{ workout.name }}</h3>
+                                    <p v-if="workout.description" class="text-sm text-gray-600 dark:text-gray-400 line-clamp-1 mt-0.5 transition-colors">{{ workout.description }}</p>
                                     <div class="flex items-center gap-2 mt-2">
-                                        <span class="text-xs bg-gray-100 group-hover:bg-white px-2 py-1 rounded-full font-semibold text-gray-600">{{ workout.category }}</span>
+                                        <span class="text-xs bg-gray-100 dark:bg-gray-700 group-hover:bg-white dark:group-hover:bg-gray-600 px-2 py-1 rounded-full font-semibold text-gray-600 dark:text-gray-300 transition-colors">{{ workout.category }}</span>
                                     </div>
                                 </div>
                                 <svg class="w-6 h-6 text-gray-400 group-hover:text-indigo-600 transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -291,11 +291,11 @@ const submit = () => {
                     
                     <!-- Empty State -->
                     <div v-else class="text-center py-12">
-                        <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <div class="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors">
                             <span class="text-4xl">📝</span>
                         </div>
-                        <h3 class="text-lg font-bold text-gray-900 mb-2">No tienes rutinas</h3>
-                        <p class="text-gray-500 mb-4">Crea tu primera rutina para poder adjuntarla a tus posts</p>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2 transition-colors">No tienes rutinas</h3>
+                        <p class="text-gray-500 dark:text-gray-400 mb-4 transition-colors">Crea tu primera rutina para poder adjuntarla a tus posts</p>
                         <Link :href="route('workouts.create')" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />

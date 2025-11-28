@@ -74,6 +74,26 @@ class NotificationService
     }
 
     /**
+     * Notificar nueva solicitud de conexión
+     */
+    public static function notifyConnectionRequest(User $receiver, $connection, User $sender): Notification
+    {
+        return self::create(
+            $receiver,
+            Notification::TYPE_CONNECTION_REQUEST,
+            'Nueva solicitud de conexión',
+            "{$sender->name} quiere conectar contigo",
+            $connection,
+            [
+                'connection_id' => $connection->id,
+                'sender_name' => $sender->name,
+                'sender_username' => $sender->username,
+                'sender_id' => $sender->id,
+            ]
+        );
+    }
+
+    /**
      * Notificar conexión aceptada
      */
     public static function notifyConnectionAccepted(User $user, $connection, User $accepter): Notification
