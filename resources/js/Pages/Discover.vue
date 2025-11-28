@@ -3,6 +3,8 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import UserCardSkeleton from '@/Components/Skeletons/UserCardSkeleton.vue';
 import { Head, useForm, router, Link } from '@inertiajs/vue3';
 import { ref, watch, onMounted, computed } from 'vue';
+import SelectInput from '@/Components/SelectInput.vue';
+import MultiSelectInput from '@/Components/MultiSelectInput.vue';
 import _ from 'lodash';
 
 const props = defineProps({
@@ -25,6 +27,19 @@ const interestOptions = computed(() => {
     const opts = props.interests.map(i => ({ value: i.id, label: i.name }));
     return [{ value: '', label: 'Todos los deportes' }, ...opts];
 });
+
+// Opciones para MultiSelect de deportes
+const interestsMultiOptions = computed(() => {
+    return props.interests.map(i => ({ value: i.id, label: i.name }));
+});
+
+// Opciones para MultiSelect de disponibilidad
+const availabilityOptions = [
+    { value: 'Mañana', label: 'Mañana' },
+    { value: 'Tarde', label: 'Tarde' },
+    { value: 'Noche', label: 'Noche' },
+    { value: 'Finde semana', label: 'Finde semana' }
+];
 
 const form = useForm({
     search: props.filters.search || '',
@@ -250,48 +265,26 @@ const availabilitySlots = ['Mañanas', 'Tardes', 'Noches', 'Fines de semana'];
                             </div>
                         </div>
                         
-                        <!-- Intereses (Checkbox) -->
+                        <!-- Intereses (MultiSelect) -->
                         <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                                <span class="text-base">🏃</span>
-                                <span>Deportes que practican</span>
-                            </label>
-                            <div class="flex flex-wrap gap-2">
-                                <div v-for="interest in interests" :key="'filter-int-'+interest.id" class="flex items-center">
-                                    <input 
-                                        :id="'interest-' + interest.id" 
-                                        :value="interest.id" 
-                                        v-model="form.interests" 
-                                        type="checkbox" 
-                                        class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                                    >
-                                    <label :for="'interest-' + interest.id" class="ml-2 text-sm text-gray-700 cursor-pointer hover:text-indigo-600 transition-colors">
-                                        {{ interest.name }}
-                                    </label>
-                                </div>
-                            </div>
+                            <MultiSelectInput
+                                id="interests"
+                                label="🏃 Deportes que practican"
+                                v-model="form.interests"
+                                :options="interestsMultiOptions"
+                                placeholder="Seleccionar deportes..."
+                            />
                         </div>
 
-                        <!-- Disponibilidad -->
+                        <!-- Disponibilidad (MultiSelect) -->
                         <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                                <span class="text-base">⏰</span>
-                                <span>Disponibilidad</span>
-                            </label>
-                            <div class="flex flex-wrap gap-2">
-                                <div v-for="slot in availabilitySlots" :key="slot" class="flex items-center">
-                                    <input 
-                                        :id="'avail-' + slot" 
-                                        :value="slot" 
-                                        v-model="form.availability_general" 
-                                        type="checkbox" 
-                                        class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                                    >
-                                    <label :for="'avail-' + slot" class="ml-2 text-sm text-gray-700 cursor-pointer hover:text-indigo-600 transition-colors">
-                                        {{ slot }}
-                                    </label>
-                                </div>
-                            </div>
+                            <MultiSelectInput
+                                id="availability"
+                                label="⏰ Disponibilidad"
+                                v-model="form.availability_general"
+                                :options="availabilityOptions"
+                                placeholder="Seleccionar horarios..."
+                            />
                         </div>
 
                         <div class="flex justify-end pt-4 border-t border-gray-100">

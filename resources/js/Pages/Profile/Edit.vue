@@ -357,17 +357,12 @@ function confirmRemovePhoto() {
 
                                     <!-- Buscando... -->
                                     <div>
-                                        <InputLabel value="Busco compañero principalmente para..." class="mb-2" />
-                                        <div class="relative">
-                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <span class="text-xl">🤝</span>
-                                            </div>
-                                            <SelectInput
-                                                v-model="form.looking_for_interest_id"
-                                                :options="interestOptions"
-                                                class="w-full pl-10 h-12 text-base"
-                                            />
-                                        </div>
+                                        <SelectInput
+                                            id="looking_for_interest"
+                                            label="🤝 Busco compañero principalmente para..."
+                                            v-model="form.looking_for_interest_id"
+                                            :options="interestOptions"
+                                        />
                                         <p class="text-xs text-gray-500 mt-1">Esto ayudará a otros usuarios a encontrarte si buscan lo mismo.</p>
                                     </div>
 

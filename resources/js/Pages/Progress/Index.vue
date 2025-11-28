@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, onMounted, ref, watch } from 'vue';
+import SelectInput from '@/Components/SelectInput.vue';
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -14,26 +15,30 @@ const props = defineProps({
 });
 
 const charts = ref([]);
-const showDropdown = ref(false);
 
 const hasData = computed(() => {
     return props.workouts && props.workouts.length > 0;
 });
 
 const changeWorkout = (workoutName) => {
-    showDropdown.value = false;
     router.get(route('progress.index'), { workout: workoutName }, {
         preserveState: true,
         replace: true
     });
 };
 
-const toggleDropdown = () => {
-    showDropdown.value = !showDropdown.value;
-};
-
 const selectedWorkoutData = computed(() => {
     return props.workouts?.find(w => w.name === props.selectedWorkout);
+});
+
+// Opciones formateadas para SelectInput
+const workoutOptions = computed(() => {
+    if (!props.workouts) return [];
+    return props.workouts.map(workout => ({
+        value: workout.name,
+        label: workout.name,
+        description: `${workout.times_completed} ${workout.times_completed === 1 ? 'sesión completada' : 'sesiones completadas'}`
+    }));
 });
 
 // Modal de récords personales
@@ -236,69 +241,13 @@ const statColors = [
                                 </div>
                             </div>
                             
-                            <!-- Dropdown Custom -->
-                            <div class="relative">
-                                <!-- Botón del selector -->
-                                <button
-                                    @click="toggleDropdown"
-                                    class="w-full px-4 py-4 rounded-xl border-2 border-gray-200 bg-white hover:border-indigo-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all text-left flex items-center justify-between group"
-                                >
-                                    <div class="flex-1">
-                                        <div class="font-bold text-gray-900 mb-0.5">{{ selectedWorkout }}</div>
-                                        <div class="text-sm text-gray-500" v-if="selectedWorkoutData">
-                                            {{ selectedWorkoutData.times_completed }} {{ selectedWorkoutData.times_completed === 1 ? 'sesión completada' : 'sesiones completadas' }}
-                                        </div>
-                                    </div>
-                                    <svg 
-                                        class="w-5 h-5 text-gray-400 transition-transform duration-200"
-                                        :class="{ 'rotate-180': showDropdown }"
-                                        fill="none" 
-                                        viewBox="0 0 24 24" 
-                                        stroke="currentColor"
-                                    >
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </button>
-
-                                <!-- Lista de opciones -->
-                                <Transition
-                                    enter-active-class="transition ease-out duration-200"
-                                    enter-from-class="opacity-0 scale-95"
-                                    enter-to-class="opacity-100 scale-100"
-                                    leave-active-class="transition ease-in duration-150"
-                                    leave-from-class="opacity-100 scale-100"
-                                    leave-to-class="opacity-0 scale-95"
-                                >
-                                    <div
-                                        v-if="showDropdown"
-                                        class="absolute z-50 w-full mt-2 bg-white rounded-xl shadow-2xl border-2 border-gray-100 max-h-80 overflow-y-auto"
-                                    >
-                                        <button
-                                            v-for="workout in workouts"
-                                            :key="workout.name"
-                                            @click="changeWorkout(workout.name)"
-                                            class="w-full px-4 py-3 text-left hover:bg-indigo-50 transition-colors border-b border-gray-100 last:border-b-0 first:rounded-t-xl last:rounded-b-xl"
-                                            :class="{ 'bg-indigo-50': selectedWorkout === workout.name }"
-                                        >
-                                            <div class="flex items-center justify-between">
-                                                <div class="flex-1">
-                                                    <div class="font-bold text-gray-900 mb-0.5">{{ workout.name }}</div>
-                                                    <div class="text-sm text-gray-500">
-                                                        {{ workout.times_completed }} {{ workout.times_completed === 1 ? 'sesión' : 'sesiones' }}
-                                                    </div>
-                                                </div>
-                                                <div v-if="selectedWorkout === workout.name" class="ml-3">
-                                                    <div class="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center">
-                                                        <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-                                                        </svg>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </button>
-                                    </div>
-                                </Transition>
-                            </div>
+                            <!-- SelectInput Component -->
+                            <SelectInput
+                                id="workout-selector"
+                                :model-value="selectedWorkout"
+                                @update:model-value="changeWorkout"
+                                :options="workoutOptions"
+                            />
                         </div>
 
                         <!-- Estadísticas de la Rutina -->
