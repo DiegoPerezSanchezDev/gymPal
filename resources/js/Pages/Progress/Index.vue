@@ -251,36 +251,43 @@ const statColors = [
                         </div>
 
                         <!-- Estadísticas de la Rutina -->
-                        <div v-if="progressData && progressData.stats" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div :class="['rounded-2xl p-6 text-white shadow-lg text-center transform hover:scale-105 transition-transform duration-300 bg-gradient-to-br', statColors[0]]">
-                                <div class="text-4xl font-black mb-1">{{ progressData.stats.times_completed }}</div>
-                                <div class="text-xs opacity-80 font-bold uppercase tracking-wider">Veces Completada</div>
+                        <!-- Estadísticas de la Rutina (Nuevo Diseño) -->
+                        <div v-if="progressData && progressData.stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                            <!-- Veces Completada -->
+                            <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center group hover:border-indigo-200 transition-colors">
+                                <div class="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl mb-2 group-hover:scale-110 transition-transform">
+                                    ✅
+                                </div>
+                                <div class="text-3xl font-black text-gray-900 leading-none">{{ progressData.stats.times_completed }}</div>
+                                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">Completada</div>
                             </div>
                             
-                            <div :class="['rounded-2xl p-6 text-white shadow-lg text-center transform hover:scale-105 transition-transform duration-300 bg-gradient-to-br', statColors[1]]">
-                                <div class="text-4xl font-black mb-1">{{ progressData.stats.avg_duration }}</div>
-                                <div class="text-xs opacity-80 font-bold uppercase tracking-wider">Minutos Promedio</div>
+                            <!-- Minutos Promedio -->
+                            <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center group hover:border-blue-200 transition-colors">
+                                <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-2xl mb-2 group-hover:scale-110 transition-transform">
+                                    ⏱️
+                                </div>
+                                <div class="text-3xl font-black text-gray-900 leading-none">{{ progressData.stats.avg_duration }}</div>
+                                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">Minutos Promedio</div>
                             </div>
 
-                            <!-- Tarjeta Récords Personales (Dorada) -->
+                            <!-- Récords (Botón) -->
                             <button 
                                 @click="openRecordsModal"
-                                class="rounded-2xl p-6 text-white shadow-lg text-center transform hover:scale-105 transition-transform duration-300 bg-gradient-to-br from-yellow-400 to-orange-500 relative overflow-hidden group"
+                                class="bg-gradient-to-br from-yellow-400 to-orange-500 p-4 rounded-2xl shadow-md flex flex-col items-center justify-center text-center text-white transform hover:scale-[1.02] transition-all"
                             >
-                                <div class="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
-                                <div class="text-4xl font-black mb-1">🏆</div>
-                                <div class="text-xs opacity-90 font-bold uppercase tracking-wider text-yellow-50">Récords Personales</div>
-                                <div class="absolute top-2 right-2 text-yellow-200 opacity-50">
-                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                    </svg>
-                                </div>
+                                <div class="text-3xl mb-1">🏆</div>
+                                <div class="font-black text-lg leading-tight">Ver Récords</div>
+                                <div class="text-[10px] opacity-80 font-bold uppercase tracking-wider mt-1">Personales</div>
                             </button>
-
-                            <div :class="['rounded-2xl p-6 text-white shadow-lg text-center transform hover:scale-105 transition-transform duration-300 bg-gradient-to-br', statColors[3]]">
-                                <div class="text-2xl font-black mb-1">{{ progressData.stats.last_completed }}</div>
-                                <div class="text-xs opacity-80 font-bold uppercase tracking-wider">Última Sesión</div>
+                            
+                            <!-- Última Sesión -->
+                            <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center group hover:border-emerald-200 transition-colors">
+                                <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl mb-2 group-hover:scale-110 transition-transform">
+                                    📅
+                                </div>
+                                <div class="text-lg font-black text-gray-900 leading-tight">{{ progressData.stats.last_completed || 'N/A' }}</div>
+                                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">Última Sesión</div>
                             </div>
                         </div>
 

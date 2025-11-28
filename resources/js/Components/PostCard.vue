@@ -323,9 +323,11 @@ const submitComment = async () => {
                 <span class="font-bold text-sm text-gray-600 group-hover:text-indigo-600">{{ post.comments_count > 0 ? post.comments_count : 'Comentar' }}</span>
             </Link>
             
-            <button @click="showShareModal = true" class="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all duration-200 bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md hover:shadow-lg hover:opacity-95 transform hover:-translate-y-0.5">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342A8.963 8.963 0 018 12.001c0-1.01.198-1.968.563-2.835m7.899 5.578A8.963 8.963 0 0116 12.001c0-1.01.198-1.968.563-2.835m0 5.67a8.965 8.965 0 01-7.899 0m7.899 0l-1.42 1.42m-5.058-8.54l1.42-1.42" /></svg>
-                <span class="font-bold text-sm">Compartir</span>
+            <button @click="showShareModal = true" class="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all duration-200 hover:bg-green-50 group text-gray-500">
+                <svg class="w-6 h-6 transition-transform duration-200 group-hover:scale-110 text-gray-500 group-hover:text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                <span class="font-bold text-sm text-gray-600 group-hover:text-green-600">Compartir</span>
             </button>
         </div>
         <LikesModal v-if="showLikesModal" :postId="post.id" @close="showLikesModal = false" />
