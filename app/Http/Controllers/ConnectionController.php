@@ -72,25 +72,42 @@ class ConnectionController extends Controller
                                     });
 
         //Obtener conexiones ACEPTADAS
-        $acceptedConnections = Connection::where('status', 'accepted')
-            ->where(function ($query) use ($currentUser) {
-                $query->where('sender_id', $currentUser->id)
-                    ->orWhere('receiver_id', $currentUser->id);
-            })
-            ->with(['sender' => function($query) {
-                $query->select('id', 'name', 'username', 'profile_picture_url');
-            }, 'receiver' => function($query) {
-                $query->select('id', 'name', 'username', 'profile_picture_url');
-            }])
+        // Obtener conexiones ACEPTADAS donde el usuario es sender
+        $sent = Connection::where('sender_id', $currentUser->id)
+            ->where('status', 'accepted')
+            ->with('receiver:id,name,username,profile_picture_url')
             ->get();
 
-        //Transformar conexiones en una lista de amigos
-        $gymPals = $acceptedConnections->map(function ($connection) use ($currentUser) {
-            $friend = $connection->sender_id === $currentUser->id ? $connection->receiver : $connection->sender;
-            // Añadimos el ID de la conexión para poder usarlo en el botón "Desconectar"
-            $friend->connection_id = $connection->id; 
-            return $friend;
-        });
+        // Obtener conexiones ACEPTADAS donde el usuario es receiver
+        $received = Connection::where('receiver_id', $currentUser->id)
+            ->where('status', 'accepted')
+            ->with('sender:id,name,username,profile_picture_url')
+            ->get();
+
+        // Crear un array único de GymPals para evitar duplicados
+        $gymPalsMap = [];
+
+        // Procesar enviadas
+        foreach ($sent as $conn) {
+            $userId = $conn->receiver_id;
+            if (!isset($gymPalsMap[$userId])) {
+                $friend = $conn->receiver;
+                $friend->connection_id = $conn->id;
+                $gymPalsMap[$userId] = $friend;
+            }
+        }
+
+        // Procesar recibidas (si ya existe, es bidireccional, pero solo mostramos una vez)
+        foreach ($received as $conn) {
+            $userId = $conn->sender_id;
+            if (!isset($gymPalsMap[$userId])) {
+                $friend = $conn->sender;
+                $friend->connection_id = $conn->id;
+                $gymPalsMap[$userId] = $friend;
+            }
+        }
+
+        $gymPals = collect(array_values($gymPalsMap));
 
         return Inertia::render('Connections/Index', [
             'pendingRequests' => $pendingRequests,

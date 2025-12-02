@@ -128,10 +128,10 @@ function formatTime(dateString) {
                             <span class="text-2xl">📊</span>
                         </div>
                         <div>
-                            <h2 class="font-extrabold text-xl text-gray-900 leading-tight">
+                            <h2 class="font-extrabold text-xl text-gray-900 dark:text-white leading-tight transition-colors">
                                 Historial de Entrenamientos
                             </h2>
-                            <p class="text-xs text-gray-500 font-medium">Tu progreso y dedicación</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 font-medium transition-colors">Tu progreso y dedicación</p>
                         </div>
                     </div>
                     <Link 
@@ -168,27 +168,27 @@ function formatTime(dateString) {
                     </div>
 
                     <!-- Filtros (Acordeón) -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-6">
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 mb-6 transition-colors">
                         <div class="max-w-2xl mx-auto">
                             <button 
                                 @click="showCalendar = !showCalendar"
-                                class="w-full flex items-center justify-between p-2 rounded-xl hover:bg-gray-50 transition group"
+                                class="w-full flex items-center justify-between p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition group"
                             >
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-100 transition">
+                                    <div class="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/50 transition">
                                         📅
                                     </div>
                                     <div class="text-left">
-                                        <h3 class="font-bold text-gray-800 group-hover:text-indigo-600 transition">Filtrar por Fecha</h3>
-                                        <p v-if="dateRange.start" class="text-xs font-medium text-indigo-600">
+                                        <h3 class="font-bold text-gray-800 dark:text-gray-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">Filtrar por Fecha</h3>
+                                        <p v-if="dateRange.start" class="text-xs font-medium text-indigo-600 dark:text-indigo-400 transition-colors">
                                             {{ formatDate(dateRange.start) }} 
-                                            <span v-if="dateRange.end"> - {{ formatDate(dateRange.end) }}</span>
+                                            <span v-if="dateRange.end">- {{ formatDate(dateRange.end) }}</span>
                                         </p>
-                                        <p v-else class="text-xs text-gray-400">Desplegar calendario</p>
+                                        <p v-else class="text-xs text-gray-400 dark:text-gray-500 transition-colors">Desplegar calendario</p>
                                     </div>
                                 </div>
                                 <svg 
-                                    class="w-5 h-5 text-gray-400 transition-transform duration-300"
+                                    class="w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform duration-300"
                                     :class="{'rotate-180': showCalendar}"
                                     fill="none" viewBox="0 0 24 24" stroke="currentColor"
                                 >
@@ -196,7 +196,7 @@ function formatTime(dateString) {
                                 </svg>
                             </button>
 
-                            <div v-show="showCalendar" class="mt-4 border-t border-gray-100 pt-4">
+                            <div v-show="showCalendar" class="mt-4 border-t border-gray-100 dark:border-gray-700 pt-4 transition-colors">
                                 <CalendarFilter 
                                     v-model="dateRange" 
                                     :activity-dates="activityDates"
@@ -212,14 +212,14 @@ function formatTime(dateString) {
                             v-for="log in allLogs" 
                             :key="log.id"
                             :href="route('workout-logs.show', log.id)"
-                            class="block bg-white rounded-2xl shadow-md hover:shadow-xl transition-all border-2 border-gray-100 hover:border-indigo-200 p-6 group"
+                            class="block bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all border-2 border-gray-100 dark:border-gray-700 hover:border-indigo-200 dark:hover:border-indigo-500 p-6 group"
                         >
                             <div class="flex items-start justify-between mb-4">
                                 <div class="flex-1">
-                                    <h3 class="text-xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors mb-1">
+                                    <h3 class="text-xl font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors mb-1">
                                         {{ log.workout_name }}
                                     </h3>
-                                    <div class="flex items-center gap-4 text-sm text-gray-500">
+                                    <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 transition-colors">
                                         <span class="flex items-center gap-1">
                                             📅 {{ formatDate(log.created_at) }}
                                         </span>
@@ -232,8 +232,8 @@ function formatTime(dateString) {
                                     <div 
                                         class="inline-flex items-center justify-center w-16 h-16 rounded-full font-black text-lg"
                                         :class="log.completed_sets === log.total_sets 
-                                            ? 'bg-green-100 text-green-600' 
-                                            : 'bg-yellow-100 text-yellow-600'"
+                                            ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' 
+                                            : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400'"
                                     >
                                         {{ Math.round((log.completed_sets / log.total_sets) * 100) }}%
                                     </div>
@@ -241,29 +241,29 @@ function formatTime(dateString) {
                             </div>
 
                             <div class="grid grid-cols-3 gap-4">
-                                <div class="bg-gray-50 rounded-lg p-3">
-                                    <div class="text-2xl font-bold text-indigo-600">{{ log.duration_minutes || '--' }}</div>
-                                    <div class="text-xs text-gray-500 font-medium">Minutos</div>
+                                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 transition-colors">
+                                    <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 transition-colors">{{ log.duration_minutes || '--' }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 font-medium transition-colors">Minutos</div>
                                 </div>
-                                <div class="bg-gray-50 rounded-lg p-3">
-                                    <div class="text-2xl font-bold text-purple-600">{{ log.completed_sets }}</div>
-                                    <div class="text-xs text-gray-500 font-medium">Series</div>
+                                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 transition-colors">
+                                    <div class="text-2xl font-bold text-purple-600 dark:text-purple-400 transition-colors">{{ log.completed_sets }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 font-medium transition-colors">Series</div>
                                 </div>
-                                <div class="bg-gray-50 rounded-lg p-3">
-                                    <div class="text-2xl font-bold text-pink-600">{{ log.exercises_data.length }}</div>
-                                    <div class="text-xs text-gray-500 font-medium">Ejercicios</div>
+                                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 transition-colors">
+                                    <div class="text-2xl font-bold text-pink-600 dark:text-pink-400 transition-colors">{{ log.exercises_data.length }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 font-medium transition-colors">Ejercicios</div>
                                 </div>
                             </div>
                         </Link>
                     </div>
 
                     <!-- Empty state -->
-                    <div v-else class="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-200">
-                        <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl">
+                    <div v-else class="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 transition-colors">
+                        <div class="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl transition-colors">
                             📊
                         </div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-2">Aún no has completado entrenamientos</h3>
-                        <p class="text-gray-500 mb-6 max-w-md mx-auto">
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2 transition-colors">Aún no has completado entrenamientos</h3>
+                        <p class="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto transition-colors">
                             Empieza una rutina en modo Live y complétala para ver tu historial aquí.
                         </p>
                         <Link 
@@ -277,18 +277,18 @@ function formatTime(dateString) {
 
                     <!-- Indicador de carga para scroll infinito -->
                     <div v-if="isLoadingMore" class="mt-8 flex justify-center">
-                        <div class="flex items-center gap-3 px-6 py-3 bg-white rounded-xl shadow-sm border border-gray-100">
-                            <svg class="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <div class="flex items-center gap-3 px-6 py-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                            <svg class="animate-spin h-5 w-5 text-indigo-600 dark:text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            <span class="text-sm font-bold text-gray-600">Cargando más entrenamientos...</span>
+                            <span class="text-sm font-bold text-gray-600 dark:text-gray-300 transition-colors">Cargando más entrenamientos...</span>
                         </div>
                     </div>
                     
                     <!-- Mensaje de fin -->
                     <div v-else-if="allLogs.length > 0 && !nextPageUrl" class="mt-8 text-center">
-                        <p class="text-sm text-gray-400 font-medium">✨ Has visto todo tu historial</p>
+                        <p class="text-sm text-gray-400 dark:text-gray-500 font-medium transition-colors">✨ Has visto todo tu historial</p>
                     </div>
 
                 </div>

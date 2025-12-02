@@ -128,20 +128,43 @@ class ProfileController extends Controller
 
         $connectionStatus = 'none';
         $connection = null;
+        $isFollowingMe = false; // Detectar si el perfil visitado me sigue
 
         if ($currentUser && $currentUser->id !== $user->id) {
-            $connection = Connection::where(function ($query) use ($currentUser, $user) {
-                $query->where('sender_id', $currentUser->id)->where('receiver_id', $user->id);
-            })->orWhere(function ($query) use ($currentUser, $user) {
-                $query->where('sender_id', $user->id)->where('receiver_id', $currentUser->id);
-            })->first();
+            // Verificar si el usuario actual ha enviado una solicitud al perfil visitado
+            $sentConnection = Connection::where('sender_id', $currentUser->id)
+                ->where('receiver_id', $user->id)
+                ->first();
 
-            if ($connection) {
-                if ($connection->status === 'pending') {
-                    $connectionStatus = $connection->sender_id === $currentUser->id ? 'sent' : 'received';
-                } else {
-                    $connectionStatus = $connection->status; 
+            // Determinar el estado basado SOLO en la conexión enviada por el usuario actual
+            if ($sentConnection) {
+                if ($sentConnection->status === 'pending') {
+                    $connectionStatus = 'sent';
+                } else if ($sentConnection->status === 'accepted') {
+                    $connectionStatus = 'accepted';
                 }
+                $connection = $sentConnection;
+            } else {
+                // Si no hay conexión enviada, verificar si hay una recibida (para mostrar el botón "Aceptar")
+                $receivedConnection = Connection::where('sender_id', $user->id)
+                    ->where('receiver_id', $currentUser->id)
+                    ->where('status', 'pending')
+                    ->first();
+                
+                if ($receivedConnection) {
+                    $connectionStatus = 'received';
+                    $connection = $receivedConnection;
+                }
+            }
+
+            // Verificar si el perfil visitado ME SIGUE (conexión accepted en dirección opuesta)
+            $reverseConnection = Connection::where('sender_id', $user->id)
+                ->where('receiver_id', $currentUser->id)
+                ->where('status', 'accepted')
+                ->first();
+            
+            if ($reverseConnection) {
+                $isFollowingMe = true;
             }
         }
 
@@ -149,28 +172,58 @@ class ProfileController extends Controller
 
         $user->loadCount('posts');
         
-        // Obtener conexiones manualmente para incluir el ID de la conexión
+        // Obtener conexiones únicas (evitar duplicados en conexiones bidireccionales)
         $sent = Connection::where('sender_id', $user->id)
             ->where('status', 'accepted')
             ->with('receiver:id,name,username,profile_picture_url')
-            ->get()
-            ->map(function ($conn) {
-                $u = $conn->receiver;
-                $u->pivot = ['id' => $conn->id];
-                return $u;
-            });
+            ->get();
 
         $received = Connection::where('receiver_id', $user->id)
             ->where('status', 'accepted')
             ->with('sender:id,name,username,profile_picture_url')
-            ->get()
-            ->map(function ($conn) {
-                $u = $conn->sender;
-                $u->pivot = ['id' => $conn->id];
-                return $u;
-            });
+            ->get();
 
-        $connections = $sent->merge($received);
+        // Crear un array único de conexiones con información de mutualidad
+        $connectionsMap = [];
+        
+        // Procesar conexiones enviadas
+        foreach ($sent as $conn) {
+            $userId = $conn->receiver_id;
+            if (!isset($connectionsMap[$userId])) {
+                $connectionsMap[$userId] = [
+                    'user' => $conn->receiver,
+                    'connection_id' => $conn->id,
+                    'is_mutual' => false,
+                ];
+            }
+        }
+        
+        // Procesar conexiones recibidas y detectar mutualidad
+        foreach ($received as $conn) {
+            $userId = $conn->sender_id;
+            if (isset($connectionsMap[$userId])) {
+                // Ya existe (conexión mutua)
+                $connectionsMap[$userId]['is_mutual'] = true;
+            } else {
+                // Nueva conexión (solo recibida)
+                $connectionsMap[$userId] = [
+                    'user' => $conn->sender,
+                    'connection_id' => $conn->id,
+                    'is_mutual' => false,
+                ];
+            }
+        }
+        
+        // Convertir a colección
+        $connections = collect(array_values($connectionsMap))->map(function ($item) {
+            $user = $item['user'];
+            $user->pivot = [
+                'id' => $item['connection_id'],
+                'is_mutual' => $item['is_mutual'],
+            ];
+            return $user;
+        });
+        
         $connections_count = $connections->count();
 
         // Cargar posts si es el propio perfil o si están conectados
@@ -221,6 +274,7 @@ class ProfileController extends Controller
             
             'connection_status' => $connectionStatus,
             'connection_id' => $connection ? $connection->id : null,
+            'is_following_me' => $isFollowingMe, // Indica si el perfil visitado me sigue
             'connections_count' => $connections_count,
             'connections_list' => $connections, // Pasar la lista de conexiones
             'posts' => $posts, // Pasar los posts

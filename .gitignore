@@ -21,3 +21,8 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Local sharing tools
+ngrok.yml
+ngrok_new/
+start_share.bat

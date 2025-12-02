@@ -18,6 +18,7 @@ const props = defineProps({
     isOwnProfile: Boolean,
     connection_status: String,
     connection_id: Number,
+    is_following_me: Boolean, // Indica si el perfil visitado me sigue
     connections_count: Number,
     connections_list: Array, // Lista de conexiones para el modal
     posts: Array, // Posts del usuario
@@ -375,10 +376,15 @@ const getExperienceLevelColor = (level) => {
 
                     <!-- Botones de Acción -->
                     <div v-if="!isOwnProfile" class="flex flex-wrap justify-center gap-3 w-full">
-                        <button v-if="connection_status === 'none'" @click="connect" :disabled="processingConnection" class="btn-primary-gradient">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
-                            Conectar
-                        </button>
+                        <div v-if="connection_status === 'none'" class="flex flex-col items-center gap-2 w-full">
+                            <button @click="connect" :disabled="processingConnection" class="btn-primary-gradient">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
+                                {{ is_following_me ? 'Seguir también' : 'Conectar' }}
+                            </button>
+                            <span v-if="is_following_me" class="text-xs text-gray-500 dark:text-gray-400 font-medium transition-colors">
+                                {{ profileUser.name.split(' ')[0] }} te sigue
+                            </span>
+                        </div>
 
                         <button v-else-if="connection_status === 'sent'" disabled class="btn-disabled">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>

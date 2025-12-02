@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import ConnectionSkeleton from '@/Components/Skeletons/ConnectionSkeleton.vue';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, onMounted } from 'vue';
 
@@ -38,15 +39,27 @@ function rejectRequest(connectionId) {
     });
 }
 
-function disconnectUser(connectionId) {
-    if (confirm('¿Estás seguro de que quieres eliminar esta conexión?')) {
-        router.delete(route('connections.destroy', connectionId), {
+const showDisconnectModal = ref(false);
+const connectionToDisconnect = ref(null);
+const userToDisconnectName = ref('');
+
+function openDisconnectModal(connectionId, userName) {
+    connectionToDisconnect.value = connectionId;
+    userToDisconnectName.value = userName;
+    showDisconnectModal.value = true;
+}
+
+function confirmDisconnect() {
+    if (connectionToDisconnect.value) {
+        showDisconnectModal.value = false;
+        router.delete(route('connections.destroy', connectionToDisconnect.value), {
             preserveScroll: true,
             onStart: () => {
-                processingId.value = connectionId;
+                processingId.value = connectionToDisconnect.value;
             },
             onFinish: () => {
                 processingId.value = null;
+                connectionToDisconnect.value = null;
             }
         });
     }
@@ -207,7 +220,7 @@ const getAvatarUrl = (user) => {
                                             class="flex-1 px-4 py-2 text-sm font-bold rounded-full text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-md hover:shadow-lg transition-all text-center transform hover:scale-105">
                                             💬 Chat
                                         </Link>
-                                        <button @click="disconnectUser(pal.connection_id)" 
+                                        <button @click="openDisconnectModal(pal.connection_id, pal.name)" 
                                                 :disabled="processingId === pal.connection_id"
                                                 class="px-4 py-2 text-sm font-bold rounded-full text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 border-2 border-red-100 dark:border-red-900/30 hover:border-red-200 dark:hover:border-red-800 transition-all disabled:opacity-50 shadow-sm hover:shadow-md">
                                             Desconectar
@@ -220,5 +233,17 @@ const getAvatarUrl = (user) => {
                 </div>
             </div>
         </div>
+
+        
+        <ConfirmModal
+            :show="showDisconnectModal"
+            type="danger"
+            title="¿Desconectar?"
+            :message="`¿Estás seguro de que quieres desconectar de ${userToDisconnectName}?`"
+            confirm-text="Sí, desconectar"
+            cancel-text="Cancelar"
+            @confirm="confirmDisconnect"
+            @cancel="showDisconnectModal = false"
+        />
     </AuthenticatedLayout>
 </template>
