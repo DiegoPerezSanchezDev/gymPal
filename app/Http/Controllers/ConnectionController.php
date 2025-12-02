@@ -108,10 +108,32 @@ class ConnectionController extends Controller
         }
 
         $gymPals = collect(array_values($gymPalsMap));
+        
+        // Paginación manual para GymPals
+        $perPage = 12;
+        $currentPage = request()->input('page', 1);
+        $offset = ($currentPage - 1) * $perPage;
+        
+        $gymPalsPaginated = $gymPals->slice($offset, $perPage)->values();
+        $hasMoreGymPals = $gymPals->count() > ($offset + $perPage);
+
+        // Contadores para los tabs
+        $counts = [
+            'all' => $pendingRequests->count() + $gymPals->count(),
+            'pending' => $pendingRequests->count(),
+            'accepted' => $gymPals->count(),
+        ];
+        
+        $tab = request()->input('tab', 'all');
 
         return Inertia::render('Connections/Index', [
             'pendingRequests' => $pendingRequests,
-            'gymPals' => $gymPals,
+            'gymPals' => $gymPalsPaginated,
+            'currentTab' => $tab,
+            'counts' => $counts,
+            'hasMoreGymPals' => $hasMoreGymPals,
+            'currentPage' => $currentPage,
+            'totalGymPals' => $gymPals->count(),
         ]);
     }
 

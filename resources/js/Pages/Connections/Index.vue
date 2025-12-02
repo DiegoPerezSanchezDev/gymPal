@@ -8,6 +8,26 @@ import { ref, onMounted } from 'vue';
 const props = defineProps({
     pendingRequests: Array,
     gymPals: Array,
+    currentTab: {
+        type: String,
+        default: 'all',
+    },
+    counts: {
+        type: Object,
+        default: () => ({ all: 0, pending: 0, accepted: 0 }),
+    },
+    hasMoreGymPals: {
+        type: Boolean,
+        default: false,
+    },
+    currentPage: {
+        type: Number,
+        default: 1,
+    },
+    totalGymPals: {
+        type: Number,
+        default: 0,
+    },
 });
 
 const processingId = ref(null);
@@ -97,6 +117,50 @@ const getAvatarUrl = (user) => {
             </div>
         </template>
 
+        <!-- Tabs Navigation -->
+        <div class="bg-white dark:bg-gray-800 shadow-md border-b border-gray-100 dark:border-gray-700 sticky top-16 z-30 transition-colors">
+            <div class="max-w-5xl mx-auto px-2 sm:px-4">
+                <nav class="flex gap-1" aria-label="Tabs">
+                    <Link 
+                        :href="route('connections.index', { tab: 'all' })"
+                        preserve-scroll
+                        class="flex-1 group inline-flex items-center justify-center py-3 px-2 sm:px-4 text-center font-bold text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-t-xl relative"
+                        :class="currentTab === 'all' ? 'text-indigo-600 dark:text-indigo-400 bg-gradient-to-b from-indigo-50 dark:from-indigo-900/30 to-transparent' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                    >
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                        <span class="hidden sm:inline">Todas</span>
+                        <span class="sm:hidden">Todas</span>
+                        <span v-if="counts.all > 0" class="ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">{{ counts.all }}</span>
+                        <span v-if="currentTab === 'all'" class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-full"></span>
+                    </Link>
+                    <Link 
+                        :href="route('connections.index', { tab: 'pending' })"
+                        preserve-scroll
+                        class="flex-1 group inline-flex items-center justify-center py-3 px-2 sm:px-4 text-center font-bold text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-t-xl relative"
+                        :class="currentTab === 'pending' ? 'text-indigo-600 dark:text-indigo-400 bg-gradient-to-b from-indigo-50 dark:from-indigo-900/30 to-transparent' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                    >
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                        <span class="hidden sm:inline">Pendientes</span>
+                        <span class="sm:hidden">Pend.</span>
+                        <span v-if="counts.pending > 0" class="ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 text-xs font-bold rounded-full animate-pulse">{{ counts.pending }}</span>
+                        <span v-if="currentTab === 'pending'" class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-full"></span>
+                    </Link>
+                    <Link 
+                        :href="route('connections.index', { tab: 'accepted' })"
+                        preserve-scroll
+                        class="flex-1 group inline-flex items-center justify-center py-3 px-2 sm:px-4 text-center font-bold text-xs sm:text-sm whitespace-nowrap transition-all duration-200 rounded-t-xl relative"
+                        :class="currentTab === 'accepted' ? 'text-indigo-600 dark:text-indigo-400 bg-gradient-to-b from-indigo-50 dark:from-indigo-900/30 to-transparent' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                    >
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <span class="hidden sm:inline">Aceptadas</span>
+                        <span class="sm:hidden">Acep.</span>
+                        <span v-if="counts.accepted > 0" class="ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 text-xs font-bold rounded-full">{{ counts.accepted }}</span>
+                        <span v-if="currentTab === 'accepted'" class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-full"></span>
+                    </Link>
+                </nav>
+            </div>
+        </div>
+
         <div class="py-6 md:py-12">
             <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
@@ -108,7 +172,7 @@ const getAvatarUrl = (user) => {
 
                 <div v-else class="space-y-8">
                     <!-- SOLICITUDES PENDIENTES -->
-                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden transition-colors">
+                    <div v-if="currentTab === 'all' || currentTab === 'pending'" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden transition-colors">
                         <div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 px-6 py-4 border-b border-gray-100 dark:border-gray-700 transition-colors">
                             <h3 class="text-lg font-extrabold text-gray-900 dark:text-white flex items-center gap-3 transition-colors">
                                 <svg class="w-6 h-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -173,7 +237,7 @@ const getAvatarUrl = (user) => {
                     </div>
 
                     <!-- MIS GYMPALS -->
-                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden transition-colors">
+                    <div v-if="currentTab === 'all' || currentTab === 'accepted'" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden transition-colors">
                         <div class="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 px-6 py-4 border-b border-gray-100 dark:border-gray-700 transition-colors">
                             <h3 class="text-lg font-extrabold text-gray-900 dark:text-white flex items-center gap-3 transition-colors">
                                 <svg class="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -181,7 +245,10 @@ const getAvatarUrl = (user) => {
                                 </svg>
                                 Mis GymPals
                                 <span class="px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold rounded-full shadow-md">
-                                    {{ gymPals.length }}
+                                    {{ totalGymPals }}
+                                </span>
+                                <span v-if="totalGymPals > 12" class="text-xs text-gray-500 dark:text-gray-400 font-normal">
+                                    (Mostrando {{ gymPals.length }})
                                 </span>
                             </h3>
                         </div>
@@ -227,6 +294,20 @@ const getAvatarUrl = (user) => {
                                         </button>
                                     </div>
                                 </div>
+                            </div>
+                            
+                            <!-- Botón Ver Más -->
+                            <div v-if="hasMoreGymPals" class="mt-6 text-center">
+                                <Link 
+                                    :href="route('connections.index', { tab: currentTab, page: currentPage + 1 })"
+                                    preserve-scroll
+                                    class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+                                >
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                    Ver más GymPals ({{ totalGymPals - (currentPage * 12) }} restantes)
+                                </Link>
                             </div>
                         </div>
                     </div>
