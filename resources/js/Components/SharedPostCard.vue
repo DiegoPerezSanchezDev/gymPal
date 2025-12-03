@@ -37,10 +37,9 @@ const formattedDate = computed(() => {
 
         <!-- Contenido del post -->
         <div class="p-3">
-            <!-- Autor del post -->
             <div class="flex items-center gap-2 mb-2">
                 <img
-                    :src="postData.post_author_profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(postData.post_author_name || 'Usuario')}&background=random`"
+                    :src="postData.post_author_profile_picture ? `/storage/${postData.post_author_profile_picture}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(postData.post_author_name || 'Usuario')}&background=random`"
                     :alt="postData.post_author_name"
                     class="w-8 h-8 rounded-full object-cover"
                 />
@@ -59,6 +58,61 @@ const formattedDate = computed(() => {
             >
                 {{ postData.post_content }}
             </p>
+
+            <!-- Rutina adjunta (si existe) -->
+            <div 
+                v-if="postData.workout" 
+                class="mt-2 mb-2 rounded-lg p-3 border"
+                :class="{
+                    'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800': postData.workout.difficulty === 'Principiante',
+                    'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800': postData.workout.difficulty === 'Intermedio',
+                    'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800': postData.workout.difficulty === 'Avanzado',
+                    'bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border-indigo-200 dark:border-indigo-800': !postData.workout.difficulty || !['Principiante', 'Intermedio', 'Avanzado'].includes(postData.workout.difficulty)
+                }"
+            >
+                <div class="flex items-start gap-2">
+                    <div 
+                        class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
+                        :class="{
+                            'bg-green-500': postData.workout.difficulty === 'Principiante',
+                            'bg-blue-500': postData.workout.difficulty === 'Intermedio',
+                            'bg-purple-500': postData.workout.difficulty === 'Avanzado',
+                            'bg-indigo-500': !postData.workout.difficulty || !['Principiante', 'Intermedio', 'Avanzado'].includes(postData.workout.difficulty)
+                        }"
+                    >
+                        <span class="text-white text-sm">🏋️</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p 
+                            class="font-bold text-sm truncate"
+                            :class="{
+                                'text-green-900 dark:text-green-200': postData.workout.difficulty === 'Principiante',
+                                'text-blue-900 dark:text-blue-200': postData.workout.difficulty === 'Intermedio',
+                                'text-purple-900 dark:text-purple-200': postData.workout.difficulty === 'Avanzado',
+                                'text-indigo-900 dark:text-indigo-200': !postData.workout.difficulty || !['Principiante', 'Intermedio', 'Avanzado'].includes(postData.workout.difficulty)
+                            }"
+                        >
+                            {{ postData.workout.name }}
+                        </p>
+                        <div 
+                            class="flex items-center gap-3 mt-1 text-xs"
+                            :class="{
+                                'text-green-600 dark:text-green-400': postData.workout.difficulty === 'Principiante',
+                                'text-blue-600 dark:text-blue-400': postData.workout.difficulty === 'Intermedio',
+                                'text-purple-600 dark:text-purple-400': postData.workout.difficulty === 'Avanzado',
+                                'text-indigo-600 dark:text-indigo-400': !postData.workout.difficulty || !['Principiante', 'Intermedio', 'Avanzado'].includes(postData.workout.difficulty)
+                            }"
+                        >
+                            <span v-if="postData.workout.difficulty" class="flex items-center gap-1">
+                                <span class="font-medium">{{ postData.workout.difficulty }}</span>
+                            </span>
+                            <span v-if="postData.workout.duration_minutes" class="flex items-center gap-1">
+                                ⏱️ {{ postData.workout.duration_minutes }}'
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Imagen del post (si existe) -->
             <div v-if="postData.post_image_path" class="mt-2 rounded-md overflow-hidden">

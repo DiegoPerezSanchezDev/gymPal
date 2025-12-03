@@ -117,7 +117,7 @@ class User extends Authenticatable
                                     ->get()
                                     ->pluck('sender');
 
-        return $sentAndAccepted->merge($receivedAndAccepted);
+        return $sentAndAccepted->merge($receivedAndAccepted)->unique('id')->values();
     }
 
     // --- RELACIONES PARA CHAT ---
