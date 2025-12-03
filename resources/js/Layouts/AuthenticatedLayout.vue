@@ -1,13 +1,16 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { Link, Head, usePage } from '@inertiajs/vue3';
-import ThemeSwitcher from '@/Components/ThemeSwitcher.vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NotificationBell from '@/Components/NotificationBell.vue';
 import ToastContainer from '@/Components/ToastContainer.vue';
 import { useToast } from '@/composables/useToast';
+import { useAutoPrefetch } from '@/composables/usePrefetch';
+
+// Activar auto-prefetch de rutas importantes
+useAutoPrefetch();
 
 const page = usePage();
 const authUser = computed(() => page.props.auth.user);
@@ -57,9 +60,28 @@ const showMobileMenu = ref(false);
                         </Link>
                     </div>
                     <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
-                        <Link :href="route('feed.index')" class="nav-link" :class="{ 'active': route().current('feed.index') }">Feed</Link>
-                        <Link :href="route('discover.index')" class="nav-link" :class="{ 'active': route().current('discover.index') }">Descubrir</Link>
-                        <Link :href="route('connections.index')" class="nav-link relative" :class="{ 'active': route().current('connections.index') }">
+                        <Link 
+                            :href="route('feed.index')" 
+                            class="nav-link" 
+                            :class="{ 'active': route().current('feed.index') }"
+                            prefetch
+                        >
+                            Feed
+                        </Link>
+                        <Link 
+                            :href="route('discover.index')" 
+                            class="nav-link" 
+                            :class="{ 'active': route().current('discover.index') }"
+                            prefetch
+                        >
+                            Descubrir
+                        </Link>
+                        <Link 
+                            :href="route('connections.index')" 
+                            class="nav-link relative" 
+                            :class="{ 'active': route().current('connections.index') }"
+                            prefetch
+                        >
                             <span>Conexiones</span>
                             <span v-if="pendingRequestsCount > 0" class="notification-dot-desktop"></span>
                         </Link>
@@ -79,9 +101,6 @@ const showMobileMenu = ref(false);
                         <div class="flex items-center">
                             <NotificationBell />
                         </div>
-                        
-                        <!-- Theme Switcher -->
-                        <ThemeSwitcher />
                         
                         <Dropdown align="right" width="48">
                             <template #trigger>
@@ -104,9 +123,6 @@ const showMobileMenu = ref(false);
                     <div class="flex items-center sm:hidden space-x-3 -mr-2">
                         <!-- Notificaciones Móvil -->
                         <NotificationBell />
-                        
-                        <!-- Theme Switcher Móvil -->
-                        <ThemeSwitcher />
                         
                         <Link :href="route('chat.index')" title="Chat" class="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-1 rounded-full transition-colors">
                             <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3.68-3.091a1.256 1.256 0 00-.86-.317H7.812a2.25 2.25 0 01-2.25-2.25V6.982c0-1.242 1.008-2.25 2.25-2.25h8.574a2.25 2.25 0 012.25 2.25v1.529z" /></svg>

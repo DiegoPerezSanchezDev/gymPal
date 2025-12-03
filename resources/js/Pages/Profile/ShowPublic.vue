@@ -7,6 +7,7 @@ import PostCard from '@/Components/PostCard.vue';
 import ConnectionsModal from '@/Components/ConnectionsModal.vue';
 import PostGridModal from '@/Components/PostGridModal.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
+import ThemeSwitcher from '@/Components/ThemeSwitcher.vue';
 import { Head, Link, usePage, router } from '@inertiajs/vue3';
 import { computed, ref, onMounted, watch } from 'vue';
 import { useToast } from '@/composables/useToast';
@@ -272,6 +273,13 @@ const getExperienceLevelColor = (level) => {
                     class="h-32 relative group"
                     :style="{ backgroundColor: profileUser.banner_color || '#6366f1' }"
                 >
+                    <!-- Theme Switcher en esquina superior izquierda -->
+                    <div class="absolute top-4 left-4 z-20">
+                        <div class="bg-white/40 dark:bg-gray-900/50 backdrop-blur-md rounded-lg shadow-lg border border-white/60 dark:border-gray-700/60 hover:bg-white/50 dark:hover:bg-gray-900/60 transition-all">
+                            <ThemeSwitcher />
+                        </div>
+                    </div>
+
                     <!-- Banner Image si existe (COMENTADO - Funcionalidad futura) -->
                     <!-- <img 
                         v-if="profileUser.banner_picture_url" 
