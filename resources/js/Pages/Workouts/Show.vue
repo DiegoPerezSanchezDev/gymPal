@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
+import SharePostModal from '@/Components/SharePostModal.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import { useToast } from '@/composables/useToast';
@@ -22,6 +23,7 @@ const localSaveCount = ref(props.workout.times_saved);
 const expandedExercises = ref({});
 const showDuplicateModal = ref(false);
 const duplicateIsPublic = ref(false);
+const showShareModal = ref(false);
 const showDeleteModal = ref(false);
 
 const difficultyColors = {
@@ -89,7 +91,7 @@ const toggleSave = async () => {
     }
 };
 
-const openDeleteModal = () => {
+const deleteWorkout = () => {
     showDeleteModal.value = true;
 };
 
@@ -120,6 +122,14 @@ const confirmDuplicate = () => {
         is_public: duplicateIsPublic.value
     });
     closeDuplicateModal();
+};
+
+const openShareModal = () => {
+    showShareModal.value = true;
+};
+
+const closeShareModal = () => {
+    showShareModal.value = false;
 };
 </script>
 
@@ -163,6 +173,31 @@ const confirmDuplicate = () => {
                                 </svg>
                                 <span class="hidden sm:inline">Volver</span>
                             </Link>
+
+                            <!-- Botones para NO dueños (Guardar y Compartir) -->
+                            <button 
+                                v-if="!isOwner"
+                                @click="toggleSave"
+                                class="p-2 bg-white/20 hover:bg-white/30 rounded-full backdrop-blur-sm transition"
+                                :class="localIsSaved ? 'text-yellow-500' : 'text-white'"
+                                :title="localIsSaved ? 'Guardado' : 'Guardar'"
+                            >
+                                <svg class="w-5 h-5" :class="localIsSaved ? 'fill-current' : 'fill-none stroke-current'" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                </svg>
+                            </button>
+                            
+                            <button 
+                                @click="openShareModal"
+                                class="p-2 bg-white/20 hover:bg-white/30 rounded-full backdrop-blur-sm transition"
+                                title="Compartir"
+                            >
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                                </svg>
+                            </button>
+
+                            <!-- Botones para DUEÑOS (Editar y Eliminar) -->
                             <button 
                                 v-if="isOwner"
                                 @click="$inertia.visit(route('workouts.edit', workout.id))"
@@ -234,7 +269,7 @@ const confirmDuplicate = () => {
                         </div>
                     </div>
 
-                    <!-- Start Workout Button (prominent) -->
+                    <!-- Start Workout Button (prominent) - Solo si eres dueño -->
                     <div v-if="isOwner" class="mt-6 flex justify-center">
                         <button 
                             @click="$inertia.visit(route('workouts.live', workout.id))"
@@ -248,27 +283,17 @@ const confirmDuplicate = () => {
                         </button>
                     </div>
 
-                    <!-- Save & Clone Buttons (if not owner) -->
-                    <div v-if="!isOwner" class="mt-6 flex flex-col sm:flex-row justify-center gap-3">
-                        <button 
-                            @click="toggleSave"
-                            class="w-full md:w-auto px-8 py-3 rounded-xl font-bold shadow-lg transition-all transform hover:scale-105 flex items-center justify-center gap-2"
-                            :class="localIsSaved ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 hover:bg-pink-200 dark:hover:bg-pink-900/50' : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-600'"
-                        >
-                            <svg class="w-6 h-6" :class="localIsSaved ? 'fill-current' : 'fill-none stroke-current'" viewBox="0 0 24 24" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                            </svg>
-                            {{ localIsSaved ? 'Guardado' : 'Guardar' }}
-                        </button>
-
+                    <!-- Clone Button (if not owner) - Simplified -->
+                    <div v-if="!isOwner" class="mt-6 flex justify-center">
                         <button 
                             @click="openDuplicateModal"
-                            class="w-full md:w-auto px-8 py-3 rounded-xl font-bold shadow-lg transition-all transform hover:scale-105 flex items-center justify-center gap-2 bg-indigo-600 text-white hover:bg-indigo-700 border border-transparent"
+                            class="p-4 rounded-full font-bold shadow-lg transition-all transform hover:scale-105 flex items-center justify-center gap-2 bg-indigo-600 text-white hover:bg-indigo-700 border border-transparent"
+                            title="Clonar y Editar"
                         >
                             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
                             </svg>
-                            Clonar y Editar
+                            Clonar
                         </button>
                     </div>
                 </div>
@@ -393,7 +418,7 @@ const confirmDuplicate = () => {
                             :href="route('workout-logs.index')"
                             class="px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg font-bold hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors text-sm shadow-md hover:shadow-lg"
                         >
-                            Ver todo
+                            Historial
                         </Link>
                     </div>
 
@@ -604,6 +629,14 @@ const confirmDuplicate = () => {
             cancel-text="Cancelar"
             @confirm="confirmDelete"
             @cancel="cancelDelete"
+        />
+
+        <!-- Modal de Compartir -->
+        <SharePostModal 
+            v-if="showShareModal" 
+            :item="workout"
+            :item-type="'workout'"
+            @close="closeShareModal" 
         />
     </AuthenticatedLayout>
 </template>

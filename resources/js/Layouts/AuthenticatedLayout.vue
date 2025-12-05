@@ -85,6 +85,14 @@ const showMobileMenu = ref(false);
                             <span>Conexiones</span>
                             <span v-if="pendingRequestsCount > 0" class="notification-dot-desktop"></span>
                         </Link>
+                        <Link 
+                            :href="route('workouts.saved')" 
+                            class="nav-link" 
+                            :class="{ 'active': route().current('workouts.saved') }"
+                            prefetch
+                        >
+                            Guardados
+                        </Link>
                     </div>
                 </div>
 

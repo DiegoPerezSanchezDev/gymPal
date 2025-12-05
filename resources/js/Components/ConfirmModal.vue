@@ -32,26 +32,26 @@ const typeConfig = {
     warning: {
         icon: '⚠️',
         gradient: 'from-yellow-500 to-orange-600',
-        bgGradient: 'from-yellow-50 to-orange-50',
-        border: 'border-yellow-200'
+        bgGradient: 'from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20',
+        border: 'border-yellow-200 dark:border-yellow-700'
     },
     danger: {
         icon: '🗑️',
         gradient: 'from-red-500 to-pink-600',
-        bgGradient: 'from-red-50 to-pink-50',
-        border: 'border-red-200'
+        bgGradient: 'from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20',
+        border: 'border-red-200 dark:border-red-700'
     },
     info: {
         icon: 'ℹ️',
         gradient: 'from-blue-500 to-indigo-600',
-        bgGradient: 'from-blue-50 to-indigo-50',
-        border: 'border-blue-200'
+        bgGradient: 'from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20',
+        border: 'border-blue-200 dark:border-blue-700'
     },
     success: {
         icon: '✅',
         gradient: 'from-green-500 to-emerald-600',
-        bgGradient: 'from-green-50 to-emerald-50',
-        border: 'border-green-200'
+        bgGradient: 'from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20',
+        border: 'border-green-200 dark:border-green-700'
     }
 };
 
@@ -69,7 +69,7 @@ const config = typeConfig[props.type] || typeConfig.warning;
     >
         <div 
             v-if="show" 
-            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" 
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 dark:bg-black/70 backdrop-blur-sm transition-colors" 
             @click.self="$emit('cancel')"
         >
             <Transition
@@ -82,30 +82,30 @@ const config = typeConfig[props.type] || typeConfig.warning;
             >
                 <div 
                     v-if="show"
-                    class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+                    class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transition-colors"
                 >
                     <!-- Header con gradiente -->
                     <div :class="['p-6 bg-gradient-to-br', config.bgGradient, config.border, 'border-b']">
                         <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 rounded-full bg-white shadow-md flex items-center justify-center text-3xl">
+                            <div class="w-14 h-14 rounded-full bg-white dark:bg-gray-700 shadow-md flex items-center justify-center text-3xl transition-colors">
                                 {{ config.icon }}
                             </div>
                             <div class="flex-1">
-                                <h3 class="text-xl font-black text-gray-900">{{ title }}</h3>
+                                <h3 class="text-xl font-black text-gray-900 dark:text-white transition-colors">{{ title }}</h3>
                             </div>
                         </div>
                     </div>
 
                     <!-- Content -->
                     <div class="p-6">
-                        <p class="text-gray-700 leading-relaxed">{{ message }}</p>
+                        <p class="text-gray-700 dark:text-gray-300 leading-relaxed transition-colors">{{ message }}</p>
                     </div>
 
                     <!-- Actions -->
                     <div class="px-6 pb-6 flex gap-3">
                         <button
                             @click="$emit('cancel')"
-                            class="flex-1 px-4 py-3 border-2 border-gray-300 text-gray-700 font-bold rounded-xl hover:bg-gray-50 active:scale-95 transition-all"
+                            class="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 active:scale-95 transition-all"
                         >
                             {{ cancelText }}
                         </button>

@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\WorkoutController;
 use App\Http\Controllers\DiscoverController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\ChatController;
@@ -97,7 +98,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/connections', [ConnectionController::class, 'index'])->name('connections.index');
     
     // Para ACEPTAR una solicitud que hemos recibido
-    //Le pasamos el ID de la 'connection'
     Route::patch('/connections/{connection}/accept', [ConnectionController::class, 'accept'])->name('connections.accept');
 
     // Para RECHAZAR una solicitud que hemos recibido
@@ -123,6 +123,12 @@ Route::middleware('auth')->group(function () {
 
     //Compartir un post con otro usuario
     Route::post('/posts/{post}/share', [PostController::class, 'share'])->name('posts.share');
+
+    //Guardar/desguardar un post
+    Route::post('/posts/{post}/save', [PostController::class, 'toggleSavePost'])->name('posts.save');
+
+    //Compartir una rutina con otro usuario
+    Route::post('/workouts/{workout}/share', [WorkoutController::class, 'shareWorkout'])->name('workouts.share');
 
     //Obtener conexiones del usuario (API)
     Route::get('/connections/gym-pals', [ConnectionController::class, 'getGymPals'])->name('connections.gym-pals');

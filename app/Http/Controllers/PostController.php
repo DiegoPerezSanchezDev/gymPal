@@ -78,6 +78,9 @@ class PostController extends Controller
     public function show(Post $post)
     {
         $post->load(['user', 'comments.user', 'workout', 'workoutLog']);
+        $user = Auth::user();
+        $post->is_liked = $post->likers()->where('user_id', $user->id)->exists();
+        $post->is_saved = $user->savedPosts()->where('post_id', $post->id)->exists();
         return \Inertia\Inertia::render('Posts/Show', ['post' => $post]);
     }
 
@@ -194,6 +197,51 @@ class PostController extends Controller
             'message' => 'Post compartido exitosamente.',
             'conversation_id' => $conversation->id,
         ], 201);
+    }
+
+    /**
+     * Guardar/Desguardar un post
+     */
+    public function toggleSavePost(Post $post)
+    {
+        $user = Auth::user();
+        
+        // Verificar si ya está guardado
+        $isSaved = $user->savedPosts()->where('post_id', $post->id)->exists();
+        
+        if ($isSaved) {
+            // Desguardar
+            $user->savedPosts()->detach($post->id);
+            return response()->json([
+                'saved' => false,
+                'message' => 'Post eliminado de guardados'
+            ]);
+        } else {
+            // Guardar
+            $user->savedPosts()->attach($post->id);
+            
+            // Notificar al autor del post (si no es el mismo usuario)
+            if ($post->user_id !== $user->id) {
+                NotificationService::create(
+                    $post->user,
+                    'post_saved',
+                    $user->name . ' guardó tu publicación',
+                    'guardó tu publicación',
+                    $post,
+                    [
+                        'user_id' => $user->id,
+                        'user_name' => $user->name,
+                        'user_avatar' => $user->profile_picture_url,
+                        'post_id' => $post->id,
+                    ]
+                );
+            }
+            
+            return response()->json([
+                'saved' => true,
+                'message' => 'Post guardado exitosamente'
+            ]);
+        }
     }
     
 }

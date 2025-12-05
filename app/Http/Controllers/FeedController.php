@@ -71,6 +71,13 @@ class FeedController extends Controller
         }
     
         $posts = $postsQuery->paginate(10)->withQueryString();
+        
+        // Añadir is_liked e is_saved a cada post
+        $posts->getCollection()->transform(function ($post) use ($user) {
+            $post->is_liked = $post->likers()->where('user_id', $user->id)->exists();
+            $post->is_saved = $user->savedPosts()->where('post_id', $post->id)->exists();
+            return $post;
+        });
     
         return Inertia::render('Feed', [
             'posts' => $posts,

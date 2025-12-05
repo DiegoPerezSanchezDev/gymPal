@@ -10,25 +10,14 @@
 ```php
 return $sentAndAccepted->merge($receivedAndAccepted)->unique('id');
 ```
-
----
-
-## ✨ FUNCIONALIDADES NUEVAS
-
 ### 2. Sistema de Guardados Unificado
-**Estado**: Parcialmente implementado
-- ✅ Guardar rutinas funciona (tabla `saved_workouts`, método `toggleSave` en WorkoutController)
-- ❌ Guardar posts NO implementado
-- ❌ Página unificada de guardados NO existe
-
-**Tareas**:
-1. Crear tabla `saved_posts` (similar a `saved_workouts`)
-2. Crear modelo `SavedPost`
-3. Añadir método `toggleSavePost` en PostController
-4. Añadir relación `savedPosts()` en modelo User
-5. Crear página `Saved/Index.vue` con tabs (Rutinas/Posts)
-6. Añadir botón "Guardar" en PostCard
-7. Mover botón "Compartir" al header del post (junto a los 3 puntos)
+**Estado**: ✅ COMPLETADO
+- ✅ Guardar rutinas funciona
+- ✅ Guardar posts implementado
+- ✅ Página unificada de guardados existe (`Workouts/Saved.vue`)
+- ✅ Botón de guardar en PostCard con notificaciones toast
+- ✅ Dark mode completo
+- ✅ Enlace en navegación principal
 
 ### 3. Estadísticas en el Perfil
 **Descripción**: Widget con métricas clave del usuario
@@ -52,91 +41,11 @@ return $sentAndAccepted->merge($receivedAndAccepted)->unique('id');
 
 ---
 
-## 🎨 MEJORAS DE UX/UI
-
-### 5. Optimización de Carga
-- ✅ Prefetch implementado
-- ❌ Lazy loading de imágenes
-- ❌ Infinite scroll en feed
-- ❌ Optimización de queries (N+1)
-
-### 6. Notificaciones en Tiempo Real
-- ❌ WebSockets/Pusher para notificaciones live
-- ❌ Sonido/vibración en nuevas notificaciones
-- ❌ Badge count en tiempo real
-
-### 7. Chat Mejorado
-- ❌ Indicador de "escribiendo..."
-- ❌ Mensajes de voz
-- ❌ Compartir ubicación del gym
-- ❌ Reacciones a mensajes
-- ❌ Mensajes temporales/efímeros
-
-### 8. Rutinas y Entrenamientos
-- ❌ Duplicar rutina de otro usuario
-- ❌ Plantillas de rutinas por deporte
-- ❌ Temporizador integrado para entrenamientos
-- ❌ Modo "En vivo" para entrenar con la rutina
-- ❌ Comparar progreso con amigos
-
-### 9. Social Features
-- ❌ Reels/Stories de entrenamientos
-- ❌ Challenges/Retos entre amigos
-- ❌ Leaderboards semanales
-- ❌ Badges y logros
-- ❌ Grupos/Comunidades por deporte
-
-### 10. Descubrimiento
-- ❌ Filtros avanzados (edad, género, nivel)
-- ❌ Búsqueda por gimnasio
-- ❌ "Cerca de mí" con mapa
-- ❌ Sugerencias basadas en IA
-
----
-
-## 🔧 MEJORAS TÉCNICAS
-
-### 11. Performance
-- ❌ Caché de queries frecuentes (Redis)
-- ❌ CDN para assets estáticos
-- ❌ Compresión de imágenes automática
-- ❌ Service Worker para PWA
-
-### 12. SEO y Accesibilidad
-- ❌ Meta tags dinámicos
-- ❌ Open Graph para compartir
-- ❌ Accesibilidad ARIA
-- ❌ Modo alto contraste
-
-### 13. Seguridad
-- ❌ Rate limiting en APIs
-- ❌ 2FA (autenticación de dos factores)
-- ❌ Reportes de usuarios/contenido
-- ❌ Moderación de contenido
-
----
-
-## 📱 MOBILE APP
-
-### 14. PWA Features
-- ❌ Instalable como app
-- ❌ Notificaciones push
-- ❌ Funciona offline (básico)
-- ❌ Sincronización en background
-
-### 15. Native Features
-- ❌ Acceso a cámara optimizado
-- ❌ Geolocalización precisa
-- ❌ Integración con Health/Fitness apps
-- ❌ Compartir a redes sociales nativo
-
----
-
 ## 🎯 PRIORIDADES INMEDIATAS (Esta Sesión)
 
 1. **🔴 CRÍTICO**: Arreglar duplicados en modal de compartir
-2. **🟡 IMPORTANTE**: Implementar guardado de posts completo
-3. **🟢 MEJORA**: Añadir estadísticas básicas al perfil
+2. **✅ COMPLETADO**: Implementar guardado de posts completo
+3. **🟡 IMPORTANTE**: Añadir estadísticas básicas al perfil
 4. **🟢 MEJORA**: Pulir animaciones y transiciones
 
 ---

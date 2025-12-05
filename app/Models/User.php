@@ -86,6 +86,12 @@ class User extends Authenticatable
         return $this->belongsToMany(Post::class, 'post_like', 'user_id', 'post_id');
     }
 
+    public function savedPosts(): BelongsToMany
+    {
+        return $this->belongsToMany(Post::class, 'saved_posts')
+            ->withTimestamps();
+    }
+
     public function comments()
     {
         return $this->hasMany(Comment::class);
@@ -103,6 +109,33 @@ class User extends Authenticatable
         return $this->hasMany(Connection::class, 'receiver_id');
     }
 
+    /**
+     * Solicitudes pendientes que he enviado
+     */
+    public function getPendingSentAttribute()
+    {
+        return Connection::where('sender_id', $this->id)
+            ->where('status', 'pending')
+            ->with('receiver')
+            ->get()
+            ->pluck('receiver');
+    }
+
+    /**
+     * Solicitudes pendientes que he recibido
+     */
+    public function getPendingReceivedAttribute()
+    {
+        return Connection::where('receiver_id', $this->id)
+            ->where('status', 'pending')
+            ->with('sender')
+            ->get()
+            ->pluck('sender');
+    }
+
+    /**
+     * GymPals - Conexiones aceptadas (mutuamente conectados)
+     */
     public function getGymPalsAttribute()
     {
         $sentAndAccepted = Connection::where('sender_id', $this->id)
@@ -118,6 +151,34 @@ class User extends Authenticatable
                                     ->pluck('sender');
 
         return $sentAndAccepted->merge($receivedAndAccepted)->unique('id')->values();
+    }
+
+    /**
+     * Verificar si tengo una conexión pendiente con un usuario
+     */
+    public function hasPendingConnectionWith($userId)
+    {
+        return Connection::where(function($query) use ($userId) {
+            $query->where('sender_id', $this->id)
+                  ->where('receiver_id', $userId);
+        })->orWhere(function($query) use ($userId) {
+            $query->where('sender_id', $userId)
+                  ->where('receiver_id', $this->id);
+        })->where('status', 'pending')->exists();
+    }
+
+    /**
+     * Verificar si somos GymPals (conexión aceptada)
+     */
+    public function isGymPalWith($userId)
+    {
+        return Connection::where(function($query) use ($userId) {
+            $query->where('sender_id', $this->id)
+                  ->where('receiver_id', $userId);
+        })->orWhere(function($query) use ($userId) {
+            $query->where('sender_id', $userId)
+                  ->where('receiver_id', $this->id);
+        })->where('status', 'accepted')->exists();
     }
 
     // --- RELACIONES PARA CHAT ---
