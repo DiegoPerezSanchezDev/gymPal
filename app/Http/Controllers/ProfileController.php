@@ -127,51 +127,88 @@ class ProfileController extends Controller
         $currentUser = Auth::user();
 
         $connectionStatus = 'none';
-        $connection = null;
+    $connection = null;
+    $isFollowingMe = false;
 
-        if ($currentUser && $currentUser->id !== $user->id) {
-            $connection = Connection::where(function ($query) use ($currentUser, $user) {
-                $query->where('sender_id', $currentUser->id)->where('receiver_id', $user->id);
-            })->orWhere(function ($query) use ($currentUser, $user) {
-                $query->where('sender_id', $user->id)->where('receiver_id', $currentUser->id);
-            })->first();
+    if ($currentUser && $currentUser->id !== $user->id) {
+        // Verificar conexión que YO envié
+        $sentConnection = Connection::where('sender_id', $currentUser->id)
+            ->where('receiver_id', $user->id)
+            ->first();
 
-            if ($connection) {
-                if ($connection->status === 'pending') {
-                    $connectionStatus = $connection->sender_id === $currentUser->id ? 'sent' : 'received';
-                } else {
-                    $connectionStatus = $connection->status; 
-                }
-            }
+        // Verificar conexión que ÉL me envió
+        $receivedConnection = Connection::where('sender_id', $user->id)
+            ->where('receiver_id', $currentUser->id)
+            ->first();
+
+        // Determinar si él me sigue (para el badge)
+        if ($receivedConnection && $receivedConnection->status === 'accepted') {
+            $isFollowingMe = true;
         }
+
+        // Determinar el estado del botón basado en MI conexión
+        if ($sentConnection) {
+            if ($sentConnection->status === 'pending') {
+                $connectionStatus = 'sent';
+                $connection = $sentConnection;
+            } else if ($sentConnection->status === 'accepted') {
+                $connectionStatus = 'accepted';
+                $connection = $sentConnection;
+            }
+        } else if ($receivedConnection && $receivedConnection->status === 'pending') {
+            // Si él me envió solicitud pendiente (y yo no le he enviado nada)
+            $connectionStatus = 'received';
+            $connection = $receivedConnection;
+        }
+        // Si no hay ninguna conexión mía, el estado es 'none'
+    }
+        
 
         $user->load('fitnessInterests');
 
         $user->loadCount('posts');
         
-        // Obtener conexiones manualmente para incluir el ID de la conexión
-        $sent = Connection::where('sender_id', $user->id)
+        // Calcular GymPals, Seguidores y Siguiendo
+        $following = $user->pending_sent; // Usuarios que este perfil sigue (pending)
+        $followingAccepted = Connection::where('sender_id', $user->id)
             ->where('status', 'accepted')
             ->with('receiver:id,name,username,profile_picture_url')
             ->get()
-            ->map(function ($conn) {
-                $u = $conn->receiver;
-                $u->pivot = ['id' => $conn->id];
-                return $u;
-            });
-
-        $received = Connection::where('receiver_id', $user->id)
+            ->pluck('receiver');
+        
+        $followers = $user->pending_received; // Usuarios que siguen a este perfil (pending)
+        $followersAccepted = Connection::where('receiver_id', $user->id)
             ->where('status', 'accepted')
             ->with('sender:id,name,username,profile_picture_url')
             ->get()
-            ->map(function ($conn) {
-                $u = $conn->sender;
-                $u->pivot = ['id' => $conn->id];
-                return $u;
-            });
+            ->pluck('sender');
+        
+        // GymPals = match mutuo (ambos se siguen con accepted)
+        $followingIds = $followingAccepted->pluck('id')->toArray();
+        $followersIds = $followersAccepted->pluck('id')->toArray();
+        $gymPalsIds = array_intersect($followingIds, $followersIds);
+        $gymPals = User::whereIn('id', $gymPalsIds)
+            ->select('id', 'name', 'username', 'profile_picture_url')
+            ->get();
+        
+        // Contadores
+        $gymPalsCount = count($gymPalsIds);
+        $followingCount = $followingAccepted->count();
+        $followersCount = $followersAccepted->count();
 
-        $connections = $sent->merge($received);
-        $connections_count = $connections->count();
+        // Calcular estadísticas del usuario
+        $stats = [
+            'workouts_completed' => $user->workoutLogs()->count(),
+            'active_days_month' => $user->workoutLogs()
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->distinct('created_at')
+                ->count(\DB::raw('DATE(created_at)')),
+            'streak_days' => $this->calculateStreak($user),
+            'workouts_created' => $user->workouts()->count(),
+            'posts_count' => $user->posts()->count(),
+            'level' => $this->calculateLevel($user),
+        ];
 
         // Cargar posts si es el propio perfil o si están conectados
         $posts = [];
@@ -221,8 +258,19 @@ class ProfileController extends Controller
             
             'connection_status' => $connectionStatus,
             'connection_id' => $connection ? $connection->id : null,
-            'connections_count' => $connections_count,
-            'connections_list' => $connections, // Pasar la lista de conexiones
+            'is_following_me' => $isFollowingMe, // Indica si el perfil visitado me sigue
+            
+            // Contadores y listas completas
+            'gym_pals_count' => $gymPalsCount,
+            'followers_count' => $followersCount,
+            'following_count' => $followingCount,
+            'gym_pals_list' => $gymPals,
+            'followers_list' => $followersAccepted->values(), // Lista completa de seguidores
+            'following_list' => $followingAccepted->values(), // Lista completa de siguiendo
+            
+            // Estadísticas del usuario
+            'stats' => $stats,
+            
             'posts' => $posts, // Pasar los posts
             'workouts' => $workouts, // Pasar las rutinas
         ]);
@@ -260,5 +308,54 @@ class ProfileController extends Controller
         $user->save();
 
         return back()->with('success_toast', 'Color del banner actualizado correctamente.');
+    }
+
+    /**
+     * Calcular racha de días consecutivos con entrenamientos
+     */
+    private function calculateStreak(User $user): int
+    {
+        $logs = $user->workoutLogs()
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->groupBy(function($log) {
+                return $log->created_at->format('Y-m-d');
+            });
+
+        if ($logs->isEmpty()) {
+            return 0;
+        }
+
+        $streak = 0;
+        $currentDate = now()->startOfDay();
+
+        foreach ($logs->keys() as $date) {
+            $logDate = \Carbon\Carbon::parse($date)->startOfDay();
+            
+            if ($logDate->equalTo($currentDate) || $logDate->equalTo($currentDate->copy()->subDay())) {
+                $streak++;
+                $currentDate = $logDate->copy()->subDay();
+            } else {
+                break;
+            }
+        }
+
+        return $streak;
+    }
+
+    /**
+     * Calcular nivel del usuario basado en actividad
+     */
+    private function calculateLevel(User $user): int
+    {
+        $totalWorkouts = $user->workoutLogs()->count();
+        $totalPosts = $user->posts()->count();
+        $totalConnections = $user->sentConnections()->where('status', 'accepted')->count();
+
+        // Fórmula simple: nivel = (entrenamientos + posts*2 + conexiones*3) / 10
+        $points = ($totalWorkouts + ($totalPosts * 2) + ($totalConnections * 3));
+        $level = max(1, floor($points / 10));
+
+        return min($level, 100); // Máximo nivel 100
     }
 }

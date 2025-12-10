@@ -1,21 +1,44 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import ConnectionSkeleton from '@/Components/Skeletons/ConnectionSkeleton.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 
 const props = defineProps({
-    pendingRequests: Array,
     gymPals: Array,
+    pendingSent: Array,
+    pendingReceived: Array,
+    currentTab: {
+        type: String,
+        default: 'gymPals',
+    },
+    counts: {
+        type: Object,
+        default: () => ({ gymPals: 0, pendingSent: 0, pendingReceived: 0 }),
+    },
 });
 
+const activeTab = ref(props.currentTab);
 const processingId = ref(null);
-const isLoading = ref(true);
 
-onMounted(() => {
-    if (props.pendingRequests && props.gymPals) {
-        setTimeout(() => isLoading.value = false, 500);
+const switchTab = (tab) => {
+    activeTab.value = tab;
+};
+
+// Helper para obtener avatar URL
+const getAvatarUrl = (user) => {
+    if (user.profile_picture_url) {
+        if (user.profile_picture_url.startsWith('http')) {
+            return user.profile_picture_url;
+        }
+        return `/storage/${user.profile_picture_url}`;
     }
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff&size=128`;
+};
+
+const currentList = computed(() => {
+    if (activeTab.value === 'pendingSent') return props.pendingSent;
+    if (activeTab.value === 'pendingReceived') return props.pendingReceived;
+    return props.gymPals;
 });
 
 function acceptRequest(connectionId) {
@@ -37,188 +60,231 @@ function rejectRequest(connectionId) {
         }
     });
 }
-
-function disconnectUser(connectionId) {
-    if (confirm('¿Estás seguro de que quieres eliminar esta conexión?')) {
-        router.delete(route('connections.destroy', connectionId), {
-            preserveScroll: true,
-            onStart: () => {
-                processingId.value = connectionId;
-            },
-            onFinish: () => {
-                processingId.value = null;
-            }
-        });
-    }
-}
-
-// Helper para obtener avatar URL
-const getAvatarUrl = (user) => {
-    if (user.profile_picture_url) {
-        if (user.profile_picture_url.startsWith('http')) {
-            return user.profile_picture_url;
-        }
-        return `/storage/${user.profile_picture_url}`;
-    }
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff&size=128`;
-};
 </script>
 
 <template>
-    <Head title="Mis Conexiones" />
-
+    <Head title="Conexiones" />
+    
     <AuthenticatedLayout>
-        <template #header>
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
-                    <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                </div>
-                <div>
-                    <h2 class="font-extrabold text-xl text-gray-900 dark:text-white leading-tight transition-colors">
-                        Mis Conexiones
-                    </h2>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium transition-colors">Gestiona tus GymPals</p>
-                </div>
-            </div>
-        </template>
-
-        <div class="py-6 md:py-12">
-            <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-
-                <!-- Loading State -->
-                <div v-if="isLoading">
-                    <ConnectionSkeleton :count="2" />
-                    <ConnectionSkeleton :count="4" />
+        <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-4 sm:py-8 transition-colors">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                <!-- Header -->
+                <div class="mb-6">
+                    <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight transition-colors">
+                        👥 Mis Conexiones
+                    </h1>
+                    <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm transition-colors">
+                        Gestiona tu red de GymPals
+                    </p>
                 </div>
 
-                <div v-else class="space-y-8">
-                    <!-- SOLICITUDES PENDIENTES -->
-                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden transition-colors">
-                        <div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 px-6 py-4 border-b border-gray-100 dark:border-gray-700 transition-colors">
-                            <h3 class="text-lg font-extrabold text-gray-900 dark:text-white flex items-center gap-3 transition-colors">
-                                <svg class="w-6 h-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                <!-- Tabs -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-6 transition-colors">
+                    <div class="grid grid-cols-3">
+                        <button
+                            @click="switchTab('gymPals')"
+                            class="px-3 sm:px-6 py-3 sm:py-4 font-bold text-xs sm:text-sm transition-all relative"
+                            :class="activeTab === 'gymPals' 
+                                ? 'bg-indigo-600 text-white' 
+                                : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                        >
+                            <span class="hidden sm:inline">💪 GymPals</span>
+                            <span class="sm:hidden">💪</span>
+                            <span class="ml-1">({{ counts.gymPals }})</span>
+                        </button>
+                        <button
+                            @click="switchTab('pendingReceived')"
+                            class="px-3 sm:px-6 py-3 sm:py-4 font-bold text-xs sm:text-sm transition-all relative"
+                            :class="activeTab === 'pendingReceived' 
+                                ? 'bg-indigo-600 text-white' 
+                                : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                        >
+                            <span class="hidden sm:inline">📥 Solicitudes</span>
+                            <span class="sm:hidden">📥</span>
+                            <span class="ml-1">({{ counts.pendingReceived }})</span>
+                            <span v-if="counts.pendingReceived > 0" class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                        </button>
+                        <button
+                            @click="switchTab('pendingSent')"
+                            class="px-3 sm:px-6 py-3 sm:py-4 font-bold text-xs sm:text-sm transition-all"
+                            :class="activeTab === 'pendingSent' 
+                                ? 'bg-indigo-600 text-white' 
+                                : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                        >
+                            <span class="hidden sm:inline">📤 Enviadas</span>
+                            <span class="sm:hidden">📤</span>
+                            <span class="ml-1">({{ counts.pendingSent }})</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- GymPals Tab -->
+                <div v-if="activeTab === 'gymPals'">
+                    <div v-if="gymPals.length > 0" class="space-y-3">
+                        <Link
+                            v-for="user in gymPals"
+                            :key="user.id"
+                            :href="route('profile.show.public', user.username)"
+                            class="block bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-600 transition-all"
+                        >
+                            <div class="flex items-center gap-4">
+                                <img
+                                    :src="getAvatarUrl(user)"
+                                    :alt="user.name"
+                                    class="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-gray-100 dark:border-gray-700 flex-shrink-0"
+                                />
+                                <div class="flex-1 min-w-0">
+                                    <h3 class="font-bold text-gray-900 dark:text-white text-base sm:text-lg truncate">{{ user.name }}</h3>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 truncate">@{{ user.username }}</p>
+                                    <span
+                                        v-if="user.experience_level"
+                                        class="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-semibold"
+                                    >
+                                        {{ user.experience_level }}
+                                    </span>
+                                </div>
+                                <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                 </svg>
-                                Solicitudes Pendientes
-                                <span v-if="pendingRequests.length > 0" class="px-3 py-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold rounded-full shadow-md animate-pulse">
-                                    {{ pendingRequests.length }}
-                                </span>
-                            </h3>
+                            </div>
+                        </Link>
+                    </div>
+                    <div v-else class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border-2 border-dashed border-gray-200 dark:border-gray-700 p-8 sm:p-12 text-center">
+                        <div class="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl sm:text-4xl">
+                            💪
                         </div>
+                        <h3 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2">No tienes GymPals aún</h3>
+                        <p class="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                            Conecta con otros usuarios para formar tu equipo de entrenamiento
+                        </p>
+                        <Link
+                            :href="route('discover.index')"
+                            class="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg text-sm sm:text-base"
+                        >
+                            <span>🔍</span>
+                            Descubrir GymPals
+                        </Link>
+                    </div>
+                </div>
 
-                        <div class="p-6">
-                            <div v-if="pendingRequests.length === 0" class="text-center py-12">
-                                <div class="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors">
-                                    <svg class="w-10 h-10 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <!-- Solicitudes Recibidas Tab -->
+                <div v-if="activeTab === 'pendingReceived'">
+                    <div v-if="pendingReceived.length > 0" class="space-y-3">
+                        <div
+                            v-for="user in pendingReceived"
+                            :key="user.id"
+                            class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-all overflow-hidden"
+                        >
+                            <Link 
+                                :href="route('profile.show.public', user.username)" 
+                                class="block p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                            >
+                                <div class="flex items-center gap-3 sm:gap-4">
+                                    <img
+                                        :src="getAvatarUrl(user)"
+                                        :alt="user.name"
+                                        class="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover border-2 border-gray-100 dark:border-gray-700 flex-shrink-0"
+                                    />
+                                    <div class="flex-1 min-w-0">
+                                        <h3 class="font-bold text-gray-900 dark:text-white text-base sm:text-lg truncate">{{ user.name }}</h3>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 truncate">@{{ user.username }}</p>
+                                        <span
+                                            v-if="user.experience_level"
+                                            class="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold"
+                                        >
+                                            {{ user.experience_level }}
+                                        </span>
+                                    </div>
+                                    <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                     </svg>
                                 </div>
-                                <p class="text-gray-500 dark:text-gray-400 font-medium transition-colors">No tienes solicitudes pendientes</p>
-                            </div>
-
-                            <div v-else class="space-y-3">
-                                <div v-for="request in pendingRequests" :key="request.id"
-                                    class="flex flex-col sm:flex-row items-center justify-between p-4 bg-gradient-to-r from-white to-indigo-50 dark:from-gray-800 dark:to-indigo-900/20 border-2 border-indigo-100 dark:border-indigo-800 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 group"
+                            </Link>
+                            <div class="px-4 pb-4 flex gap-2">
+                                <button
+                                    @click.stop="acceptRequest(user.connection_id)"
+                                    :disabled="processingId === user.connection_id"
+                                    class="btn-primary-gradient flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    
-                                    <Link :href="route('profile.show.public', { user: request.sender.username })" class="flex items-center gap-4 w-full sm:w-auto mb-4 sm:mb-0">
-                                        <div class="relative">
-                                            <img :src="getAvatarUrl(request.sender)"
-                                                :alt="request.sender.name"
-                                                class="w-16 h-16 rounded-full object-cover border-4 border-white dark:border-gray-700 shadow-lg group-hover:border-indigo-200 dark:group-hover:border-indigo-700 transition-all">
-                                            <span class="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
-                                                <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
-                                            </span>
-                                        </div>
-                                        <div class="min-w-0 text-left">
-                                            <h4 class="font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors text-lg">{{ request.sender.name }}</h4>
-                                            <p class="text-sm text-gray-500 dark:text-gray-400 transition-colors">@{{ request.sender.username }}</p>
-                                            <div v-if="request.sender.common_interests_count > 0" class="mt-1 flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 font-bold transition-colors">
-                                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                                                {{ request.sender.common_interests_count }} intereses en común
-                                            </div>
-                                        </div>
-                                    </Link>
-
-                                    <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
-                                        <button @click="rejectRequest(request.id)" 
-                                                :disabled="processingId === request.id"
-                                                class="px-5 py-2.5 text-sm font-bold rounded-full text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 border-2 border-gray-200 dark:border-gray-600 hover:border-red-300 dark:hover:border-red-800 transition-all disabled:opacity-50 shadow-sm hover:shadow-md">
-                                            Rechazar
-                                        </button>
-                                        <button @click="acceptRequest(request.id)" 
-                                                :disabled="processingId === request.id"
-                                                class="px-5 py-2.5 text-sm font-bold rounded-full text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-md hover:shadow-lg transition-all disabled:opacity-50 transform hover:scale-105">
-                                            Aceptar
-                                        </button>
-                                    </div>
-                                </div>
+                                    <span class="hidden sm:inline">✓ Aceptar</span>
+                                    <span class="sm:hidden">✓ Aceptar</span>
+                                </button>
+                                <button
+                                    @click.stop="rejectRequest(user.connection_id)"
+                                    :disabled="processingId === user.connection_id"
+                                    class="btn-danger-gradient flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <span class="hidden sm:inline">✗ Rechazar</span>
+                                    <span class="sm:hidden">✗ Rechazar</span>
+                                </button>
                             </div>
                         </div>
                     </div>
-
-                    <!-- MIS GYMPALS -->
-                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden transition-colors">
-                        <div class="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 px-6 py-4 border-b border-gray-100 dark:border-gray-700 transition-colors">
-                            <h3 class="text-lg font-extrabold text-gray-900 dark:text-white flex items-center gap-3 transition-colors">
-                                <svg class="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                                </svg>
-                                Mis GymPals
-                                <span class="px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold rounded-full shadow-md">
-                                    {{ gymPals.length }}
-                                </span>
-                            </h3>
+                    <div v-else class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border-2 border-dashed border-gray-200 dark:border-gray-700 p-8 sm:p-12 text-center">
+                        <div class="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl sm:text-4xl">
+                            📥
                         </div>
-
-                        <div class="p-6">
-                            <div v-if="gymPals.length === 0" class="text-center py-12">
-                                <div class="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors">
-                                    <svg class="w-10 h-10 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                                    </svg>
-                                </div>
-                                <p class="text-gray-500 dark:text-gray-400 font-medium mb-4 transition-colors">Aún no tienes GymPals</p>
-                                <Link :href="route('discover.index')" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
-                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                                    Descubrir GymPals
-                                </Link>
-                            </div>
-
-                            <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div v-for="pal in gymPals" :key="pal.id"
-                                    class="p-4 bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-2xl shadow-md hover:shadow-xl hover:border-purple-200 dark:hover:border-purple-500 transition-all duration-300 group"
-                                >
-                                    
-                                    <Link :href="route('profile.show.public', { user: pal.username })" class="flex items-center gap-4 mb-4">
-                                        <img :src="getAvatarUrl(pal)"
-                                            :alt="pal.name"
-                                            class="w-14 h-14 rounded-full object-cover border-4 border-purple-100 dark:border-purple-900/50 group-hover:border-purple-300 dark:group-hover:border-purple-500 transition-all shadow-sm">
-                                        <div class="flex-1 min-w-0">
-                                            <h4 class="font-bold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors truncate">{{ pal.name }}</h4>
-                                            <p class="text-sm text-gray-500 dark:text-gray-400 truncate transition-colors">@{{ pal.username }}</p>
-                                        </div>
-                                    </Link>
-
-                                    <div class="flex items-center gap-2">
-                                        <Link :href="route('chat.show', { user: pal.username })" 
-                                            class="flex-1 px-4 py-2 text-sm font-bold rounded-full text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-md hover:shadow-lg transition-all text-center transform hover:scale-105">
-                                            💬 Chat
-                                        </Link>
-                                        <button @click="disconnectUser(pal.connection_id)" 
-                                                :disabled="processingId === pal.connection_id"
-                                                class="px-4 py-2 text-sm font-bold rounded-full text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 border-2 border-red-100 dark:border-red-900/30 hover:border-red-200 dark:hover:border-red-800 transition-all disabled:opacity-50 shadow-sm hover:shadow-md">
-                                            Desconectar
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <h3 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2">No tienes solicitudes pendientes</h3>
+                        <p class="text-sm sm:text-base text-gray-500 dark:text-gray-400">Las solicitudes de conexión aparecerán aquí</p>
                     </div>
                 </div>
+
+                <!-- Solicitudes Enviadas Tab -->
+                <div v-if="activeTab === 'pendingSent'">
+                    <div v-if="pendingSent.length > 0" class="space-y-3">
+                        <Link
+                            v-for="user in pendingSent"
+                            :key="user.id"
+                            :href="route('profile.show.public', user.username)"
+                            class="block bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-all opacity-75"
+                        >
+                            <div class="flex items-center gap-4">
+                                <img
+                                    :src="getAvatarUrl(user)"
+                                    :alt="user.name"
+                                    class="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-gray-100 dark:border-gray-700 flex-shrink-0"
+                                />
+                                <div class="flex-1 min-w-0">
+                                    <h3 class="font-bold text-gray-900 dark:text-white text-base sm:text-lg truncate">{{ user.name }}</h3>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 truncate">@{{ user.username }}</p>
+                                    <span class="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 font-semibold">
+                                        ⏳ Pendiente
+                                    </span>
+                                </div>
+                                <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </div>
+                        </Link>
+                    </div>
+                    <div v-else class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border-2 border-dashed border-gray-200 dark:border-gray-700 p-8 sm:p-12 text-center">
+                        <div class="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl sm:text-4xl">
+                            📤
+                        </div>
+                        <h3 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2">No has enviado solicitudes</h3>
+                        <p class="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-6">Descubre usuarios y envía solicitudes de conexión</p>
+                        <Link
+                            :href="route('discover.index')"
+                            class="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg text-sm sm:text-base"
+                        >
+                            <span>🔍</span>
+                            Descubrir GymPals
+                        </Link>
+                    </div>
+                </div>
+
             </div>
         </div>
     </AuthenticatedLayout>
 </template>
+
+<style scoped>
+.btn-primary-gradient {
+    @apply inline-flex items-center justify-center px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:from-indigo-700 hover:to-purple-700 active:bg-indigo-900 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150 shadow-md hover:shadow-lg transform hover:-translate-y-0.5;
+}
+
+.btn-danger-gradient {
+    @apply inline-flex items-center justify-center px-6 py-2.5 bg-gradient-to-r from-red-500 to-pink-600 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:from-red-600 hover:to-pink-700 active:bg-red-900 focus:outline-none focus:border-red-900 focus:ring ring-red-300 disabled:opacity-25 transition ease-in-out duration-150 shadow-md hover:shadow-lg transform hover:-translate-y-0.5;
+}
+</style>

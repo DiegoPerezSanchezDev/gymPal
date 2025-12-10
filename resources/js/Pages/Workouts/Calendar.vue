@@ -92,10 +92,10 @@ function nextMonth() {
                         <span class="text-2xl">📅</span>
                     </div>
                     <div>
-                        <h2 class="font-extrabold text-xl text-gray-900 leading-tight">
+                        <h2 class="font-extrabold text-xl text-gray-900 dark:text-white leading-tight transition-colors">
                             Calendario de Entrenamientos
                         </h2>
-                        <p class="text-xs text-gray-500 font-medium">{{ currentMonth }} {{ currentYear }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 font-medium transition-colors">{{ currentMonth }} {{ currentYear }}</p>
                     </div>
                 </div>
                 <Link 
@@ -127,15 +127,15 @@ function nextMonth() {
                 </div>
 
                 <!-- Navegación del mes -->
-                <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-6 transition-colors">
                     <div class="flex items-center justify-between mb-6">
-                        <button @click="previousMonth" class="p-2 hover:bg-gray-100 rounded-lg transition">
+                        <button @click="previousMonth" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition text-gray-700 dark:text-gray-200">
                             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                             </svg>
                         </button>
-                        <h3 class="text-2xl font-black text-gray-900">{{ currentMonth }} {{ currentYear }}</h3>
-                        <button @click="nextMonth" class="p-2 hover:bg-gray-100 rounded-lg transition">
+                        <h3 class="text-2xl font-black text-gray-900 dark:text-white transition-colors">{{ currentMonth }} {{ currentYear }}</h3>
+                        <button @click="nextMonth" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition text-gray-700 dark:text-gray-200">
                             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                             </svg>
@@ -144,7 +144,7 @@ function nextMonth() {
 
                     <!-- Días de la semana -->
                     <div class="grid grid-cols-7 gap-2 mb-2">
-                        <div v-for="day in dayNames" :key="day" class="text-center text-sm font-bold text-gray-500 py-2">
+                        <div v-for="day in dayNames" :key="day" class="text-center text-sm font-bold text-gray-500 dark:text-gray-400 py-2 transition-colors">
                             {{ day }}
                         </div>
                     </div>
@@ -160,11 +160,11 @@ function nextMonth() {
                                 v-if="dayData.day"
                                 class="h-full rounded-lg border-2 transition-all p-2 flex flex-col"
                                 :class="[
-                                    dayData.isToday ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300',
-                                    dayData.logs.length > 0 ? 'bg-green-50 border-green-300' : 'bg-white'
+                                    dayData.isToday ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 dark:border-indigo-400' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600',
+                                    dayData.logs.length > 0 ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700' : 'bg-white dark:bg-gray-800'
                                 ]"
                             >
-                                <div class="text-sm font-bold mb-1" :class="dayData.isToday ? 'text-indigo-600' : 'text-gray-700'">
+                                <div class="text-sm font-bold mb-1 transition-colors" :class="dayData.isToday ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-700 dark:text-gray-200'">
                                     {{ dayData.day }}
                                 </div>
                                 <div v-if="dayData.logs.length > 0" class="flex-1 flex flex-col gap-1">
@@ -172,12 +172,12 @@ function nextMonth() {
                                         v-for="log in dayData.logs.slice(0, 2)" 
                                         :key="log.id"
                                         :href="route('workout-logs.show', log.id)"
-                                        class="text-xs bg-green-500 text-white rounded px-1 py-0.5 truncate hover:bg-green-600 transition"
+                                        class="text-xs bg-green-500 dark:bg-green-600 text-white rounded px-1 py-0.5 truncate hover:bg-green-600 dark:hover:bg-green-500 transition"
                                         :title="log.workout_name"
                                     >
                                         💪 {{ log.completed_sets }}
                                     </Link>
-                                    <div v-if="dayData.logs.length > 2" class="text-xs text-green-600 font-bold">
+                                    <div v-if="dayData.logs.length > 2" class="text-xs text-green-600 dark:text-green-400 font-bold transition-colors">
                                         +{{ dayData.logs.length - 2 }}
                                     </div>
                                 </div>

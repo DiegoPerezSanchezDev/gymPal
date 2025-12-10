@@ -7,6 +7,7 @@ use App\Models\WorkoutExercise;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class WorkoutController extends Controller
@@ -368,15 +369,32 @@ class WorkoutController extends Controller
      */
     public function saved()
     {
-        $workouts = Auth::user()
+        $user = Auth::user();
+        
+        $workouts = $user
             ->savedWorkouts()
             ->with(['user:id,name,username,profile_picture_url', 'exercises'])
             ->latest('saved_workouts.created_at')
             ->paginate(12);
 
+        // Obtener posts guardados
+        $savedPosts = $user->savedPosts()
+            ->with(['user', 'latestLikers', 'latestComments.user', 'workout', 'workoutLog'])
+            ->withCount(['likers', 'comments'])
+            ->latest('saved_posts.created_at')
+            ->paginate(10);
+            
+        // Añadir is_liked e is_saved a cada post
+        $savedPosts->getCollection()->transform(function ($post) use ($user) {
+            $post->is_liked = $post->likers()->where('user_id', $user->id)->exists();
+            $post->is_saved = true;
+            return $post;
+        });
+
         return Inertia::render('Workouts/Saved', [
             'workouts' => $workouts,
-            'title' => 'Rutinas Guardadas',
+            'savedPosts' => $savedPosts,
+            'title' => 'Guardados',
         ]);
     }
     /**
@@ -530,5 +548,102 @@ class WorkoutController extends Controller
                 'difficulty' => $request->difficulty,
             ]
         ]);
+    }
+
+    /**
+     * Comparte una rutina con otro usuario enviándola como mensaje
+     */
+    public function shareWorkout(Request $request, Workout $workout)
+    {
+        try {
+            $validated = $request->validate([
+                'recipient_id' => 'required|exists:users,id',
+            ]);
+
+            $currentUser = Auth::user();
+            $recipient = \App\Models\User::findOrFail($validated['recipient_id']);
+            
+            // Cargar la relación del usuario de la rutina
+            $workout->load(['user', 'exercises']);
+
+            // Verificar que el usuario esté conectado con el destinatario
+            $isConnected = $currentUser->gym_pals->contains('id', $recipient->id);
+            
+            if (!$isConnected) {
+                return response()->json(['message' => 'Solo puedes compartir con tus GymPals.'], 403);
+            }
+
+            // Buscar o crear conversación entre los dos usuarios
+            $conversations = \App\Models\Conversation::whereHas('users', function ($q) use ($currentUser) {
+                    $q->where('users.id', $currentUser->id);
+                })
+                ->whereHas('users', function ($q) use ($recipient) {
+                    $q->where('users.id', $recipient->id);
+                })
+                ->get();
+
+            // Filtrar para encontrar la conversación que tenga exactamente 2 usuarios
+            $conversation = $conversations->first(function ($conv) {
+                return $conv->users()->count() === 2;
+            });
+
+            if (!$conversation) {
+                $conversation = \App\Models\Conversation::create(['last_message_at' => now()]);
+                $conversation->users()->attach([$currentUser->id, $recipient->id]);
+            }
+
+            // Crear mensaje con la rutina compartida
+            $workoutUrl = route('workouts.show', $workout->id);
+            $messageBody = "🏋️ Compartí una rutina contigo";
+
+            $metadata = [
+                'workout_id' => $workout->id,
+                'workout_url' => $workoutUrl,
+                'workout_name' => $workout->name,
+                'workout_description' => $workout->description,
+                'workout_category' => $workout->category,
+                'workout_difficulty' => $workout->difficulty,
+                'workout_duration_minutes' => $workout->duration_minutes,
+                'workout_exercises_count' => $workout->exercises->count(),
+                'workout_author_name' => $workout->user->name,
+                'workout_author_username' => $workout->user->username,
+                'workout_author_profile_picture' => $workout->user->profile_picture_url,
+            ];
+
+            $message = $conversation->messages()->create([
+                'user_id' => $currentUser->id,
+                'body' => $messageBody,
+                'type' => \App\Models\Message::TYPE_SHARED_WORKOUT,
+                'metadata' => $metadata,
+            ]);
+
+            $conversation->update(['last_message_at' => now()]);
+
+            // Crear notificación para el destinatario
+            NotificationService::create(
+                $recipient,
+                'workout_shared',
+                $currentUser->name . ' compartió una rutina contigo',
+                'compartió una rutina contigo',
+                $workout,
+                [
+                    'user_id' => $currentUser->id,
+                    'user_name' => $currentUser->name,
+                    'user_avatar' => $currentUser->profile_picture_url,
+                    'workout_id' => $workout->id,
+                    'workout_name' => $workout->name,
+                ]
+            );
+
+            return response()->json([
+                'message' => 'Rutina compartida exitosamente.',
+                'conversation_id' => $conversation->id,
+            ], 201);
+
+        } catch (\Exception $e) {
+            Log::error('Error sharing workout: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+            return response()->json(['message' => 'Error interno al compartir la rutina: ' . $e->getMessage()], 500);
+        }
     }
 }

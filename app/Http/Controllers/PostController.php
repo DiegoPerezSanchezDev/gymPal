@@ -78,6 +78,9 @@ class PostController extends Controller
     public function show(Post $post)
     {
         $post->load(['user', 'comments.user', 'workout', 'workoutLog']);
+        $user = Auth::user();
+        $post->is_liked = $post->likers()->where('user_id', $user->id)->exists();
+        $post->is_saved = $user->savedPosts()->where('post_id', $post->id)->exists();
         return \Inertia\Inertia::render('Posts/Show', ['post' => $post]);
     }
 
@@ -126,16 +129,19 @@ class PostController extends Controller
         }
 
         // Buscar o crear conversación entre los dos usuarios
-        $conversation = \App\Models\Conversation::query()
-            ->whereHas('users', function ($q) use ($currentUser) {
+        // Buscar conversaciones donde ambos usuarios estén presentes
+        $conversations = \App\Models\Conversation::whereHas('users', function ($q) use ($currentUser) {
                 $q->where('users.id', $currentUser->id);
             })
             ->whereHas('users', function ($q) use ($recipient) {
                 $q->where('users.id', $recipient->id);
             })
-            ->withCount('users')
-            ->having('users_count', '=', 2)
-            ->first();
+            ->get();
+
+        // Filtrar para encontrar la conversación que tenga exactamente 2 usuarios
+        $conversation = $conversations->first(function ($conv) {
+            return $conv->users()->count() === 2;
+        });
 
         if (!$conversation) {
             $conversation = \App\Models\Conversation::create(['last_message_at' => now()]);
@@ -143,27 +149,41 @@ class PostController extends Controller
         }
 
         // Cargar datos adicionales del post para la metadata
-        $post->load(['user', 'latestLikers']);
+        $post->load(['user', 'latestLikers', 'workout']);
         
         // Crear mensaje con el post compartido usando tipo y metadata
         $postUrl = route('posts.show', $post->id);
         $messageBody = "📌 Compartí una publicación contigo";
 
+        $metadata = [
+            'post_id' => $post->id,
+            'post_url' => $postUrl,
+            'post_author_name' => $post->user->name,
+            'post_author_username' => $post->user->username,
+            'post_author_profile_picture' => $post->user->profile_picture_url,
+            'post_content' => $post->content,
+            'post_image_path' => $post->image_path,
+            'post_created_at' => $post->created_at->toIso8601String(),
+            'post_likes_count' => $post->likes_count ?? 0,
+        ];
+
+        // Añadir datos de la rutina si existe
+        if ($post->workout) {
+            $metadata['workout'] = [
+                'id' => $post->workout->id,
+                'name' => $post->workout->name,
+                'description' => $post->workout->description,
+                'category' => $post->workout->category,
+                'difficulty' => $post->workout->difficulty,
+                'duration_minutes' => $post->workout->duration_minutes,
+            ];
+        }
+
         $message = $conversation->messages()->create([
             'user_id' => $currentUser->id,
             'body' => $messageBody,
             'type' => \App\Models\Message::TYPE_SHARED_POST,
-            'metadata' => [
-                'post_id' => $post->id,
-                'post_url' => $postUrl,
-                'post_author_name' => $post->user->name,
-                'post_author_username' => $post->user->username,
-                'post_author_profile_picture' => $post->user->profile_picture_url,
-                'post_content' => $post->content,
-                'post_image_path' => $post->image_path,
-                'post_created_at' => $post->created_at->toISOString(),
-                'post_likes_count' => $post->likes_count ?? 0,
-            ],
+            'metadata' => $metadata,
         ]);
 
         $conversation->update(['last_message_at' => now()]);
@@ -177,6 +197,51 @@ class PostController extends Controller
             'message' => 'Post compartido exitosamente.',
             'conversation_id' => $conversation->id,
         ], 201);
+    }
+
+    /**
+     * Guardar/Desguardar un post
+     */
+    public function toggleSavePost(Post $post)
+    {
+        $user = Auth::user();
+        
+        // Verificar si ya está guardado
+        $isSaved = $user->savedPosts()->where('post_id', $post->id)->exists();
+        
+        if ($isSaved) {
+            // Desguardar
+            $user->savedPosts()->detach($post->id);
+            return response()->json([
+                'saved' => false,
+                'message' => 'Post eliminado de guardados'
+            ]);
+        } else {
+            // Guardar
+            $user->savedPosts()->attach($post->id);
+            
+            // Notificar al autor del post (si no es el mismo usuario)
+            if ($post->user_id !== $user->id) {
+                NotificationService::create(
+                    $post->user,
+                    'post_saved',
+                    $user->name . ' guardó tu publicación',
+                    'guardó tu publicación',
+                    $post,
+                    [
+                        'user_id' => $user->id,
+                        'user_name' => $user->name,
+                        'user_avatar' => $user->profile_picture_url,
+                        'post_id' => $post->id,
+                    ]
+                );
+            }
+            
+            return response()->json([
+                'saved' => true,
+                'message' => 'Post guardado exitosamente'
+            ]);
+        }
     }
     
 }

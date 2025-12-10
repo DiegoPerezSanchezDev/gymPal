@@ -4,6 +4,7 @@ import { Head, Link, usePage } from '@inertiajs/vue3';
 import { ref, computed, onMounted, nextTick, watch } from 'vue';
 import axios from 'axios';
 import SharedPostCard from '@/Components/SharedPostCard.vue';
+import SharedWorkoutCard from '@/Components/SharedWorkoutCard.vue';
 
 // Props que vienen del controlador
 const props = defineProps({
@@ -107,6 +108,11 @@ const isSharedPost = (message) => {
     return message.type === 'shared_post';
 };
 
+// Verificar si un mensaje es una rutina compartida
+const isSharedWorkout = (message) => {
+    return message.type === 'shared_workout';
+};
+
 // Observar cambios en los mensajes de las props
 watch(() => props.messages, (newMessages) => {
     if (newMessages && newMessages.data) {
@@ -159,7 +165,7 @@ watch(() => props.messages, (newMessages) => {
                         <div class="flex flex-col max-w-[85%] md:max-w-[70%]">
                             <!-- Mensaje de Texto/Imagen -->
                             <div 
-                                v-if="!isSharedPost(message)"
+                                v-if="!isSharedPost(message) && !isSharedWorkout(message)"
                                 class="shadow-md text-sm relative group"
                                 :class="[
                                     message.user_id === authUserId 
@@ -187,12 +193,25 @@ watch(() => props.messages, (newMessages) => {
                             </div>
 
                             <!-- Post Compartido -->
-                            <div v-else class="w-full">
+                            <div v-else-if="isSharedPost(message)" class="w-full">
                                 <div v-if="message.body" class="mb-2 text-xs text-gray-500 dark:text-gray-400 font-medium transition-colors" :class="message.user_id === authUserId ? 'text-right' : 'text-left'">
                                     {{ message.body }}
                                 </div>
                                 <div class="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 shadow-md bg-white dark:bg-gray-800 transition-colors">
                                     <SharedPostCard :postData="message.metadata || {}" />
+                                </div>
+                                <p class="text-[10px] text-gray-400 mt-1.5 text-right">
+                                    {{ new Date(message.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) }}
+                                </p>
+                            </div>
+
+                            <!-- Rutina Compartida -->
+                            <div v-else-if="isSharedWorkout(message)" class="w-full">
+                                <div v-if="message.body" class="mb-2 text-xs text-gray-500 dark:text-gray-400 font-medium transition-colors" :class="message.user_id === authUserId ? 'text-right' : 'text-left'">
+                                    {{ message.body }}
+                                </div>
+                                <div class="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 shadow-md bg-white dark:bg-gray-800 transition-colors">
+                                    <SharedWorkoutCard :workoutData="message.metadata || {}" />
                                 </div>
                                 <p class="text-[10px] text-gray-400 mt-1.5 text-right">
                                     {{ new Date(message.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) }}

@@ -1,12 +1,15 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
+import SharePostModal from '@/Components/SharePostModal.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import axios from 'axios';
 
 const props = defineProps({
-    notifications: Object,
+    notifications: Array,
+    has_more: Boolean,
+    next_cursor: Number,
     unread_count: Number,
     filters: Object, // Recibimos los filtros actuales
 });
@@ -14,13 +17,72 @@ const props = defineProps({
 const currentFilter = ref(new URLSearchParams(window.location.search).get('unread_only') === '1' ? 'unread' : 'all');
 const isDeleting = ref(false);
 const showDeleteAllModal = ref(false);
+const showShareModal = ref(false);
+const shareItem = ref(null);
+const shareItemType = ref('post');
+
+// Estado para scroll infinito
+const allNotifications = ref([...props.notifications]);
+const hasMore = ref(props.has_more);
+const nextCursor = ref(props.next_cursor);
+const isLoadingMore = ref(false);
 
 // Observar cambios en el filtro para recargar
 watch(currentFilter, (val) => {
     router.get(route('notifications.index'), 
         { unread_only: val === 'unread' ? 1 : 0 }, 
-        { preserveState: true, preserveScroll: true, only: ['notifications', 'unread_count'] }
+        { 
+            preserveState: false,
+            onSuccess: (page) => {
+                allNotifications.value = page.props.notifications;
+                hasMore.value = page.props.has_more;
+                nextCursor.value = page.props.next_cursor;
+            }
+        }
     );
+});
+
+// Función para cargar más notificaciones
+const loadMore = async () => {
+    if (isLoadingMore.value || !hasMore.value) return;
+    
+    isLoadingMore.value = true;
+    
+    try {
+        const response = await axios.get(route('notifications.index'), {
+            params: {
+                cursor: nextCursor.value,
+                unread_only: currentFilter.value === 'unread' ? 1 : 0,
+            }
+        });
+        
+        allNotifications.value.push(...response.data.data);
+        hasMore.value = response.data.has_more;
+        nextCursor.value = response.data.next_cursor;
+    } catch (error) {
+        console.error('Error loading more notifications:', error);
+    } finally {
+        isLoadingMore.value = false;
+    }
+};
+
+// Detectar scroll al final
+const handleScroll = () => {
+    const scrollPosition = window.innerHeight + window.scrollY;
+    const threshold = document.documentElement.scrollHeight - 500; // 500px antes del final
+    
+    if (scrollPosition >= threshold && hasMore.value && !isLoadingMore.value) {
+        loadMore();
+    }
+};
+
+// Montar y desmontar listener
+onMounted(() => {
+    window.addEventListener('scroll', handleScroll);
+});
+
+onBeforeUnmount(() => {
+    window.removeEventListener('scroll', handleScroll);
 });
 
 const formatDate = (dateString) => {
@@ -94,6 +156,11 @@ const handleNotificationClick = (notification) => {
                 router.visit(route('chat.show', { user: data.sender_username, from: 'notifications' }));
             }
             break;
+        case 'connection_request':
+            if (data.sender_username) {
+                router.visit(route('profile.show.public', { user: data.sender_username, from: 'notifications' }));
+            }
+            break;
         case 'connection_accepted':
             if (data.accepter_username) {
                 router.visit(route('profile.show.public', { user: data.accepter_username, from: 'notifications' }));
@@ -108,24 +175,62 @@ const handleNotificationClick = (notification) => {
     }
 };
 
+const handleShareClick = (event, notification) => {
+    event.stopPropagation(); // Evitar navegar al detalle
+    
+    const data = notification.data || {};
+    
+    if (data.post_id) {
+        // Construimos un objeto mínimo para el modal
+        shareItem.value = { 
+            id: data.post_id, 
+            description: 'Publicación' // No tenemos el contenido real aquí, pero sirve
+        };
+        shareItemType.value = 'post';
+        showShareModal.value = true;
+    } else if (data.workout_id) {
+        shareItem.value = { 
+            id: data.workout_id, 
+            name: data.workout_name || 'Rutina'
+        };
+        shareItemType.value = 'workout';
+        showShareModal.value = true;
+    }
+};
+
+const canShare = (notification) => {
+    const data = notification.data || {};
+    return !!(data.post_id || data.workout_id);
+};
+
 const getNotificationIcon = (type) => {
     const icons = {
-        post_shared: 'M8.684 13.342A8.963 8.963 0 018 12.001c0-1.01.198-1.968.563-2.835m7.899 5.578A8.963 8.963 0 0116 12.001c0-1.01.198-1.968.563-2.835m0 5.67a8.965 8.965 0 01-7.899 0m7.899 0l-1.42 1.42m-5.058-8.54l1.42-1.42',
+        connection_request: 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z',
+        connection_accepted: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+        post_shared: 'M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z',
         new_message: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
-        connection_accepted: 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z',
         post_liked: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z',
-        post_commented: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
+        post_commented: 'M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z',
+        post_saved: 'M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z',
+        workout_cloned: 'M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2',
+        workout_saved: 'M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z',
+        workout_shared: 'M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z',
     };
     return icons[type] || icons.new_message;
 };
 
 const getNotificationColor = (type) => {
     const colors = {
-        post_shared: 'text-blue-500 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30',
-        new_message: 'text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30',
-        connection_accepted: 'text-green-500 dark:text-green-400 bg-green-50 dark:bg-green-900/30',
-        post_liked: 'text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/30',
-        post_commented: 'text-purple-500 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30',
+        connection_request: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30',
+        connection_accepted: 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30',
+        post_shared: 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30',
+        new_message: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30',
+        post_liked: 'text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/30',
+        post_commented: 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30',
+        post_saved: 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30',
+        workout_cloned: 'text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-900/30',
+        workout_saved: 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30',
+        workout_shared: 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30',
     };
     return colors[type] || colors.new_message;
 };
@@ -147,7 +252,7 @@ const getNotificationColor = (type) => {
                     
                     <div class="flex items-center gap-3">
                         <button
-                            v-if="notifications.data.length > 0"
+                            v-if="allNotifications && allNotifications.length > 0"
                             @click="openDeleteAllModal"
                             :disabled="isDeleting"
                             class="group flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 transition-all disabled:opacity-50"
@@ -196,7 +301,7 @@ const getNotificationColor = (type) => {
                 </div>
 
                 <!-- Notifications List -->
-                <div v-if="notifications && notifications.data && notifications.data.length > 0" class="space-y-3">
+                <div v-if="allNotifications && allNotifications.length > 0" class="space-y-3">
                     <TransitionGroup 
                         enter-active-class="transition duration-300 ease-out"
                         enter-from-class="transform translate-y-4 opacity-0"
@@ -206,7 +311,7 @@ const getNotificationColor = (type) => {
                         leave-to-class="transform translate-y-4 opacity-0"
                     >
                         <div
-                            v-for="notification in notifications.data"
+                            v-for="notification in allNotifications"
                             :key="notification.id"
                             @click="handleNotificationClick(notification)"
                             class="group relative bg-white dark:bg-gray-800 rounded-2xl p-4 border transition-all duration-200 cursor-pointer overflow-hidden"
@@ -251,26 +356,20 @@ const getNotificationColor = (type) => {
                         </div>
                     </TransitionGroup>
 
-                    <!-- Pagination -->
-                    <div v-if="notifications.links && notifications.links.length > 3" class="mt-8 flex justify-center">
-                        <div class="flex flex-wrap justify-center gap-2 bg-white dark:bg-gray-800 p-2 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
-                            <Link
-                                v-for="(link, key) in notifications.links"
-                                :key="key"
-                                :href="link.url"
-                                :preserve-scroll="true"
-                                :preserve-state="true"
-                                :data="{ unread_only: currentFilter === 'unread' ? 1 : 0 }"
-                                class="px-3 py-1.5 text-sm font-medium rounded-lg transition-all"
-                                :class="[
-                                    link.active 
-                                        ? 'bg-indigo-600 text-white shadow-md' 
-                                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400',
-                                    !link.url ? 'opacity-50 cursor-not-allowed' : ''
-                                ]"
-                                v-html="link.label"
-                            />
+                    <!-- Loading Indicator -->
+                    <div v-if="isLoadingMore" class="flex justify-center py-8">
+                        <div class="flex items-center gap-3 text-indigo-600 dark:text-indigo-400">
+                            <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span class="text-sm font-medium">Cargando más...</span>
                         </div>
+                    </div>
+
+                    <!-- End Message -->
+                    <div v-else-if="!hasMore && allNotifications.length > 0" class="text-center py-8">
+                        <p class="text-sm text-gray-400 dark:text-gray-500">No hay más notificaciones</p>
                     </div>
                 </div>
 
@@ -312,6 +411,14 @@ const getNotificationColor = (type) => {
             cancel-text="Cancelar"
             @confirm="confirmDeleteAll"
             @cancel="showDeleteAllModal = false"
+        />
+
+        <!-- Modal de Compartir -->
+        <SharePostModal 
+            v-if="showShareModal" 
+            :item="shareItem"
+            :item-type="shareItemType"
+            @close="showShareModal = false" 
         />
     </AuthenticatedLayout>
 </template>

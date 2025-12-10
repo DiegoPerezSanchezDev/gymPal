@@ -1,12 +1,24 @@
+```vue
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { useToast } from '@/composables/useToast';
 
-const props = defineProps({ post: Object });
+const props = defineProps({ 
+    post: Object,  // Deprecated - mantener por compatibilidad
+    item: Object,  // Nuevo - genérico
+    itemType: {    // 'post' o 'workout'
+        type: String,
+        default: 'post'
+    }
+});
 const emit = defineEmits(['close']);
 
 const { success, error } = useToast();
+
+// Determinar qué item usar (compatibilidad con código antiguo)
+const currentItem = computed(() => props.item || props.post);
+const currentType = computed(() => props.itemType || 'post');
 
 const gymPals = ref([]);
 const isLoading = ref(false);
@@ -51,33 +63,49 @@ const isSelected = (gymPal) => {
     return selectedRecipients.value.some(r => r.id === gymPal.id);
 };
 
+// Compartir con todos los seleccionados
 const sharePost = async () => {
-    if (selectedRecipients.value.length === 0) return;
-    
-    isSharing.value = true;
-    try {
-        // Compartir con cada usuario seleccionado
-        // Nota: Idealmente el backend debería aceptar un array de IDs, pero por ahora iteramos
-        // O mejor, enviamos una sola petición si el backend lo soporta, o múltiples en paralelo.
-        // Vamos a asumir que necesitamos enviar una petición por usuario por ahora para no romper el backend existente,
-        // pero lo ideal sería refactorizar el backend para aceptar 'recipient_ids' array.
-        
-        const sharePromises = selectedRecipients.value.map(recipient => 
-            axios.post(route('posts.share', { post: props.post.id }), {
-                recipient_id: recipient.id
-            })
-        );
+    if (selectedRecipients.value.length === 0) {
+        error('Selecciona al menos un GymPal');
+        return;
+    }
 
-        await Promise.all(sharePromises);
+    isSharing.value = true;
+    let successCount = 0;
+    let errorCount = 0;
+
+    try {
+        // Determinar la ruta según el tipo
+        const shareRoute = currentType.value === 'workout' 
+            ? route('workouts.share', currentItem.value.id)
+            : route('posts.share', currentItem.value.id);
+
+        // Enviar una petición por cada destinatario
+        for (const recipient of selectedRecipients.value) {
+            try {
+                await axios.post(shareRoute, {
+                    recipient_id: recipient.id
+                });
+                successCount++;
+            } catch (err) {
+                console.error(`Error al compartir con ${recipient.name}:`, err);
+                errorCount++;
+            }
+        }
+
+        if (successCount > 0) {
+            const itemName = currentType.value === 'workout' ? 'rutina' : 'publicación';
+            success(`${itemName.charAt(0).toUpperCase() + itemName.slice(1)} compartida con ${successCount} ${successCount === 1 ? 'persona' : 'personas'}`);
+        }
         
-        const count = selectedRecipients.value.length;
-        const names = count === 1 ? selectedRecipients.value[0].name : `${count} personas`;
-        
-        success(`Post compartido con ${names}`);
+        if (errorCount > 0) {
+            error(`Error al compartir con ${errorCount} ${errorCount === 1 ? 'persona' : 'personas'}`);
+        }
+
         emit('close');
     } catch (err) {
-        console.error('Error al compartir post:', err);
-        error(err.response?.data?.message || 'Error al compartir el post');
+        console.error('Error al compartir:', err);
+        error('Error al compartir');
     } finally {
         isSharing.value = false;
     }
@@ -92,9 +120,16 @@ onMounted(() => {
     <div @click.self="$emit('close')" class="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 z-50 flex items-center justify-center p-4 transition-colors">
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] flex flex-col transition-colors">
             <!-- Header -->
-            <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between transition-colors">
-                <h2 class="text-xl font-bold text-gray-800 dark:text-white transition-colors">Compartir Publicación</h2>
-                <button @click="$emit('close')" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-2xl leading-none transition-colors">&times;</button>
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex flex-col gap-1 transition-colors">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-gray-800 dark:text-white transition-colors">
+                        {{ currentType === 'workout' ? 'Compartir Rutina' : 'Compartir Publicación' }}
+                    </h2>
+                    <button @click="$emit('close')" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-2xl leading-none transition-colors">&times;</button>
+                </div>
+                <p v-if="currentItem" class="text-sm text-gray-500 dark:text-gray-400 truncate">
+                    {{ currentType === 'workout' ? currentItem.name : (currentItem.description || 'Publicación') }}
+                </p>
             </div>
 
             <!-- Search Bar -->
@@ -102,7 +137,7 @@ onMounted(() => {
                 <input
                     v-model="searchQuery"
                     type="text"
-                    placeholder="Buscar GymPals..."
+                    placeholder="Buscar GymPals"
                     class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors"
                 />
             </div>
@@ -135,9 +170,9 @@ onMounted(() => {
                         ]"
                     >
                         <img
-                            :src="gymPal.profile_picture_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(gymPal.name)}&background=random`"
+                            :src="gymPal.profile_picture_url ? `/storage/${gymPal.profile_picture_url}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(gymPal.name)}&background=random`"
                             :alt="gymPal.name"
-                            class="w-12 h-12 rounded-full object-cover"
+                            class="w-12 h-12 rounded-full object-cover border border-gray-200 dark:border-gray-700"
                         />
                         <div class="flex-1 text-left">
                             <p class="font-semibold text-gray-800 dark:text-white transition-colors">{{ gymPal.name }}</p>

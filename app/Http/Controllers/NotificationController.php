@@ -17,6 +17,7 @@ class NotificationController extends Controller
         $user = Auth::user();
         $unreadOnly = $request->boolean('unread_only', false);
         $type = $request->input('type');
+        $cursor = $request->input('cursor'); // ID de la última notificación cargada
 
         $query = $user->notifications();
 
@@ -28,21 +29,33 @@ class NotificationController extends Controller
             $query->where('type', $type);
         }
 
-        $notifications = $query->paginate(20);
+        // Si hay cursor, cargar notificaciones más antiguas que ese ID
+        if ($cursor) {
+            $query->where('id', '<', $cursor);
+        }
 
-        // Si es una petición AJAX, devolver JSON con paginación
+        $notifications = $query->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
+            ->limit(20)
+            ->get();
+
+        $hasMore = $notifications->count() === 20;
+        $nextCursor = $hasMore ? $notifications->last()->id : null;
+
+        // Si es una petición AJAX, devolver JSON
         if ($request->wantsJson()) {
             return response()->json([
-                'data' => $notifications->items(),
-                'current_page' => $notifications->currentPage(),
-                'last_page' => $notifications->lastPage(),
-                'total' => $notifications->total(),
+                'data' => $notifications,
+                'has_more' => $hasMore,
+                'next_cursor' => $nextCursor,
                 'unread_count' => $user->unreadNotifications()->count(),
             ]);
         }
 
         return Inertia::render('Notifications/Index', [
             'notifications' => $notifications,
+            'has_more' => $hasMore,
+            'next_cursor' => $nextCursor,
             'unread_count' => $user->unreadNotifications()->count(),
         ]);
     }

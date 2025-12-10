@@ -12,7 +12,7 @@ import DeletePostModal from './DeletePostModal.vue';
 import WorkoutCard from './WorkoutCard.vue';
 import WorkoutPreviewCard from './WorkoutPreviewCard.vue';
 
-const { error: showError } = useToast();
+const { error: showError, success } = useToast();
 
 const props = defineProps({
     post: {
@@ -66,6 +66,8 @@ const postImageUrl = computed(() => {
 const showReportModal = ref(false);
 const showShareModal = ref(false);
 const showDeleteModal = ref(false);
+const isSaved = ref(false);
+const isProcessingSave = ref(false);
 
 function handleDeleteModalClose() {
     showDeleteModal.value = false;
@@ -78,6 +80,7 @@ const emit = defineEmits(['delete-post']);
 const initializeValues = () => {
     isLiked.value = props.post.is_liked || false;
     localLikesCount.value = props.post.likes_count || props.post.likers_count || 0;
+    isSaved.value = props.post.is_saved || false;
 };
 
 // Inicializar valores cuando el componente se monta
@@ -126,6 +129,32 @@ const toggleLike = async () => {
         showError('Error al actualizar el like');
     } finally {
         isProcessingLike.value = false;
+    }
+};
+
+const toggleSave = async () => {
+    if (isProcessingSave.value) return;
+    isProcessingSave.value = true;
+    
+    const originalIsSaved = isSaved.value;
+    isSaved.value = !isSaved.value; // Optimistic update
+    
+    try {
+        const response = await axios.post(route('posts.save', props.post.id));
+        isSaved.value = response.data.saved;
+        
+        // Mostrar notificación
+        if (response.data.saved) {
+            success('✅ Post guardado correctamente');
+        } else {
+            success('Post eliminado de guardados');
+        }
+    } catch (err) {
+        isSaved.value = originalIsSaved;
+        showError('Error al guardar el post');
+        console.error('Error al guardar post:', err);
+    } finally {
+        isProcessingSave.value = false;
     }
 };
 
@@ -184,12 +213,25 @@ const submitComment = async () => {
                     </div>
                 </div>
             </div>
-            <PostActionsMenu 
-                :post="post" 
-                :isOwner="isOwner"
-                @report-post="showReportModal = true"
-                @delete-post="showDeleteModal = true"
-            />
+            <div class="flex items-center gap-2">
+                <!-- Botón Compartir -->
+                <button 
+                    @click="showShareModal = true" 
+                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
+                    title="Compartir"
+                >
+                    <svg class="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-green-500 dark:group-hover:text-green-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                </button>
+                <!-- Menú de 3 puntos -->
+                <PostActionsMenu 
+                    :post="post" 
+                    :isOwner="isOwner"
+                    @report-post="showReportModal = true"
+                    @delete-post="showDeleteModal = true"
+                />
+            </div>
         </div>
 
         <!-- ================== Contenido del Post ================== -->
@@ -299,6 +341,7 @@ const submitComment = async () => {
         <!-- ================== Acciones del Post ================== -->
         <div class="px-4 py-3 flex justify-between items-center border-t border-gray-100 dark:border-gray-700 gap-4 transition-colors">
             
+            <!-- Botón Me Gusta -->
             <button 
                 @click="toggleLike" 
                 :disabled="isProcessingLike"
@@ -317,17 +360,32 @@ const submitComment = async () => {
                 </span>
             </button>
 
-            
+            <!-- Botón Comentar -->
             <Link v-if="!isDetailView || showCommentAction" :href="route('posts.show', post.id)" class="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all duration-200 group text-gray-500 dark:text-gray-400">
                 <svg class="w-6 h-6 transition-transform duration-200 group-hover:scale-110 text-gray-500 dark:text-gray-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
                 <span class="font-bold text-sm text-gray-600 dark:text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">{{ post.comments_count > 0 ? post.comments_count : 'Comentar' }}</span>
             </Link>
             
-            <button @click="showShareModal = true" class="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all duration-200 group text-gray-500 dark:text-gray-400">
-                <svg class="w-6 h-6 transition-transform duration-200 group-hover:scale-110 text-gray-500 dark:text-gray-400 group-hover:text-green-500 dark:group-hover:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            <!-- Botón Guardar -->
+            <button 
+                @click="toggleSave" 
+                :disabled="isProcessingSave"
+                class="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all duration-200 group disabled:opacity-70" 
+                :class="isSaved ? 'text-yellow-500' : 'text-gray-500 dark:text-gray-400'"
+                :title="isSaved ? 'Guardado' : 'Guardar'"
+            >
+                <svg 
+                    class="w-6 h-6 transition-transform duration-200 group-hover:scale-110" 
+                    :class="isSaved ? 'fill-yellow-500' : 'fill-none'"
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                >
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                 </svg>
-                <span class="font-bold text-sm text-gray-600 dark:text-gray-400 group-hover:text-green-600 dark:group-hover:text-green-400">Compartir</span>
+                <span class="font-bold text-sm" :class="isSaved ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-600 dark:text-gray-400 group-hover:text-yellow-600 dark:group-hover:text-yellow-400'">
+                    {{ isSaved ? 'Guardado' : 'Guardar' }}
+                </span>
             </button>
         </div>
         <LikesModal v-if="showLikesModal" :postId="post.id" @close="showLikesModal = false" />

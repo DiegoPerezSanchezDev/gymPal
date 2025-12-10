@@ -15,6 +15,7 @@ class Message extends Model
     // Constantes para tipos de mensaje
     const TYPE_TEXT = 'text';
     const TYPE_SHARED_POST = 'shared_post';
+    const TYPE_SHARED_WORKOUT = 'shared_workout';
     
     public function conversation(): BelongsTo { 
         return $this->belongsTo(Conversation::class); 
@@ -33,9 +34,24 @@ class Message extends Model
         return null;
     }
     
+    // Helper para obtener la rutina compartida si existe
+    public function getSharedWorkoutAttribute()
+    {
+        if ($this->type === self::TYPE_SHARED_WORKOUT && isset($this->metadata['workout_id'])) {
+            return Workout::with('user')->find($this->metadata['workout_id']);
+        }
+        return null;
+    }
+    
     // Helper para verificar si es un post compartido
     public function isSharedPost(): bool
     {
         return $this->type === self::TYPE_SHARED_POST;
+    }
+    
+    // Helper para verificar si es una rutina compartida
+    public function isSharedWorkout(): bool
+    {
+        return $this->type === self::TYPE_SHARED_WORKOUT;
     }
 }

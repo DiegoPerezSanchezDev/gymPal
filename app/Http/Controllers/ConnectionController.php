@@ -11,122 +11,148 @@ use App\Services\NotificationService;
 class ConnectionController extends Controller
 {
     /**
-     * Almacena una nueva solicitud de conexión.
+     * Enviar solicitud de conexión
      */
     public function store(User $user)
     {
-        $sender = Auth::user();
-        $receiver = $user;
+        $currentUser = Auth::user();
+        $targetUser = $user;
 
-        if ($sender->id === $receiver->id) {
-            return response()->json(['message' => 'No puedes conectarte contigo mismo.'], 422);
+        if ($currentUser->id === $targetUser->id) {
+            return redirect()->back()->with('error', 'No puedes conectarte contigo mismo.');
         }
 
-        // Verificar si YA existe una solicitud del sender al receiver
-        $existingConnection = Connection::where('sender_id', $sender->id)
-            ->where('receiver_id', $receiver->id)
+        // Verificar si YO ya le envié una conexión
+        $myConnection = Connection::where('sender_id', $currentUser->id)
+            ->where('receiver_id', $targetUser->id)
             ->first();
 
-        if ($existingConnection) {
-            return response()->json(['message' => 'Ya has enviado una solicitud a este usuario.'], 409);
+        if ($myConnection) {
+            if ($myConnection->status === 'accepted') {
+                return redirect()->back()->with('info', 'Ya estás conectado con este usuario.');
+            }
+            if ($myConnection->status === 'pending') {
+                return redirect()->back()->with('info', 'Ya has enviado una solicitud a este usuario.');
+            }
         }
-        
+
+        // Verificar si ÉL me envió una conexión
+        $hisConnection = Connection::where('sender_id', $targetUser->id)
+            ->where('receiver_id', $currentUser->id)
+            ->first();
+
+        if ($hisConnection && $hisConnection->status === 'pending') {
+            // Si él me envió solicitud pendiente, la acepto automáticamente
+            $hisConnection->status = 'accepted';
+            $hisConnection->save();
+            
+            // Notificar al otro usuario
+            NotificationService::notifyConnectionAccepted($hisConnection->sender, $hisConnection, $currentUser);
+            
+            return redirect()->back()->with('success', '¡Conexión establecida! Ahora sois GymPals.');
+        }
+
+        // Si él me sigue (accepted) pero yo no lo sigo, crear mi conexión
+        // O si no hay ninguna conexión, crear nueva
         $connection = Connection::create([
-            'sender_id'   => $sender->id,
-            'receiver_id' => $receiver->id,
+            'sender_id'   => $currentUser->id,
+            'receiver_id' => $targetUser->id,
         ]);
 
         // Crear notificación para el receptor
-        NotificationService::notifyConnectionRequest($receiver, $connection, $sender);
+        NotificationService::notifyConnectionRequest($targetUser, $connection, $currentUser);
 
         return redirect()->back()->with('success', 'Solicitud de conexión enviada.');
     }
 
     /**
-     * Muestra la página "Mis Conexiones".
+     * Muestra la página "Mis Conexiones" con 3 tabs
      */
     public function index()
     {
-        // Simulate latency in development for testing Skeletons
-        if (app()->environment('local') && request()->has('simulate_latency')) {
-            sleep(1);
-        }
-
         $currentUser = User::find(Auth::id());
-        $currentUser->load('fitnessInterests');
-        $currentUserInterestIds = $currentUser->fitnessInterests->pluck('id');
-
-        //Obtener solicitudes PENDIENTES que he recibido
-        $pendingRequests = Connection::where('receiver_id', $currentUser->id)
-                                    ->where('status', 'pending')
-                                    ->with(['sender' => function($query) {
-                                        $query->select('id', 'name', 'username', 'profile_picture_url', 'experience_level');
-                                    }, 'sender.fitnessInterests'])
-                                    ->orderBy('created_at', 'desc')
-                                    ->get()
-                                    ->map(function ($request) use ($currentUserInterestIds) {
-                                        $commonInterests = $request->sender->fitnessInterests->whereIn('id', $currentUserInterestIds);
-                                        $request->sender->common_interests_count = $commonInterests->count();
-                                        $request->sender->common_interests_list = $commonInterests->pluck('name')->take(2);
-                                        return $request;
-                                    });
-
-        //Obtener conexiones ACEPTADAS
-        $acceptedConnections = Connection::where('status', 'accepted')
-            ->where(function ($query) use ($currentUser) {
-                $query->where('sender_id', $currentUser->id)
-                    ->orWhere('receiver_id', $currentUser->id);
-            })
-            ->with(['sender' => function($query) {
-                $query->select('id', 'name', 'username', 'profile_picture_url');
-            }, 'receiver' => function($query) {
-                $query->select('id', 'name', 'username', 'profile_picture_url');
-            }])
-            ->get();
-
-        //Transformar conexiones en una lista de amigos
-        $gymPals = $acceptedConnections->map(function ($connection) use ($currentUser) {
-            $friend = $connection->sender_id === $currentUser->id ? $connection->receiver : $connection->sender;
-            // Añadimos el ID de la conexión para poder usarlo en el botón "Desconectar"
-            $friend->connection_id = $connection->id; 
-            return $friend;
+        
+        // GymPals - Conexiones aceptadas (mutuamente conectados)
+        $gymPals = $currentUser->gym_pals->map(function ($user) {
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'username' => $user->username,
+                'profile_picture_url' => $user->profile_picture_url,
+                'experience_level' => $user->experience_level,
+            ];
         });
 
+        // Solicitudes pendientes que HE ENVIADO
+        $pendingSent = $currentUser->pending_sent->map(function ($user) {
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'username' => $user->username,
+                'profile_picture_url' => $user->profile_picture_url,
+                'experience_level' => $user->experience_level,
+            ];
+        });
+
+        // Solicitudes pendientes que HE RECIBIDO
+        $pendingReceived = $currentUser->pending_received->map(function ($user) use ($currentUser) {
+            // Añadir connection_id para poder aceptar/rechazar
+            $connection = Connection::where('sender_id', $user->id)
+                ->where('receiver_id', $currentUser->id)
+                ->where('status', 'pending')
+                ->first();
+                
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'username' => $user->username,
+                'profile_picture_url' => $user->profile_picture_url,
+                'experience_level' => $user->experience_level,
+                'connection_id' => $connection ? $connection->id : null,
+            ];
+        });
+
+        // Contadores para los tabs
+        $counts = [
+            'gymPals' => $gymPals->count(),
+            'pendingSent' => $pendingSent->count(),
+            'pendingReceived' => $pendingReceived->count(),
+        ];
+        
+        $tab = request()->input('tab', 'gymPals');
+
         return Inertia::render('Connections/Index', [
-            'pendingRequests' => $pendingRequests,
             'gymPals' => $gymPals,
+            'pendingSent' => $pendingSent,
+            'pendingReceived' => $pendingReceived,
+            'currentTab' => $tab,
+            'counts' => $counts,
         ]);
     }
 
     /**
-     * Acepta una solicitud de conexión pendiente.
+     * Aceptar una solicitud de conexión
      */
     public function accept(Connection $connection)
     {
-        // Medida de seguridad
         abort_if(Auth::id() !== $connection->receiver_id, 403, 'Acción no autorizada.');
 
-        // Actualizamos el estado a 'accepted'
         $connection->status = 'accepted';
         $connection->save();
         
-        // Cargar el sender para la notificación
         $connection->load('sender');
         $accepter = Auth::user();
         
-        // Crear notificación para el usuario que envió la solicitud
         NotificationService::notifyConnectionAccepted($connection->sender, $connection, $accepter);
 
-        // Redirigimos de vuelta a la página de conexiones
         return redirect()->back()->with('success', '¡Conexión aceptada!');
     }
 
     /**
-     * Rechaza una solicitud de conexión pendiente.
+     * Rechazar una solicitud de conexión
      */
     public function reject(Connection $connection)
     {
-        // Medida de seguridad
         abort_if(Auth::id() !== $connection->receiver_id, 403, 'Acción no autorizada.');
 
         $connection->delete();
@@ -134,6 +160,9 @@ class ConnectionController extends Controller
         return redirect()->back()->with('success', 'Solicitud rechazada.');
     }
 
+    /**
+     * Eliminar una conexión
+     */
     public function destroy(Connection $connection)
     {
         abort_if(
@@ -153,7 +182,9 @@ class ConnectionController extends Controller
     public function getGymPals()
     {
         $currentUser = Auth::user();
-        $gymPals = $currentUser->gym_pals->map(function ($gymPal) {
+        
+        // Obtener gym pals y asegurar unicidad por ID
+        $gymPals = $currentUser->gym_pals->unique('id')->values()->map(function ($gymPal) {
             return [
                 'id' => $gymPal->id,
                 'name' => $gymPal->name,
