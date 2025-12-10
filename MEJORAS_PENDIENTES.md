@@ -2,35 +2,38 @@
 
 ## 🔴 PRIORIDAD ALTA
 
-### 1. Completar Modal de Conexiones
-**Descripción**: Añadir listas completas de Seguidores y Siguiendo al modal
-**Tareas**:
-- [ ] Enviar lista de `followers` desde backend (ProfileController)
-- [ ] Enviar lista de `following` desde backend (ProfileController)
-- [ ] Actualizar modal para mostrar listas de Seguidores
-- [ ] Actualizar modal para mostrar lista de Siguiendo
-- [ ] Añadir avatares y links a perfiles en todas las listas
-**Estimación**: 30-45 minutos
-**Archivo**: `app/Http/Controllers/ProfileController.php`, `resources/js/Pages/Profile/ShowPublic.vue`
+### 1. 📊 Página de Estadísticas Diferenciadora ⭐⭐⭐⭐⭐
+**Descripción**: Crear una página dedicada de estadísticas que sea única y diferenciadora en el mercado
+**Features a implementar**:
+- [ ] 🔥 **Heatmap de Actividad** - Calendario visual estilo GitHub mostrando días activos
+- [ ] 📈 **Gráficas de Progreso** - Peso levantado, volumen total, frecuencia de entrenamientos
+- [ ] 🏆 **Sistema de Logros y Badges** - Gamificación con badges desbloqueables
+- [ ] 📊 **Comparativas con GymPals** - Ver cómo te comparas con tus amigos
+- [ ] 💪 **Récords Personales (PRs)** - Tracking de mejores marcas por ejercicio
+- [ ] 📅 **Racha de Entrenamientos** - Visualización motivacional de días consecutivos
+- [ ] 🎯 **Objetivos y Metas** - Sistema de tracking de progreso hacia objetivos
+- [ ] 📉 **Análisis de Tendencias** - Gráficas de mejora semanal/mensual
+- [ ] 🌟 **Nivel y Experiencia** - Sistema de niveles basado en actividad
+- [ ] 🔔 **Insights Personalizados** - Recomendaciones basadas en datos
+
+**Tecnologías**:
+- Chart.js (ya instalado) para gráficas
+- Componente Heatmap personalizado
+- Animaciones con Framer Motion o CSS
+
+**Estimación**: 8-12 horas
+**Prioridad**: ⭐⭐⭐⭐⭐ (MÁXIMA - Feature diferenciadora)
 
 ### 2. Duplicados en Modal de Compartir
 **Problema**: El modal de compartir posts muestra usuarios duplicados
-**Causa**: El método `getGymPalsAttribute()` en `User.php` hace merge de conexiones enviadas y recibidas sin eliminar duplicados
-**Solución**: Añadir `->unique('id')` después del merge
-**Archivo**: `app/Models/User.php` línea ~145
-```php
-return $sentAndAccepted->merge($receivedAndAccepted)->unique('id');
-```
+**Solución**: Ya tiene `->unique('id')` aplicado
+**Estado**: ✅ COMPLETADO
 
 ### 3. Estadísticas en el Perfil
-**Descripción**: Widget con métricas clave del usuario
-**Componentes**:
-- Contador de entrenamientos completados
-- Días activos este mes
-- Racha de actividad (días consecutivos)
-- Gráfica simple de progreso (Chart.js ya está instalado)
-- Total de rutinas creadas
-- Total de posts publicados
+**Estado**: ⚠️ PARCIALMENTE COMPLETADO
+- ✅ Componente ProfileStats creado
+- ✅ Backend calcula estadísticas
+- ⏸️ Pendiente: Integrar en página dedicada (ver tarea #1)
 
 ## 🟡 PRIORIDAD MEDIA
 
@@ -48,19 +51,20 @@ return $sentAndAccepted->merge($receivedAndAccepted)->unique('id');
 - [ ] Contador de visualizaciones
 - [ ] UI responsive y animada
 **Estimación**: 8-10 horas
-**Prioridad**: ⭐⭐⭐⭐⭐ (Feature muy solicitada)
+**Prioridad**: ⭐⭐⭐⭐
 
 ### 5. Sistema de Logros / Badges 🏆
-**Descripción**: Gamificación con logros desbloqueables
+**Descripción**: Gamificación con logros desbloqueables (integrado con Stats)
 **Tareas**:
 - [ ] Crear tabla `badges` (name, description, icon_path)
 - [ ] Crear tabla `user_badge` (user_id, badge_id, earned_at)
 - [ ] Definir logros iniciales (primer post, 10 entrenamientos, etc.)
 - [ ] Eventos que disparan logros
-- [ ] UI para mostrar badges en perfil
+- [ ] UI para mostrar badges en perfil y stats
 - [ ] Notificación al desbloquear logro
 - [ ] Página de logros disponibles
 **Estimación**: 6-8 horas
+**Nota**: Parte de esto se integrará en la página de estadísticas
 
 ### 6. Agrupar Notificaciones por Tipo
 **Descripción**: Organizar notificaciones en grupos expandibles
@@ -71,7 +75,6 @@ return $sentAndAccepted->merge($receivedAndAccepted)->unique('id');
 - [ ] Añadir opción de expandir/colapsar grupos
 - [ ] Añadir contador por tipo de notificación
 **Estimación**: 2-3 horas
-**Archivo**: `app/Http/Controllers/NotificationController.php`, `resources/js/Pages/Notifications/Index.vue`
 
 ### 7. Mejoras de UX
 **Áreas a mejorar**:
@@ -169,8 +172,10 @@ return $sentAndAccepted->merge($receivedAndAccepted)->unique('id');
 - ✅ Diferenciación entre GymPals, Seguidores y Siguiendo
 - ✅ Auto-aceptación de solicitudes mutuas
 - ✅ Contadores en perfil público
-- ✅ Modal clickeable para GymPals
+- ✅ Modal clickeable para GymPals, Seguidores y Siguiendo
+- ✅ Listas completas con avatares y links
 - ✅ Diseño mobile-first en página de conexiones
+- ✅ Fix de fotos de perfil en modales
 
 ### Scroll Infinito en Notificaciones
 **Estado**: ✅ COMPLETADO
@@ -178,6 +183,13 @@ return $sentAndAccepted->merge($receivedAndAccepted)->unique('id');
 - ✅ Carga automática al hacer scroll
 - ✅ Indicador de carga visual
 - ✅ Sin botones de paginación
+
+### Componente de Estadísticas
+**Estado**: ✅ COMPLETADO
+- ✅ ProfileStats component creado
+- ✅ Backend calcula estadísticas (workouts, racha, nivel, etc.)
+- ✅ Diseño responsive con gradientes
+- ✅ Dark mode completo
 
 ---
 
@@ -191,5 +203,15 @@ return $sentAndAccepted->merge($receivedAndAccepted)->unique('id');
 
 ---
 
-**Última actualización**: 2025-12-05
-**Rama actual**: `master`
+## 🎯 PRÓXIMOS PASOS RECOMENDADOS
+
+1. **Crear Página de Estadísticas** (8-12h) ← PRIORIDAD #1
+2. **Implementar Heatmap de Actividad** (parte de #1)
+3. **Sistema de Badges** (6-8h) - Integrar con stats
+4. **Historias 24h** (8-10h) - Feature muy solicitada
+
+---
+
+**Última actualización**: 2025-12-10
+**Rama actual**: `feature/quick-fixes`
+**Próxima feature**: Página de Estadísticas Diferenciadora

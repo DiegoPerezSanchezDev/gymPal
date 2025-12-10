@@ -4,10 +4,10 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import ProfileSkeleton from '@/Components/Skeletons/ProfileSkeleton.vue';
 import PostCard from '@/Components/PostCard.vue';
-import ConnectionsModal from '@/Components/ConnectionsModal.vue';
 import PostGridModal from '@/Components/PostGridModal.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import ThemeSwitcher from '@/Components/ThemeSwitcher.vue';
+import ProfileStats from '@/Components/ProfileStats.vue';
 import { Head, Link, usePage, router } from '@inertiajs/vue3';
 import { computed, ref, onMounted, watch } from 'vue';
 import { useToast } from '@/composables/useToast';
@@ -25,6 +25,9 @@ const props = defineProps({
     followers_count: Number,
     following_count: Number,
     gym_pals_list: Array,
+    followers_list: Array,
+    following_list: Array,
+    stats: Object, // Estadísticas del usuario
     posts: Array, // Posts del usuario
     workouts: {
         type: Array,
@@ -36,6 +39,7 @@ const processingConnection = ref(false);
 const isLoading = ref(true);
 const showConnectionsModal = ref(false);
 const connectionsModalType = ref('gymPals'); // 'gymPals', 'followers', 'following'
+const activeTab = ref('posts'); // 'posts', 'workouts', 'stats'
 const showPostModal = ref(false);
 const selectedPostIndex = ref(0);
 const showRejectModal = ref(false);
@@ -87,6 +91,26 @@ const openPostModal = (post) => {
         selectedPostIndex.value = index;
         showPostModal.value = true;
     }
+};
+
+// Helper para obtener URL completa de foto de perfil
+const getProfilePictureUrl = (user) => {
+    if (!user.profile_picture_url) {
+        return `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff`;
+    }
+    
+    // Si ya es una URL completa, devolverla tal cual
+    if (user.profile_picture_url.startsWith('http')) {
+        return user.profile_picture_url;
+    }
+    
+    // Si es una ruta relativa, añadir /storage/ si no lo tiene
+    let path = user.profile_picture_url.replace(/^\//, '');
+    if (!path.startsWith('storage/')) {
+        path = `storage/${path}`;
+    }
+    
+    return `${window.location.origin}/${path}`;
 };
 
 const toast = useToast();
@@ -405,7 +429,7 @@ const getExperienceLevelColor = (level) => {
                     </div>
 
                     <!-- Botones de Acción -->
-                    <div v-if="!isOwnProfile" class="flex flex-wrap justify-center gap-3 w-full">
+                    <div v-if="!isOwnProfile" class="flex flex-wrap justify-center gap-3 w-full mb-8">
                         <div v-if="connection_status === 'none'" class="flex flex-col items-center gap-2 w-full">
                             <button @click="connect" :disabled="processingConnection" class="btn-primary-gradient">
                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
@@ -441,7 +465,7 @@ const getExperienceLevelColor = (level) => {
                         </div>
                     </div>
                     
-                    <div v-else class="flex flex-col gap-3 w-full max-w-sm mx-auto">
+                    <div v-if="isOwnProfile" class="flex flex-col gap-3 w-full max-w-sm mx-auto mt-8 px-4">
                         <Link :href="route('profile.edit')" class="w-full bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-bold py-3 px-4 rounded-xl text-center shadow-sm flex items-center justify-center gap-2 hover:border-indigo-300 dark:hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all active:scale-95">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                             Editar Perfil
@@ -692,14 +716,6 @@ const getExperienceLevelColor = (level) => {
 
         </div>
 
-        <!-- Modal de Conexiones -->
-        <ConnectionsModal 
-            v-if="showConnectionsModal" 
-            :connections="connections_list || []" 
-            :isOwnProfile="isOwnProfile"
-            @close="showConnectionsModal = false" 
-        />
-
         <!-- Modal de Post Grid -->
         <PostGridModal
             v-if="showPostModal && posts && posts.length > 0"
@@ -804,7 +820,7 @@ const getExperienceLevelColor = (level) => {
                                 class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                                 @click="closeConnectionsModal"
                             >
-                                <img :src="user.profile_picture_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff`" :alt="user.name" class="w-12 h-12 rounded-full object-cover" />
+                                <img :src="getProfilePictureUrl(user)" :alt="user.name" class="w-12 h-12 rounded-full object-cover" />
                                 <div class="flex-1 min-w-0">
                                     <p class="font-bold text-gray-900 dark:text-white truncate transition-colors">{{ user.name }}</p>
                                     <p class="text-sm text-gray-500 dark:text-gray-400 truncate transition-colors">@{{ user.username }}</p>
@@ -820,14 +836,50 @@ const getExperienceLevelColor = (level) => {
                     </template>
 
                     <template v-else-if="connectionsModalType === 'followers'">
-                        <div class="text-center py-12">
-                            <p class="text-gray-500 dark:text-gray-400 transition-colors">Lista de seguidores próximamente</p>
+                        <div v-if="followers_list && followers_list.length > 0" class="space-y-2">
+                            <Link
+                                v-for="user in followers_list"
+                                :key="user.id"
+                                :href="route('profile.show.public', user.username)"
+                                class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                @click="closeConnectionsModal"
+                            >
+                                <img :src="getProfilePictureUrl(user)" :alt="user.name" class="w-12 h-12 rounded-full object-cover" />
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-bold text-gray-900 dark:text-white truncate transition-colors">{{ user.name }}</p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 truncate transition-colors">@{{ user.username }}</p>
+                                </div>
+                                <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </Link>
+                        </div>
+                        <div v-else class="text-center py-12">
+                            <p class="text-gray-500 dark:text-gray-400 transition-colors">No tienes seguidores aún</p>
                         </div>
                     </template>
 
                     <template v-else-if="connectionsModalType === 'following'">
-                        <div class="text-center py-12">
-                            <p class="text-gray-500 dark:text-gray-400 transition-colors">Lista de siguiendo próximamente</p>
+                        <div v-if="following_list && following_list.length > 0" class="space-y-2">
+                            <Link
+                                v-for="user in following_list"
+                                :key="user.id"
+                                :href="route('profile.show.public', user.username)"
+                                class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                @click="closeConnectionsModal"
+                            >
+                                <img :src="getProfilePictureUrl(user)" :alt="user.name" class="w-12 h-12 rounded-full object-cover" />
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-bold text-gray-900 dark:text-white truncate transition-colors">{{ user.name }}</p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 truncate transition-colors">@{{ user.username }}</p>
+                                </div>
+                                <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </Link>
+                        </div>
+                        <div v-else class="text-center py-12">
+                            <p class="text-gray-500 dark:text-gray-400 transition-colors">No sigues a nadie aún</p>
                         </div>
                     </template>
                 </div>

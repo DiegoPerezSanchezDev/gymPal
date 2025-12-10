@@ -196,6 +196,20 @@ class ProfileController extends Controller
         $followingCount = $followingAccepted->count();
         $followersCount = $followersAccepted->count();
 
+        // Calcular estadísticas del usuario
+        $stats = [
+            'workouts_completed' => $user->workoutLogs()->count(),
+            'active_days_month' => $user->workoutLogs()
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->distinct('created_at')
+                ->count(\DB::raw('DATE(created_at)')),
+            'streak_days' => $this->calculateStreak($user),
+            'workouts_created' => $user->workouts()->count(),
+            'posts_count' => $user->posts()->count(),
+            'level' => $this->calculateLevel($user),
+        ];
+
         // Cargar posts si es el propio perfil o si están conectados
         $posts = [];
         if (($currentUser && $currentUser->id === $user->id) || $connectionStatus === 'accepted') {
@@ -246,11 +260,16 @@ class ProfileController extends Controller
             'connection_id' => $connection ? $connection->id : null,
             'is_following_me' => $isFollowingMe, // Indica si el perfil visitado me sigue
             
-            // Nuevos contadores y listas
+            // Contadores y listas completas
             'gym_pals_count' => $gymPalsCount,
             'followers_count' => $followersCount,
             'following_count' => $followingCount,
             'gym_pals_list' => $gymPals,
+            'followers_list' => $followersAccepted->values(), // Lista completa de seguidores
+            'following_list' => $followingAccepted->values(), // Lista completa de siguiendo
+            
+            // Estadísticas del usuario
+            'stats' => $stats,
             
             'posts' => $posts, // Pasar los posts
             'workouts' => $workouts, // Pasar las rutinas
@@ -289,5 +308,54 @@ class ProfileController extends Controller
         $user->save();
 
         return back()->with('success_toast', 'Color del banner actualizado correctamente.');
+    }
+
+    /**
+     * Calcular racha de días consecutivos con entrenamientos
+     */
+    private function calculateStreak(User $user): int
+    {
+        $logs = $user->workoutLogs()
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->groupBy(function($log) {
+                return $log->created_at->format('Y-m-d');
+            });
+
+        if ($logs->isEmpty()) {
+            return 0;
+        }
+
+        $streak = 0;
+        $currentDate = now()->startOfDay();
+
+        foreach ($logs->keys() as $date) {
+            $logDate = \Carbon\Carbon::parse($date)->startOfDay();
+            
+            if ($logDate->equalTo($currentDate) || $logDate->equalTo($currentDate->copy()->subDay())) {
+                $streak++;
+                $currentDate = $logDate->copy()->subDay();
+            } else {
+                break;
+            }
+        }
+
+        return $streak;
+    }
+
+    /**
+     * Calcular nivel del usuario basado en actividad
+     */
+    private function calculateLevel(User $user): int
+    {
+        $totalWorkouts = $user->workoutLogs()->count();
+        $totalPosts = $user->posts()->count();
+        $totalConnections = $user->sentConnections()->where('status', 'accepted')->count();
+
+        // Fórmula simple: nivel = (entrenamientos + posts*2 + conexiones*3) / 10
+        $points = ($totalWorkouts + ($totalPosts * 2) + ($totalConnections * 3));
+        $level = max(1, floor($points / 10));
+
+        return min($level, 100); // Máximo nivel 100
     }
 }
