@@ -59,37 +59,51 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <!-- El `ref="rootEl"` le da un "nombre" al div para que podamos referenciarlo en el script -->
     <div ref="rootEl" class="relative">
-        <!-- Contenedor para los chips seleccionados y el botón '+' -->
-        <div class="flex flex-wrap items-center gap-2">
-            <span v-for="interest in selectedInterests" :key="interest.id" class="inline-flex items-center px-3 py-1 bg-indigo-100 text-indigo-700 text-sm font-semibold rounded-full">
+        <!-- Contenedor para los chips seleccionados -->
+        <div class="flex flex-wrap items-center gap-2 mb-3">
+            <span v-for="interest in selectedInterests" :key="interest.id" class="inline-flex items-center px-3 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-sm font-bold rounded-full border border-indigo-200 dark:border-indigo-800 transition-all animate-bounce-in">
                 {{ interest.name }}
-                <button type="button" class="ml-2 -mr-1 flex-shrink-0 h-4 w-4 rounded-full inline-flex items-center justify-center text-indigo-400 hover:text-red-500" @click="removeInterest(interest.id)">
+                <button type="button" class="ml-2 -mr-1 flex-shrink-0 h-4 w-4 rounded-full inline-flex items-center justify-center text-indigo-400 hover:text-red-500 hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-colors" @click="removeInterest(interest.id)">
                     <svg class="h-3 w-3" stroke="currentColor" fill="none" viewBox="0 0 8 8"><path stroke-linecap="round" stroke-width="1.5" d="M1 1l6 6m0-6L1 7" /></svg>
                 </button>
             </span>
-            <button type="button" @click="showDropdown = !showDropdown" class="w-8 h-8 flex items-center justify-center bg-gray-200 hover:bg-indigo-200 text-indigo-700 rounded-full transition">
-                <span class="text-xl font-bold -mt-0.5">+</span>
-            </button>
+             <span v-if="selectedInterests.length === 0" class="text-sm text-gray-400 italic">Selecciona tus deportes...</span>
         </div>
         
-        <!-- Dropdown de intereses disponibles -->
-        <div v-if="showDropdown" class="absolute z-10 bg-white border border-gray-200 rounded-md shadow-lg mt-2 w-full md:w-64">
-            <ul>
-                <li v-for="interest in paginatedInterests" :key="interest.id" class="border-b border-gray-100 last:border-b-0">
-                    <button type="button" class="w-full text-left px-4 py-2 hover:bg-indigo-50" @click="addInterest(interest)">
-                        {{ interest.name }}
-                    </button>
-                </li>
-                <li v-if="paginatedInterests.length === 0" class="px-4 py-2 text-gray-400">No hay más intereses</li>
-            </ul>
-            <!-- Controles de paginación -->
-            <div class="flex justify-between items-center px-2 py-1 border-t border-gray-100 bg-gray-50 rounded-b-md">
-                <button type="button" @click="prevPage" :disabled="page === 1" class="text-xs px-2 py-1 rounded disabled:opacity-50 hover:bg-gray-200">Anterior</button>
-                <span class="text-xs text-gray-600">Pág {{ page }} / {{ totalPages }}</span>
-                <button type="button" @click="nextPage" :disabled="page === totalPages" class="text-xs px-2 py-1 rounded disabled:opacity-50 hover:bg-gray-200">Siguiente</button>
+        <!-- Lista de intereses disponibles (Scroll Horizontal) -->
+        <div class="relative">
+            <div class="flex overflow-x-auto gap-2 pb-2 scrollbar-hide mask-fade-sides">
+                <button 
+                    v-for="interest in availableInterests" 
+                    :key="interest.id" 
+                    type="button" 
+                    class="whitespace-nowrap px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-sm font-medium border border-gray-200 dark:border-gray-700 transition-all active:scale-95 flex-shrink-0"
+                    @click="addInterest(interest)"
+                >
+                    + {{ interest.name }}
+                </button>
+                <div v-if="availableInterests.length === 0" class="text-sm text-gray-400 italic px-2">
+                    ¡Has seleccionado todos!
+                </div>
             </div>
         </div>
     </div>
 </template>
+
+<style scoped>
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.animate-bounce-in {
+    animation: bounceIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+@keyframes bounceIn {
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+</style>

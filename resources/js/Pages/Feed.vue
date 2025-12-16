@@ -5,6 +5,7 @@ import PostSkeleton from '@/Components/Skeletons/PostSkeleton.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, watch, onMounted } from 'vue';
 import DeletePostModal from '@/Components/DeletePostModal.vue';
+import StoryBar from '@/Components/StoryBar.vue';
 
 const props = defineProps({
     posts: Object,
@@ -140,6 +141,10 @@ function closeDeleteModal() {
         <div class="container mx-auto px-2 sm:px-4 py-4 md:py-8">
             <h2 v-if="title" class="text-2xl font-bold text-gray-800 dark:text-white mb-6 hidden md:block text-center transition-colors">{{ title }}</h2>
 
+            <!-- Barra de Historias (Stories) - Desactivado temporalmente
+            <StoryBar class="max-w-2xl mx-auto" />
+            -->
+
             <!-- Estado de Carga (Skeletons) -->
             <div v-if="isLoading" class="space-y-6 max-w-2xl mx-auto">
                 <PostSkeleton v-for="n in 3" :key="n" />
@@ -188,7 +193,7 @@ function closeDeleteModal() {
                 <p class="mt-2 text-gray-500 dark:text-gray-400 max-w-sm mx-auto transition-colors">
                     {{ 
                         activeTab === 'populares' ? 'Las publicaciones más destacadas de la comunidad aparecerán aquí. ¡Crea contenido genial para ser el primero!' : 
-                        (activeTab === 'cerca' ? 'Parece que no hay GymPals activos cerca de tu ubicación por ahora.' : 'Sigue a más atletas o crea tu primera publicación para empezar.') 
+                        (activeTab === 'cerca' ? 'Parece que no hay actividad cerca. ¡Busca tu gimnasio en el mapa y únete a su comunidad!' : 'Sigue a más atletas o encuentra tu gimnasio para ver actividad aquí.') 
                     }}
                 </p>
 
@@ -196,8 +201,8 @@ function closeDeleteModal() {
                     <Link :href="route('posts.create')" class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent shadow-lg text-sm font-bold rounded-xl text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transform hover:-translate-y-0.5 transition-all">
                         ✨ Crear Publicación
                     </Link>
-                    <Link v-if="activeTab === 'siguiendo'" :href="route('discover.index')" class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border-2 border-gray-100 dark:border-gray-600 shadow-sm text-sm font-bold rounded-xl text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-gray-200 dark:hover:border-gray-500 transition-all">
-                        🔍 Descubrir Personas
+                    <Link :href="route('discover.index')" class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border-2 border-gray-100 dark:border-gray-600 shadow-sm text-sm font-bold rounded-xl text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-gray-200 dark:hover:border-gray-500 transition-all">
+                        �️ Explorar Mapa y Gimnasios
                     </Link>
                 </div>
             </div>

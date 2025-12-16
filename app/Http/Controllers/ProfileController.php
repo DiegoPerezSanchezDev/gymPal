@@ -21,14 +21,60 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): \Inertia\Response
     {
+        $user = $request->user()->load(['fitnessInterests', 'gyms']);
+        
+        // Obtener gimnasios relevantes
+        $gyms = [];
+        if ($user->location_city) {
+            $city = strtolower(trim($user->location_city));
+            $gyms = \App\Models\Gym::where(function($query) use ($city) {
+                  $query->whereRaw('LOWER(address) LIKE ?', ["%{$city}%"])
+                        ->orWhereRaw('LOWER(name) LIKE ?', ["%{$city}%"]);
+              })->select('id', 'name', 'address', 'latitude', 'longitude')->limit(50)->get();
+              
+            // Fallback: Si no hay gimnasios por ciudad, buscar por proximidad
+            if ($gyms->isEmpty() && $user->latitude && $user->longitude) {
+                $lat = $user->latitude;
+                $lon = $user->longitude;
+                
+                $gyms = \App\Models\Gym::fromRaw("(
+                    SELECT *, ( 6371 * acos( cos( radians({$lat}) ) *
+                        cos( radians( latitude ) )
+                        * cos( radians( longitude ) - radians({$lon})
+                        ) + sin( radians({$lat}) ) *
+                        sin( radians( latitude ) ) )
+                    ) AS distance
+                    FROM gyms
+                    WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+                ) AS gyms_with_distance")
+                ->where('distance', '<', 50)
+                ->orderBy('distance')
+                ->select('id', 'name', 'address', 'latitude', 'longitude')
+                ->limit(50)
+                ->get();
+            }
+        }
+
+        // Asegurar que los gimnasios actuales del usuario estén en la lista de opciones
+        if ($user->gyms->isNotEmpty()) {
+            $currentGyms = $user->gyms->map(function($g) {
+                return $g->makeHidden('pivot'); 
+            });
+            
+            // Unir y quitar duplicados por ID
+            $gyms = collect($gyms)->merge($currentGyms)->unique('id')->values();
+        }
+        
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
             'title' => 'Editar Perfil',
             'isLoginPage' => false, // Estas props pueden ser útiles para el layout
             'isRegisterPage' => false,
-            'user' => $request->user()->load('fitnessInterests'), 
+            'user' => $user, 
             'interests' => \App\Models\FitnessInterest::all(['id', 'name']),
+            'geoapify_key' => config('services.geoapify.key'),
+            'gyms' => $gyms,
         ]);
     }
 
@@ -93,6 +139,11 @@ class ProfileController extends Controller
 
         // Guardar intereses deportivos (relación muchos a muchos)
         $user->fitnessInterests()->sync($data['interests'] ?? []);
+
+        // Guardar gimnasios (relación muchos a muchos)
+        if (isset($data['gym_ids'])) {
+            $user->gyms()->sync($data['gym_ids']);
+        }
 
         return Redirect::route('profile.show.public', ['user' => $user->username])
             ->with('success_toast', 'Perfil actualizado correctamente.');
@@ -164,9 +215,11 @@ class ProfileController extends Controller
     }
         
 
-        $user->load('fitnessInterests');
+        $user->load(['fitnessInterests', 'gyms']);
 
         $user->loadCount('posts');
+        
+        // Calcular GymPals, Seguidores y Siguiendo
         
         // Calcular GymPals, Seguidores y Siguiendo
         $following = $user->pending_sent; // Usuarios que este perfil sigue (pending)
@@ -251,6 +304,12 @@ class ProfileController extends Controller
             $workouts = $query->latest()->get();
         }
 
+        // Verificar si el usuario actual es GymPal del perfil visitado
+        $areGymPals = false;
+        if ($currentUser && $currentUser->id !== $user->id) {
+            $areGymPals = in_array($currentUser->id, $gymPalsIds);
+        }
+
         return Inertia::render('Profile/ShowPublic', [
             'profileUser' => $user,
             'title' => 'Perfil de ' . $user->name,
@@ -259,6 +318,7 @@ class ProfileController extends Controller
             'connection_status' => $connectionStatus,
             'connection_id' => $connection ? $connection->id : null,
             'is_following_me' => $isFollowingMe, // Indica si el perfil visitado me sigue
+            'are_gym_pals' => $areGymPals, // Indica si somos GymPals
             
             // Contadores y listas completas
             'gym_pals_count' => $gymPalsCount,

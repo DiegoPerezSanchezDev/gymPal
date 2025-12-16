@@ -18,7 +18,13 @@ class Post extends Model
         'image_path',
         'likes_count',
         'workout_log_id',
-        'workout_id'
+        'workout_id',
+        'type',      // Nuevo
+        'metadata'   // Nuevo
+    ];
+
+    protected $casts = [
+        'metadata' => 'array', // Convertir JSON a Array automáticamente
     ];
 
     protected $appends = ['is_liked'];

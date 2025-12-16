@@ -11,6 +11,7 @@ use App\Http\Controllers\PostLikeController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\StatsController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ConnectionController;
@@ -22,6 +23,11 @@ Route::get('/', function () {
         'canRegister' => Route::has('register'),
     ]);
 });
+
+// ONBOARDING
+Route::get('/onboarding', [\App\Http\Controllers\OnboardingController::class, 'index'])->name('onboarding.index');
+Route::post('/onboarding', [\App\Http\Controllers\OnboardingController::class, 'store'])->name('onboarding.store');
+Route::post('/onboarding/skip', [\App\Http\Controllers\OnboardingController::class, 'skip'])->name('onboarding.skip');
 
 // MODIFICAMOS ESTA SECCIÓN PARA EL FEED
 Route::get('/feed', [FeedController::class, 'index'])
@@ -62,6 +68,7 @@ Route::middleware('auth')->group(function () {
 
     //DESCUBRIR usuarios gymPals
     Route::get('/discover', [DiscoverController::class, 'index'])->name('discover.index');
+    Route::get('/discover/gyms', [DiscoverController::class, 'nearbyGyms'])->name('discover.gyms');
 
     // Ruta para ver perfiles públicos
     Route::get('/u/{user:username}', [ProfileController::class, 'showPublic'])->name('profile.show.public');
@@ -71,6 +78,11 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
     Route::get('/chat/{user:username}', [ChatController::class, 'show'])->name('chat.show');
+
+    // GYMS
+    Route::post('/gyms/{gym}/join', [\App\Http\Controllers\GymController::class, 'join'])->name('gyms.join');
+    Route::post('/gyms/{gym}/leave', [\App\Http\Controllers\GymController::class, 'leave'])->name('gyms.leave');
+    Route::get('/gyms/{gym}', [\App\Http\Controllers\GymController::class, 'show'])->name('gyms.show');
 
     // RUTA PARA GUARDAR MENSAJES EN UNA CONVERSACIÓN
     Route::post('/chat/conversations/{conversation}/messages', [ChatController::class, 'storeMessage'])
@@ -169,6 +181,20 @@ Route::middleware('auth')->group(function () {
     // Progreso
     Route::get('/progress', [\App\Http\Controllers\ProgressController::class, 'index'])->name('progress.index');
 
+    // Estadísticas
+    Route::get('/stats', [StatsController::class, 'index'])->name('stats.index');
+    Route::post('/goals', [StatsController::class, 'storeGoal'])->name('goals.store');
+    Route::delete('/goals/{goal}', [StatsController::class, 'destroyGoal'])->name('goals.destroy');
+    Route::get('/stats/{user:username}', [StatsController::class, 'show'])->name('stats.show');
+    Route::post('/stats/share-achievement', [StatsController::class, 'shareAchievement'])->name('stats.share');
+    Route::get('/api/stats/day-details', [StatsController::class, 'dayDetails'])->name('stats.day_details');
+
+    // Historias (Stories)
+    Route::get('/api/stories', [\App\Http\Controllers\StoryController::class, 'index'])->name('stories.index');
+    Route::get('/api/stories/recent-activity', [\App\Http\Controllers\StoryController::class, 'checkRecentActivity'])->name('stories.check-activity');
+    Route::post('/stories', [\App\Http\Controllers\StoryController::class, 'store'])->name('stories.store');
+    Route::post('/stories/{story}/view', [\App\Http\Controllers\StoryController::class, 'markAsViewed'])->name('stories.view');
+    Route::delete('/stories/{story}', [\App\Http\Controllers\StoryController::class, 'destroy'])->name('stories.destroy');
 });
 
 require __DIR__.'/auth.php';

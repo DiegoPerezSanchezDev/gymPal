@@ -55,16 +55,11 @@ class HandleInertiaRequests extends Middleware
                 'error_toast' => fn () => $request->session()->get('error_toast'),
                 'info_toast' => fn () => $request->session()->get('info_toast'),
                 'warning_toast' => fn () => $request->session()->get('warning_toast'),
+                'new_badges' => fn () => $request->session()->get('new_badges'), // <-- AÑADIDO
             ],
             'geoapify_key' => config('services.geoapify.key'),
-            'pendingRequestsCount' => function () use ($user) {
-                if ($user) {
-                    return Connection::where('receiver_id', $user->id)
-                                    ->where('status', 'pending')
-                                    ->count();
-                }
-                return 0;
-            },
+            'pendingRequestsCount' => 0, // Sistema de followers activo, sin solicitudes pendientes
+
         ]);
     }
 }

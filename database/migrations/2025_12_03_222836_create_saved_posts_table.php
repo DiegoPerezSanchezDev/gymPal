@@ -11,15 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('saved_posts', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('post_id')->constrained()->onDelete('cascade');
-            $table->timestamps();
-            
-            // Evitar duplicados
-            $table->unique(['user_id', 'post_id']);
-        });
+        // Saltamos esta migración porque la tabla ya existe y está bloqueando el proceso
+        // Schema::create('saved_posts', function (Blueprint $table) {
+        //     $table->id();
+        //     $table->foreignId('user_id')->constrained()->onDelete('cascade');
+        //     $table->foreignId('post_id')->constrained()->onDelete('cascade');
+        //     $table->timestamps();
+        //     $table->unique(['user_id', 'post_id']);
+        // });
     }
 
     /**

@@ -207,16 +207,16 @@ function rejectRequest(connectionId) {
                                     :disabled="processingId === user.connection_id"
                                     class="btn-primary-gradient flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    <span class="hidden sm:inline">✓ Aceptar</span>
-                                    <span class="sm:hidden">✓ Aceptar</span>
+                                    <span class="hidden sm:inline">Aceptar</span>
+                                    <span class="sm:hidden">Aceptar</span>
                                 </button>
                                 <button
                                     @click.stop="rejectRequest(user.connection_id)"
                                     :disabled="processingId === user.connection_id"
                                     class="btn-danger-gradient flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    <span class="hidden sm:inline">✗ Rechazar</span>
-                                    <span class="sm:hidden">✗ Rechazar</span>
+                                    <span class="hidden sm:inline">Rechazar</span>
+                                    <span class="sm:hidden">Rechazar</span>
                                 </button>
                             </div>
                         </div>

@@ -332,7 +332,7 @@ const submit = () => {
                                                 </div>
                                                 <select
                                                     v-model="set.type"
-                                                    class="w-full px-2 py-1 text-sm rounded border border-gray-300 dark:border-gray-600 focus:border-indigo-500 dark:focus:border-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
+                                                    class="w-full px-2 py-1.5 text-xs rounded border border-gray-300 dark:border-gray-600 focus:border-indigo-500 dark:focus:border-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
                                                 >
                                                     <option v-for="type in setTypes" :key="type.value" :value="type.value">
                                                         {{ type.label }}

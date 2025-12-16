@@ -67,6 +67,10 @@ class ProfileUpdateRequest extends FormRequest
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
 
+            // Valida el gimnasio seleccionado
+            'gym_ids' => ['nullable', 'array'],
+            'gym_ids.*' => ['integer', 'exists:gyms,id'],
+
             // --- Foto de Perfil ---
             'profile_picture' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif', 'max:5120'], // 5MB máx
             'remove_profile_picture' => ['nullable', 'boolean'],

@@ -52,51 +52,45 @@ const showMobileMenu = ref(false);
 
         <nav v-if="authUser" class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 sticky top-0 z-40 transition-colors duration-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex">
-                    <div class="shrink-0 flex items-center">
-                        <Link :href="route('feed.index')">
-                            <ApplicationLogo class="block h-9 w-auto fill-current text-gray-800 dark:text-white transition-colors" />
+                <div class="flex h-16 items-center justify-between">
+                    <!-- Left: Brand Name & Nav -->
+                    <div class="flex items-center gap-8">
+                        <Link :href="route('feed.index')" class="text-2xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 hover:opacity-80 transition-opacity">
+                            GymPal
                         </Link>
+                        
+                        <!-- Desktop Navigation Links -->
+                        <div class="hidden sm:flex space-x-8">
+                             <Link 
+                                :href="route('feed.index')" 
+                                class="nav-link" 
+                                :class="{ 'active': route().current('feed.index') }"
+                                prefetch
+                            >
+                                Feed
+                            </Link>
+                            <Link 
+                                :href="route('discover.index')" 
+                                class="nav-link" 
+                                :class="{ 'active': route().current('discover.index') }"
+                                prefetch
+                            >
+                                Descubrir
+                            </Link>
+                             <Link 
+                                :href="route('connections.index')" 
+                                class="nav-link relative" 
+                                :class="{ 'active': route().current('connections.index') }"
+                                prefetch
+                            >
+                                <span>Conexiones</span>
+                                <span v-if="pendingRequestsCount > 0" class="notification-dot-desktop"></span>
+                            </Link>
+                        </div>
                     </div>
-                    <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
-                        <Link 
-                            :href="route('feed.index')" 
-                            class="nav-link" 
-                            :class="{ 'active': route().current('feed.index') }"
-                            prefetch
-                        >
-                            Feed
-                        </Link>
-                        <Link 
-                            :href="route('discover.index')" 
-                            class="nav-link" 
-                            :class="{ 'active': route().current('discover.index') }"
-                            prefetch
-                        >
-                            Descubrir
-                        </Link>
-                        <Link 
-                            :href="route('connections.index')" 
-                            class="nav-link relative" 
-                            :class="{ 'active': route().current('connections.index') }"
-                            prefetch
-                        >
-                            <span>Conexiones</span>
-                            <span v-if="pendingRequestsCount > 0" class="notification-dot-desktop"></span>
-                        </Link>
-                        <Link 
-                            :href="route('workouts.saved')" 
-                            class="nav-link" 
-                            :class="{ 'active': route().current('workouts.saved') }"
-                            prefetch
-                        >
-                            Guardados
-                        </Link>
-                    </div>
-                </div>
 
-                <div class="flex items-center">
+                    <!-- Right: Menu & Actions -->
+                    <div class="flex flex-1 items-center justify-end">
                     <div class="hidden sm:flex sm:items-center sm:ml-6 space-x-4">
                         <!-- Chat -->
                         <Link :href="route('chat.index')" title="Chat" class="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-2 rounded-full transition-colors">
@@ -121,8 +115,9 @@ const showMobileMenu = ref(false);
                             <template #content>
                                 <DropdownLink :href="route('profile.show.public', { user: authUser.username })">Mi Perfil</DropdownLink>
                                 <DropdownLink :href="route('profile.edit')">Editar Perfil</DropdownLink>
+                                <DropdownLink :href="route('stats.index')">📊 Estadísticas</DropdownLink>
                                 <DropdownLink :href="route('workouts.my-workouts')">📚 Mis Rutinas</DropdownLink>
-                                <DropdownLink :href="route('workout-logs.index')">📊 Historial de Entrenamientos</DropdownLink>
+                                <DropdownLink :href="route('workout-logs.index')">📋 Historial de Entrenamientos</DropdownLink>
                                 <DropdownLink :href="route('logout')" method="post" as="button">Cerrar Sesión</DropdownLink>
                             </template>
                         </Dropdown>

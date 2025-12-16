@@ -6,8 +6,10 @@ import ProfileSkeleton from '@/Components/Skeletons/ProfileSkeleton.vue';
 import PostCard from '@/Components/PostCard.vue';
 import PostGridModal from '@/Components/PostGridModal.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
+import Modal from '@/Components/Modal.vue';
 import ThemeSwitcher from '@/Components/ThemeSwitcher.vue';
 import ProfileStats from '@/Components/ProfileStats.vue';
+import GymDetailsModal from '@/Components/GymDetailsModal.vue';
 import { Head, Link, usePage, router } from '@inertiajs/vue3';
 import { computed, ref, onMounted, watch } from 'vue';
 import { useToast } from '@/composables/useToast';
@@ -21,6 +23,7 @@ const props = defineProps({
     connection_status: String,
     connection_id: Number,
     is_following_me: Boolean, // Indica si el perfil visitado me sigue
+    are_gym_pals: Boolean, // Indica si somos GymPals (conexión mutua aceptada)
     gym_pals_count: Number,
     followers_count: Number,
     following_count: Number,
@@ -45,6 +48,31 @@ const selectedPostIndex = ref(0);
 const showRejectModal = ref(false);
 const showDisconnectModal = ref(false);
 const showColorModal = ref(false); // Estado para el modal de colores
+const showGymModal = ref(false);
+const selectedGymId = ref(null);
+
+// Open Gym Modal
+const openGymModal = (gymId) => {
+    selectedGymId.value = gymId;
+    showGymModal.value = true;
+    showAllGymsModal.value = false; // Cerrar lista si estaba abierta
+};
+
+const showLogoutModal = ref(false);
+const confirmLogout = () => {
+    router.post(route('logout'));
+};
+
+// Logic for limiting gyms (max 3)
+const showAllGymsModal = ref(false);
+const displayedGyms = computed(() => {
+    if (!props.profileUser.gyms) return [];
+    return props.profileUser.gyms.slice(0, 3);
+});
+const remainingGymsCount = computed(() => {
+    if (!props.profileUser.gyms) return 0;
+    return Math.max(0, props.profileUser.gyms.length - 3);
+});
 
 // Paleta de colores predefinidos
 const bannerColors = [
@@ -405,6 +433,30 @@ const getExperienceLevelColor = (level) => {
                         </button>
                     </div>
 
+                    <!-- Sección de Gimnasios (Nuevo) -->
+                    <div v-if="profileUser.gyms && profileUser.gyms.length > 0" class="w-full mb-8 text-center animate-fade-in-up">
+                        <div class="inline-block bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-600 transition-colors">
+                            <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 transition-colors">Entrena en</h3>
+                            <div class="flex flex-wrap justify-center gap-4">
+                                <!-- Gyms Visibles (Max 4) -->
+                                <div v-for="gym in displayedGyms" :key="gym.id" class="flex flex-col items-center group cursor-pointer" @click="openGymModal(gym.id)">
+                                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/30 dark:to-indigo-800/30 flex items-center justify-center text-2xl shadow-sm group-hover:scale-110 transition-transform mb-1 border border-indigo-200 dark:border-indigo-700 group-hover:border-indigo-500">
+                                        {{ gym.type === 'pool' ? '🏊' : (gym.type === 'yoga' ? '🧘' : (gym.type === 'crossfit' ? '🔥' : (gym.type === 'park' ? '🤸' : '🏋️'))) }}
+                                    </div>
+                                    <span class="text-[10px] font-bold text-gray-700 dark:text-gray-300 max-w-[80px] truncate">{{ gym.name }}</span>
+                                </div>
+
+                                <!-- Botón Ver Más -->
+                                <div v-if="remainingGymsCount > 0" class="flex flex-col items-center group cursor-pointer" @click="showAllGymsModal = true">
+                                    <div class="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-500 dark:text-gray-400 shadow-sm group-hover:bg-gray-200 dark:group-hover:bg-gray-600 transition-colors mb-1 border border-gray-200 dark:border-gray-600">
+                                        +{{ remainingGymsCount }}
+                                    </div>
+                                    <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400">Ver más</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Secciones de Información -->
                     <div class="w-full space-y-6 mb-8">
                         <!-- Intereses -->
@@ -465,15 +517,26 @@ const getExperienceLevelColor = (level) => {
                         </div>
                     </div>
                     
-                    <div v-if="isOwnProfile" class="flex flex-col gap-3 w-full max-w-sm mx-auto mt-8 px-4">
+                    <!-- Botón de Estadísticas (Solo para GymPals o perfil propio) -->
+                    <div v-if="isOwnProfile || (are_gym_pals && connection_status === 'accepted')" class="w-full max-w-sm mx-auto px-4 mb-6">
+                        <Link 
+                            :href="isOwnProfile ? route('stats.index') : route('stats.show', profileUser.username)" 
+                            class="w-full bg-gradient-to-r from-yellow-500 to-orange-600 text-white font-bold py-3 px-4 rounded-xl text-center shadow-lg flex items-center justify-center gap-2 hover:from-yellow-600 hover:to-orange-700 transition-all active:scale-95"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                            {{ isOwnProfile ? 'Ver mis Estadísticas' : `Ver Estadísticas de ${profileUser.name.split(' ')[0]}` }}
+                        </Link>
+                    </div>
+                    
+                    <div v-if="isOwnProfile" class="flex flex-col gap-3 w-full max-w-sm mx-auto px-4">
                         <Link :href="route('profile.edit')" class="w-full bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-bold py-3 px-4 rounded-xl text-center shadow-sm flex items-center justify-center gap-2 hover:border-indigo-300 dark:hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all active:scale-95">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                             Editar Perfil
                         </Link>
-                        <Link href="/logout" method="post" as="button" class="w-full bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-bold py-3 px-4 rounded-xl text-center shadow-sm flex items-center justify-center gap-2 hover:bg-red-100 dark:hover:bg-red-900/40 transition active:scale-95">
+                        <button @click="showLogoutModal = true" class="w-full bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-bold py-3 px-4 rounded-xl text-center shadow-sm flex items-center justify-center gap-2 hover:bg-red-100 dark:hover:bg-red-900/40 transition active:scale-95 border border-transparent hover:border-red-200 dark:hover:border-red-800">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                             Cerrar Sesión
-                        </Link>
+                        </button>
                     </div>
 
                     <div v-if="profileUser.created_at" class="mt-8 text-xs text-gray-400">
@@ -885,6 +948,99 @@ const getExperienceLevelColor = (level) => {
                 </div>
             </div>
         </div>
+
+        <!-- Modal para ver todos los gimnasios -->
+        <Modal :show="showAllGymsModal" @close="showAllGymsModal = false">
+            <div class="p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <span class="text-2xl">🏋️</span>
+                        Centros de Entrenamiento
+                    </h3>
+                    <button @click="showAllGymsModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 gap-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                    <div v-for="gym in profileUser.gyms" :key="gym.id" 
+                         class="flex items-center gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-700/30 hover:bg-white dark:hover:bg-gray-700 border border-transparent hover:border-indigo-200 dark:hover:border-indigo-500 hover:shadow-md transition-all cursor-pointer group"
+                         @click="openGymModal(gym.id)">
+                        
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-100 to-white dark:from-indigo-900/50 dark:to-gray-800 flex items-center justify-center text-2xl shadow-sm border border-indigo-50 dark:border-indigo-800 group-hover:scale-110 transition-transform">
+                            {{ gym.type === 'pool' ? '🏊' : (gym.type === 'yoga' ? '🧘' : (gym.type === 'crossfit' ? '🔥' : (gym.type === 'park' ? '🤸' : '🏋️'))) }}
+                        </div>
+
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-bold text-gray-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{{ gym.name }}</h4>
+                            <div class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                <span class="truncate">{{ gym.address || 'Sin dirección' }}</span>
+                            </div>
+                        </div>
+
+                        <svg class="w-5 h-5 text-gray-300 dark:text-gray-600 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </Modal>
+
+        <GymDetailsModal 
+            :show="showGymModal" 
+            :gym-id="selectedGymId" 
+            @close="showGymModal = false" 
+        />
+
+        <!-- Logout Confirmation Modal -->
+        <ConfirmModal
+            :show="showLogoutModal"
+            type="danger"
+            title="¿Cerrar Sesión?"
+            message="¿Estás seguro de que quieres salir de GymPal?"
+            confirm-text="Cerrar Sesión"
+            cancel-text="Cancelar"
+            @confirm="confirmLogout"
+            @cancel="showLogoutModal = false"
+        />
+        <!-- Modal para ver todos los gimnasios -->
+        <Modal :show="showAllGymsModal" @close="showAllGymsModal = false">
+            <div class="p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <span class="text-2xl">🏋️</span>
+                        Centros de Entrenamiento
+                    </h3>
+                    <button @click="showAllGymsModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 gap-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                    <div v-for="gym in profileUser.gyms" :key="gym.id" 
+                         class="flex items-center gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-700/30 hover:bg-white dark:hover:bg-gray-700 border border-transparent hover:border-indigo-200 dark:hover:border-indigo-500 hover:shadow-md transition-all cursor-pointer group"
+                         @click="openGymModal(gym.id)">
+                        
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-100 to-white dark:from-indigo-900/50 dark:to-gray-800 flex items-center justify-center text-2xl shadow-sm border border-indigo-50 dark:border-indigo-800 group-hover:scale-110 transition-transform">
+                            {{ gym.type === 'pool' ? '🏊' : (gym.type === 'yoga' ? '🧘' : (gym.type === 'crossfit' ? '🔥' : (gym.type === 'park' ? '🤸' : '🏋️'))) }}
+                        </div>
+
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-bold text-gray-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{{ gym.name }}</h4>
+                            <div class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                <span class="truncate">{{ gym.address || 'Sin dirección' }}</span>
+                            </div>
+                        </div>
+
+                        <svg class="w-5 h-5 text-gray-300 dark:text-gray-600 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </Modal>
 
     </AuthenticatedLayout>
 </template>

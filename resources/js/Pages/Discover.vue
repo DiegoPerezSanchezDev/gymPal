@@ -1,11 +1,16 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import UserCardSkeleton from '@/Components/Skeletons/UserCardSkeleton.vue';
+import GymDetailsModal from '@/Components/GymDetailsModal.vue';
+import CityAutocomplete from '@/Components/CityAutocomplete.vue';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { Head, useForm, router, Link } from '@inertiajs/vue3';
 import { ref, watch, onMounted, computed } from 'vue';
 import SelectInput from '@/Components/SelectInput.vue';
 import MultiSelectInput from '@/Components/MultiSelectInput.vue';
 import _ from 'lodash';
+import "leaflet/dist/leaflet.css";
+import { LMap, LTileLayer, LMarker, LPopup, LIcon, LCircle } from "@vue-leaflet/vue-leaflet";
 
 const props = defineProps({
     title: String,
@@ -14,32 +19,17 @@ const props = defineProps({
     user: Object, // Usuario actual
     interests: Array,
     searchedInterestId: [String, Number],
+    initialGyms: Array,
+    gymsInCity: Array,
+    geoapify_key: String,
 });
 
-const experienceOptions = [
-    { value: '', label: '✨ Todos los niveles' },
-    { value: 'Principiante', label: '🌱 Principiante' },
-    { value: 'Intermedio', label: '⚡ Intermedio' },
-    { value: 'Avanzado', label: '🔥 Avanzado' }
-];
-
-const interestOptions = computed(() => {
-    const opts = props.interests.map(i => ({ value: i.id, label: i.name }));
-    return [{ value: '', label: 'Todos los deportes' }, ...opts];
-});
-
-// Opciones para MultiSelect de deportes
-const interestsMultiOptions = computed(() => {
-    return props.interests.map(i => ({ value: i.id, label: i.name }));
-});
-
-// Opciones para MultiSelect de disponibilidad
-const availabilityOptions = [
-    { value: 'Mañana', label: 'Mañana' },
-    { value: 'Tarde', label: 'Tarde' },
-    { value: 'Noche', label: 'Noche' },
-    { value: 'Finde semana', label: 'Finde semana' }
-];
+// State
+const viewMode = ref('grid');
+const zoom = ref(14);
+const showFilters = ref(false);
+const isLoading = ref(true);
+const showLocationPermissionModal = ref(false);
 
 const form = useForm({
     search: props.filters.search || '',
@@ -52,32 +42,165 @@ const form = useForm({
     filtro_rapido: props.filters.filtro_rapido || '',
     lat: props.filters.lat || null,
     lon: props.filters.lon || null,
+    gym_id: props.filters.gym_id || '',
 });
 
-const showFilters = ref(false);
-const isLoading = ref(true);
+// Options
+const experienceOptions = [
+    { value: '', label: '✨ Todos los niveles' },
+    { value: 'Principiante', label: '🌱 Principiante' },
+    { value: 'Intermedio', label: '⚡ Intermedio' },
+    { value: 'Avanzado', label: '🔥 Avanzado' }
+];
 
-onMounted(() => {
-    // Delay de 1.5 segundos para dar tiempo a que se oculten datos anteriores
-    if (props.users) {
-        setTimeout(() => isLoading.value = false, 1500);
+const interestOptions = computed(() => {
+    const opts = props.interests.map(i => ({ value: i.id, label: i.name }));
+    return [{ value: '', label: 'Todos los deportes' }, ...opts];
+});
+
+const interestsMultiOptions = computed(() => {
+    return props.interests.map(i => ({ value: i.id, label: i.name }));
+});
+
+const gymsInCityOptions = computed(() => {
+    if (!props.gymsInCity || props.gymsInCity.length === 0) return [];
+    return [
+        { value: '', label: 'Cualquier gimnasio' }, 
+        ...props.gymsInCity.map(g => ({ 
+            value: g.id, 
+            label: g.address ? `${g.name} - ${g.address}` : g.name 
+        }))
+    ];
+});
+
+const availabilityOptions = [
+    { value: 'Mañana', label: 'Mañana' },
+    { value: 'Tarde', label: 'Tarde' },
+    { value: 'Noche', label: 'Noche' },
+    { value: 'Finde semana', label: 'Finde semana' }
+];
+
+// Map Logic & Helpers
+const usersWithLocation = computed(() => {
+    if (!props.users?.data) return [];
+    return props.users.data.filter(u => u.latitude && u.longitude);
+});
+
+const mapCenter = computed(() => {
+    if (form.lat && form.lon) return [form.lat, form.lon];
+    if (usersWithLocation.value.length > 0) {
+        return [parseFloat(usersWithLocation.value[0].latitude), parseFloat(usersWithLocation.value[0].longitude)];
     }
+    return [40.4168, -3.7038]; // Madrid por defecto
 });
 
+const getAffinityColorClass = (score) => {
+    if (score >= 80) return 'border-emerald-500 ring-2 ring-emerald-100';
+    if (score >= 50) return 'border-yellow-400 ring-2 ring-yellow-100';
+    return 'border-indigo-500 ring-2 ring-indigo-50';
+};
 
+// Gyms Logic (Local DB)
+const gyms = ref([]);
+
+// Initialize with props if available
+if (props.initialGyms && props.initialGyms.length > 0) {
+    gyms.value = props.initialGyms.map(mapGymBackendToFrontend);
+}
+
+function mapGymBackendToFrontend(gym) {
+    let icon = '🏋️'; 
+    let colorClass = 'border-indigo-500';
+    let typeLabel = 'Gimnasio';
+
+    switch(gym.type) {
+        case 'yoga': icon = '🧘'; colorClass = 'border-pink-500'; typeLabel = 'Yoga/Pilates'; break;
+        case 'crossfit': icon = '🔥'; colorClass = 'border-orange-500'; typeLabel = 'CrossFit'; break;
+        case 'park': icon = '🤸'; colorClass = 'border-emerald-500'; typeLabel = 'Calistenia/Parque'; break;
+        case 'pool': icon = '🏊'; colorClass = 'border-cyan-500'; typeLabel = 'Piscina'; break;
+        default: icon = '🏋️'; colorClass = 'border-indigo-500'; typeLabel = 'Gimnasio';
+    }
+
+    return {
+        id: gym.id,
+        lat: gym.latitude,
+        lon: gym.longitude,
+        name: gym.name,
+        type: typeLabel,
+        icon,
+        colorClass,
+        address: gym.address,
+        website: gym.website,
+        hours: gym.meta_data?.hours,
+        users_count: gym.users_count
+    };
+}
+
+// Modal Logic
+const selectedGymId = ref(null);
+const showGymModal = ref(false);
+
+const openGymModal = (gymId) => {
+    selectedGymId.value = gymId;
+    showGymModal.value = true;
+};
+
+const updateGymData = (updatedGym) => {
+    const index = gyms.value.findIndex(g => g.id === updatedGym.id);
+    if (index !== -1) {
+        gyms.value[index].users_count = updatedGym.users_count;
+        // Optional: Could toggle visual "is member" state on marker if we tracked it locally
+    }
+};
+
+const fetchGyms = async (bounds) => {
+    if (!bounds) return;
+
+    try {
+        const south = bounds.getSouth();
+        const west = bounds.getWest();
+        const north = bounds.getNorth();
+        const east = bounds.getEast();
+        
+        const response = await axios.get(route('discover.gyms'), {
+            params: { south, west, north, east }
+        });
+
+        gyms.value = response.data.map(mapGymBackendToFrontend);
+    } catch (e) {
+        console.warn("Fallo carga gyms backend", e);
+    }
+};
+
+// Evento al mover el mapa
+const onMapReady = (mapObject) => {
+    // Carga inicial basada en la vista
+    fetchGyms(mapObject.getBounds());
+};
+
+const onMapMoveEnd = (e) => {
+    // Recargar al terminar de mover
+    fetchGyms(e.target.getBounds());
+};
+
+// Lifecycle
+onMounted(() => {
+    if (props.users) setTimeout(() => isLoading.value = false, 1500);
+}); 
+
+// (Eliminamos watcher de lat/lon antiguo porque ahora va por evento de mapa)
+
+// Actions
 const submit = _.debounce(() => {
     form.get(route('discover.index'), {
         preserveState: true,
         preserveScroll: true,
         replace: true,
-        onFinish: () => {
-            // Delay para mostrar skeleton y dar tiempo a transición
-            setTimeout(() => isLoading.value = false, 800);
-        },
+        onFinish: () => setTimeout(() => isLoading.value = false, 800),
     });
 }, 500);
 
-// Watches que activan loading inmediatamente
+// Watches
 watch(() => form.search, () => { isLoading.value = true; submit(); });
 watch(() => form.city, () => { isLoading.value = true; submit(); });
 watch(() => form.interests, () => { isLoading.value = true; submit(); });
@@ -85,65 +208,51 @@ watch(() => form.availability_general, () => { isLoading.value = true; submit();
 watch(() => form.experience_level, () => { isLoading.value = true; submit(); });
 watch(() => form.interest_id, () => { isLoading.value = true; submit(); });
 watch(() => form.looking_for_interest_id, () => { isLoading.value = true; submit(); });
+watch(() => form.gym_id, () => { isLoading.value = true; submit(); });
 
 const aplicarFiltroRapido = (tipo) => {
     form.filtro_rapido = form.filtro_rapido === tipo ? '' : tipo; // Toggle
     
-    // Limpiar otros filtros si se activa uno rápido (opcional, depende de la UX deseada)
+    // Limpiar otros filtros si se activa uno rápido
     if (form.filtro_rapido) {
-        form.search = '';
-        form.city = '';
-        form.interests = [];
-        form.availability_general = [];
-        form.experience_level = '';
-        form.looking_for_interest_id = '';
-        // No reseteamos lat/lon si es 'cerca de mi'
-        if (tipo !== 'cerca_de_mi') {
-            form.lat = null;
-            form.lon = null;
-        }
-        // Si es 'buscando_companero', usar el deporte del usuario actual por defecto
+        form.search = ''; form.city = ''; form.interests = []; form.availability_general = []; form.experience_level = ''; form.looking_for_interest_id = '';
+        if (tipo !== 'cerca_de_mi') { form.lat = null; form.lon = null; }
         if (tipo === 'buscando_companero' && props.user?.looking_for_interest_id) {
             form.interest_id = props.user.looking_for_interest_id;
         }
     } else {
-        // Si se desactiva el filtro, limpiar también el interest_id
         form.interest_id = '';
     }
     submit();
 };
 
 const buscarPorUbicacion = () => {
-    if (!navigator.geolocation) {
-        alert("La geolocalización no es soportada por tu navegador.");
-        return;
+    if (!navigator.geolocation) { 
+        showLocationPermissionModal.value = true;
+        return; 
     }
-
     navigator.geolocation.getCurrentPosition((position) => {
         form.lat = position.coords.latitude;
         form.lon = position.coords.longitude;
-        form.filtro_rapido = ''; // Desactivar filtros rápidos si se usa geo explícito
+        form.filtro_rapido = '';
+        viewMode.value = 'map'; // Auto-switch to map view
         submit();
     }, () => {
-        alert("No se pudo obtener tu ubicación.");
+        showLocationPermissionModal.value = true;
     });
 };
 
 const limpiarFiltros = () => {
     form.reset();
-    form.interests = []; // Reset manual para arrays
-    form.availability_general = [];
+    form.interests = []; form.availability_general = [];
     submit();
 };
 
-// Helper para color de afinidad
-const getAffinityColor = (score) => {
-    if (score >= 80) return 'from-green-400 to-emerald-600';
-    if (score >= 50) return 'from-yellow-400 to-orange-500';
-    return 'from-blue-400 to-indigo-500';
+const handleCitySelected = (cityData) => {
+    form.city = cityData.name;
+    form.lat = cityData.lat;
+    form.lon = cityData.lon;
 };
-
-const availabilitySlots = ['Mañanas', 'Tardes', 'Noches', 'Fines de semana'];
 </script>
 
 <template>
@@ -244,7 +353,7 @@ const availabilitySlots = ['Mañanas', 'Tardes', 'Noches', 'Fines de semana'];
                     </div>
 
                     <!-- Filtros Avanzados (Collapsible) -->
-                    <div v-show="showFilters" class="pt-6 border-t border-gray-100 dark:border-gray-700 animate-fade-in-down space-y-6 transition-colors">
+                    <div class="pt-6 border-t border-gray-100 dark:border-gray-700 animate-fade-in-down space-y-6 transition-colors" v-show="showFilters">
                         
                         <!-- Fila 1: Nivel y Ciudad -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -261,8 +370,23 @@ const availabilitySlots = ['Mañanas', 'Tardes', 'Noches', 'Fines de semana'];
                                     <span class="text-base">📍</span>
                                     <span>Ciudad</span>
                                 </label>
-                                <input v-model="form.city" type="text" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 sm:text-sm font-medium bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors" placeholder="Ej: Madrid, Barcelona...">
+                                <CityAutocomplete 
+                                    v-model="form.city" 
+                                    :api-key="geoapify_key" 
+                                    @city-selected="handleCitySelected" 
+                                    class="mt-1"
+                                />
                             </div>
+                        </div>
+
+                         <!-- Fila 1.5: Gimnasio (Nuevo) -->
+                         <div v-if="gymsInCityOptions.length > 0">
+                                <SelectInput
+                                    id="gym_id"
+                                    label="🏋️ Filtrar por Gimnasio"
+                                    v-model="form.gym_id"
+                                    :options="gymsInCityOptions"
+                                />
                         </div>
                         
                         <!-- Intereses (MultiSelect) -->
@@ -313,15 +437,136 @@ const availabilitySlots = ['Mañanas', 'Tardes', 'Noches', 'Fines de semana'];
                     </div>
                 </div>
 
-                <!-- Grid de Resultados -->
-                <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <UserCardSkeleton v-for="n in 6" :key="n" />
+                <!-- Botón Alternar Mapa/Lista (Ubicado debajo de filtros) -->
+                <div class="flex justify-end mb-6">
+                    <button 
+                        @click="viewMode = viewMode === 'grid' ? 'map' : 'grid'"
+                        class="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold shadow-sm border transition-all duration-200"
+                        :class="viewMode === 'grid' 
+                            ? 'bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-md' 
+                            : 'bg-indigo-600 text-white border-transparent hover:bg-indigo-700 shadow-md'"
+                    >
+                        <span v-if="viewMode === 'grid'" class="flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+                            Ver Mapa
+                        </span>
+                        <span v-else class="flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                            Ver Lista
+                        </span>
+                    </button>
                 </div>
 
-                <div v-else>
-                    <div v-if="users.data.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div v-for="user in users.data" :key="user.id" 
-                             class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col h-full group relative transform scale-[0.98]"
+                <!-- VISTA MAPA (Inmersiva) -->
+                <div v-if="viewMode === 'map'" class="relative h-[500px] md:h-[650px] w-full rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-700 mb-8 z-0 transition-all duration-500">
+                    
+                    <!-- Controles Flotantes (Glassmorphism) -->
+                    <div class="absolute top-4 right-4 z-[400] flex flex-col gap-2">
+                        <button @click="viewMode = 'grid'" class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md p-3 rounded-full shadow-lg hover:scale-110 transition-transform text-gray-700 dark:text-gray-200" title="Volver a lista">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                        </button>
+                        <button v-if="form.lat" @click="$refs.map.leafletObject.flyTo([form.lat, form.lon], 14)" class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md p-3 rounded-full shadow-lg hover:scale-110 transition-transform text-indigo-600 dark:text-indigo-400" title="Mi ubicación">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        </button>
+                    </div>
+
+                    <l-map 
+                        ref="map" 
+                        v-model:zoom="zoom" 
+                        :center="mapCenter" 
+                        :use-global-leaflet="false" 
+                        :options="{zoomControl: false}"
+                        @ready="onMapReady"
+                        @moveend="onMapMoveEnd"
+                    >
+                        <l-tile-layer
+                            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                            layer-type="base"
+                            name="CartoDB Voyager"
+                        ></l-tile-layer>
+
+                        <!-- Radio de Búsqueda (Radar) -->
+                        <l-circle 
+                            v-if="form.lat && form.lon"
+                            :lat-lng="[form.lat, form.lon]"
+                            :radius="3000"
+                            color="#6366f1"
+                            :weight="1"
+                            fill-color="#6366f1"
+                            :fill-opacity="0.08"
+                            class-name="radar-animation"
+                        />
+
+                        <!-- Marcador Usuario Actual (Tú) -->
+                        <l-marker v-if="form.lat && form.lon" :lat-lng="[form.lat, form.lon]">
+                             <l-icon class-name="custom-me-icon" :icon-anchor="[10, 10]">
+                                 <div class="w-5 h-5 bg-indigo-600 rounded-full border-2 border-white shadow-xl pulse-ring relative z-50"></div>
+                             </l-icon>
+                            <l-popup :options="{ closeButton: false, offset: [0, -5], className: 'me-popup' }">
+                                <div class="text-center font-bold text-xs px-2 py-1">📍 Tú estás aquí</div>
+                            </l-popup>
+                        </l-marker>
+
+                        <!-- AQUI IRÁN LOS GIMNASIOS (OSM) -->
+                        <l-marker 
+                            v-for="gym in gyms" 
+                            :key="'gym-'+gym.id" 
+                            :lat-lng="[parseFloat(gym.lat), parseFloat(gym.lon)]"
+                        >
+                            <l-icon class-name="custom-gym-icon" :icon-anchor="[16, 16]">
+                                <div class="w-8 h-8 flex items-center justify-center bg-gray-900 dark:bg-black border-2 rounded-lg shadow-xl text-lg hover:scale-110 transition-transform cursor-pointer" :class="gym.colorClass || 'border-indigo-500'">
+                                    {{ gym.icon || '🏋️' }}
+                                </div>
+                            </l-icon>
+                            
+                            <l-popup :options="{ closeButton: false, offset: [0, -10], className: 'premium-popup' }">
+                                <div class="text-center p-1 w-48 font-sans">
+                                    <h4 class="font-bold text-gray-900 text-sm leading-tight mb-0.5">{{ gym.name }}</h4>
+                                    <p class="text-[10px] text-gray-500 font-bold tracking-wide mb-2">{{ gym.type }}</p>
+                                    
+                                    <div v-if="gym.address" class="text-[10px] text-gray-500 mb-1 flex items-start justify-center gap-1">
+                                        <span>📍</span> <span class="text-left line-clamp-2 leading-tight">{{ gym.address }}</span>
+                                    </div>
+                                    <a v-if="gym.website" :href="gym.website" target="_blank" class="block text-[10px] text-indigo-500 mb-3 truncate hover:underline">🌐 Sitio Web Oficial</a>
+
+                                    <div class="flex items-center justify-center gap-1 mb-3 bg-indigo-50 rounded-lg py-1">
+                                        <div class="flex -space-x-1">
+                                            <div class="w-3 h-3 rounded-full bg-indigo-200 border border-white"></div>
+                                            <div class="w-3 h-3 rounded-full bg-indigo-300 border border-white"></div>
+                                        </div>
+                                        <p class="text-[10px] text-indigo-700 font-bold"> {{ gym.users_count }} GymPals</p>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <button 
+                                            @click="openGymModal(gym.id)"
+                                            class="bg-white border border-gray-200 text-gray-700 text-[10px] font-bold py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                                        >
+                                            Ver GymPals
+                                        </button>
+                                        <button 
+                                            @click="openGymModal(gym.id)"
+                                            class="bg-indigo-600 border border-transparent text-white text-[10px] font-bold py-2 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm active:scale-95 transform"
+                                        >
+                                            ¡Es mi Gym!
+                                        </button>
+                                    </div>
+                                </div>
+                            </l-popup>
+                        </l-marker>
+                    </l-map>
+                </div>
+
+                <!-- Grid de Resultados -->
+                <div v-show="viewMode === 'grid'">
+                    <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <UserCardSkeleton v-for="n in 6" :key="n" />
+                    </div>
+
+                    <div v-else>
+                        <div v-if="users.data.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div v-for="user in users.data" :key="user.id" 
+                                 class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col h-full group relative transform scale-[0.98]"
                              :class="{
                                  'border-2 border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-900': form.filtro_rapido === 'buscando_companero' && form.interest_id && user.looking_for_interest_id == form.interest_id,
                                  'border border-gray-100 dark:border-gray-700': !(form.filtro_rapido === 'buscando_companero' && form.interest_id && user.looking_for_interest_id == form.interest_id)
@@ -342,7 +587,7 @@ const availabilitySlots = ['Mañanas', 'Tardes', 'Noches', 'Fines de semana'];
                             <!-- Badge de Afinidad (Top Right) -->
                             <div v-if="user.affinity_score > 0" 
                                  class="absolute top-3 right-3 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm z-10 bg-gradient-to-r"
-                                 :class="getAffinityColor(user.affinity_score)"
+                                 :class="getAffinityColorClass(user.affinity_score).replace('border-', 'from-').replace('ring-', '').split(' ')[0] + ' from-green-400 to-emerald-600'" 
                             >
                                 {{ user.affinity_score }}% Afinidad
                             </div>
@@ -442,6 +687,7 @@ const availabilitySlots = ['Mañanas', 'Tardes', 'Noches', 'Fines de semana'];
                         </button>
                     </div>
                 </div>
+            </div>
 
                 <!-- Paginación -->
                 <div v-if="!isLoading && users.links.length > 3" class="mt-8 flex justify-center">
@@ -453,6 +699,23 @@ const availabilitySlots = ['Mañanas', 'Tardes', 'Noches', 'Fines de semana'];
 
             </div>
         </div>
+
+        <GymDetailsModal 
+            :show="showGymModal" 
+            :gymId="selectedGymId" 
+            @close="showGymModal = false"
+            @update:gym="updateGymData"
+        />
+
+        <ConfirmModal
+            :show="showLocationPermissionModal"
+            type="info"
+            title="📍 Permisos de Ubicación Requeridos"
+            message="Para utilizar el mapa y buscar gimnasios cercanos, necesitas permitir el acceso a tu ubicación GPS en tu navegador."
+            confirm-text="Entendido"
+            :show-cancel="false"
+            @confirm="showLocationPermissionModal = false"
+        />
     </AuthenticatedLayout>
 </template>
 
@@ -469,5 +732,35 @@ const availabilitySlots = ['Mañanas', 'Tardes', 'Noches', 'Fines de semana'];
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+.pulse-ring {
+    animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+@keyframes pulse-ring {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.7); }
+    70% { transform: scale(3); box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); }
+    100% { transform: scale(3); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+}
+
+:deep(.radar-animation) {
+    animation: radar-blink 3s infinite alternate;
+}
+@keyframes radar-blink {
+    from { fill-opacity: 0.05; stroke-opacity: 0.2; }
+    to { fill-opacity: 0.15; stroke-opacity: 0.6; }
+}
+
+/* Custom Popup Styles */
+:deep(.leaflet-popup-content-wrapper) {
+    border-radius: 1rem;
+    padding: 0;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+:deep(.leaflet-popup-content) {
+    margin: 1rem;
+}
+:deep(.leaflet-popup-tip) {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 }
 </style>

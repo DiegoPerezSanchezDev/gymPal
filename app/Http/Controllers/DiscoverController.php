@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\User;
+use App\Models\Gym;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -164,6 +165,10 @@ class DiscoverController extends Controller
                     }
                 });
             }
+            if ($request->filled('gym_id')) {
+                $filtrosManualesAplicados = true;
+                $usersQuery->whereHas('gyms', fn($q) => $q->where('gyms.id', $request->input('gym_id')));
+            }
 
             // Si no se aplicó ningún filtro, usamos el ALGORITMO DE RECOMENDACIÓN
             if (!$appliedSpecificFilter && !$filtrosManualesAplicados && $usuarioActual) {
@@ -212,6 +217,17 @@ class DiscoverController extends Controller
                 return $user;
             }
 
+            // SEGURIDAD / PRIVACIDAD: Location Fuzzing
+            // Añadimos un pequeño error aleatorio (+/- 300-400m) a las coordenadas para no revelar la casa exacta.
+            if ($user->latitude && $user->longitude) {
+                // 0.004 grados son aprox ~440m.
+                $fuzzLat = mt_rand(-40, 40) / 10000; 
+                $fuzzLon = mt_rand(-40, 40) / 10000;
+                
+                $user->latitude = (float)$user->latitude + $fuzzLat;
+                $user->longitude = (float)$user->longitude + $fuzzLon;
+            }
+
             $interesesUsuarioActualIds = $usuarioActual->fitnessInterests->pluck('id');
             $disponibilidadUsuarioActual = (array) $usuarioActual->availability_general;
             $ciudadUsuarioActual = $usuarioActual->location_city;
@@ -251,9 +267,144 @@ class DiscoverController extends Controller
             'users' => $users,
             'user' => $usuarioActual, // Usuario actual para usar su looking_for_interest_id
             'sugerencias' => collect(), // Se mantiene la variable, aunque no se use en la lógica actual.
-            'filters' => $request->only(['search', 'city', 'interests', 'availability_general', 'filtro_rapido', 'experience_level', 'lat', 'lon', 'interest_id']),
+            'filters' => $request->only(['search', 'city', 'interests', 'availability_general', 'filtro_rapido', 'experience_level', 'lat', 'lon', 'interest_id', 'gym_id']),
             'interests' => \App\Models\FitnessInterest::all(['id', 'name']),
             'searchedInterestId' => $searchedInterestId,
+            'initialGyms' => $this->getInitialGyms($request),
+            'geoapify_key' => config('services.geoapify.key'),
+            'gymsInCity' => $usuarioActual && $usuarioActual->location_city 
+                ? Gym::where(function($query) use ($usuarioActual) {
+                      $city = strtolower(trim($usuarioActual->location_city));
+                      $query->whereRaw('LOWER(address) LIKE ?', ["%{$city}%"])
+                            ->orWhereRaw('LOWER(name) LIKE ?', ["%{$city}%"]);
+                  })
+                  ->select('id', 'name', 'address')
+                  ->when($usuarioActual->latitude && $usuarioActual->longitude, function($query) use ($usuarioActual) {
+                        // Si la búsqueda por texto falla (o para complementar), añadir cercanía si es posible
+                        // En este caso, hacemos un UNION o simplemente priorizamos la query visual.
+                        // Para simplificar: Si no hay resultados por texto, buscar por distancia.
+                        // Pero Eloquent builder es único.
+                        // Vamos a usar una lógica híbrida: Buscar por texto, y si la colección es pequeña (<5), añadir cercanos.
+                        // Implicaría hacerlo fuera del builder. Para mantener builder simple:
+                        return $query;
+                  })
+                  ->limit(50)->get()
+                  ->whenEmpty(function($collection) use ($usuarioActual) {
+                        if ($usuarioActual->latitude && $usuarioActual->longitude) {
+                            $lat = $usuarioActual->latitude;
+                            $lon = $usuarioActual->longitude;
+                            
+                            // PostgreSQL no permite usar alias en HAVING, usamos subconsulta
+                            return Gym::fromRaw("(
+                                SELECT *, ( 6371 * acos( cos( radians({$lat}) ) *
+                                    cos( radians( latitude ) )
+                                    * cos( radians( longitude ) - radians({$lon})
+                                    ) + sin( radians({$lat}) ) *
+                                    sin( radians( latitude ) ) )
+                                ) AS distance
+                                FROM gyms
+                                WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+                            ) AS gyms_with_distance")
+                            ->where('distance', '<', 50)
+                            ->orderBy('distance')
+                            ->select('id', 'name', 'address', 'latitude', 'longitude')
+                            ->limit(50)
+                            ->get();
+                        }
+                        return $collection;
+                  })
+                : [],
         ]);
+    }
+
+    private function getInitialGyms(Request $request)
+    {
+        $lat = $request->input('lat');
+        $lon = $request->input('lon');
+
+        if (!$lat || !$lon) {
+           // Si no hay ubicación, y el usuario tiene ciudad, intentar buscar gyms en su ciudad (simple)
+           // O simplemente devolver vacio si no hay lat/lon explícito
+           return []; 
+        }
+
+        return Gym::selectRaw("*, ( 6371 * acos( cos( radians(?) ) *
+                                cos( radians( latitude ) )
+                                * cos( radians( longitude ) - radians(?)
+                                ) + sin( radians(?) ) *
+                            sin( radians( latitude ) ) )
+                            ) AS distance", [$lat, $lon, $lat])
+            ->having('distance', '<', 15) // 15km
+            ->orderBy('distance')
+            ->limit(100)
+            ->get();
+    }
+
+    public function nearbyGyms(Request $request)
+    {
+        // 1. LIMITS (Map View) - Si nos pasan límites explícitos
+        if ($request->has(['south', 'west', 'north', 'east'])) {
+            $request->validate([
+                'south' => 'required|numeric',
+                'west' => 'required|numeric',
+                'north' => 'required|numeric',
+                'east' => 'required|numeric',
+            ]);
+
+            return response()->json(
+                Gym::whereBetween('latitude', [$request->south, $request->north])
+                   ->whereBetween('longitude', [$request->west, $request->east])
+                   ->limit(300)
+                   ->get()
+            );
+        }
+
+        // 2. SEARCH PARAMETERS
+        $lat = $request->input('lat');
+        $lon = $request->input('lon') ?? $request->input('lng');
+        $search = $request->input('search');
+
+        // Bounding Box Logic (Aprox +/- 50km)
+        // 1 grado latitud ~= 111 km -> 0.45 grados ~= 50km
+        $deltaLat = 0.45;
+        $deltaLon = 0.45; // Aprox para longitudes medias, suficiente para MVP
+
+        $query = Gym::query();
+
+        if ($lat && $lon) {
+            $minLat = $lat - $deltaLat;
+            $maxLat = $lat + $deltaLat;
+            $minLon = $lon - $deltaLon;
+            $maxLon = $lon + $deltaLon;
+
+            $query->whereBetween('latitude', [$minLat, $maxLat])
+                  ->whereBetween('longitude', [$minLon, $maxLon]);
+        }
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                 $q->where('name', 'like', "%{$search}%")
+                   ->orWhere('address', 'like', "%{$search}%");
+            });
+        }
+
+        // 4. FALLBACK: FILTER BY CITY NAME
+        // Si nos pasan ciudad pero no (o además de) coordenadas, aseguramos buscar por texto de ciudad
+        if ($request->filled('city')) {
+             $city = $request->input('city');
+             $query->orWhere('address', 'like', "%{$city}%");
+        }
+
+        // Si no hay filtro de ubi, ni texto, ni ciudad, no devolver nada
+        if (!$lat && !$lon && !$search && !$request->filled('city')) {
+            return response()->json(['gyms' => []]);
+        }
+
+        $gyms = $query->limit(50)->get();
+        
+        // Opcional: Calcular distancia precisa en PHP para mostrar "x km" si se quisiera
+        // Pero para el selector dropdown no es crítico.
+
+        return response()->json(['gyms' => $gyms]);
     }
 }

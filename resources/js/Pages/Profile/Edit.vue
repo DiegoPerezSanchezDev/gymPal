@@ -14,6 +14,8 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import CityAutocomplete from '@/Components/CityAutocomplete.vue';
 import SelectInput from '@/Components/SelectInput.vue';
+import MultiSelectInput from '@/Components/MultiSelectInput.vue';
+import GymMapModal from '@/Components/GymMapModal.vue';
 import { useToast } from '@/composables/useToast';
 
 // --- PROPS ---
@@ -22,6 +24,7 @@ const props = defineProps({
     interests: Array,
     mustVerifyEmail: Boolean,
     status: String,
+    gyms: Array,
 });
 
 // --- DATOS GLOBALES ---
@@ -38,6 +41,17 @@ const interestOptions = computed(() => {
         });
     }
     return options;
+});
+
+const gymOptions = computed(() => {
+    // Para multiselect, el formato debe ser value/label
+    if (Array.isArray(props.gyms)) {
+        return props.gyms.map(gym => ({
+            value: gym.id,
+            label: gym.address ? `${gym.name} - ${gym.address}` : gym.name
+        }));
+    }
+    return [];
 });
 
 // --- ESTADO LOCAL ---
@@ -69,6 +83,7 @@ const form = useForm({
     looking_for_interest_id: props.user.looking_for_interest_id || null, 
     latitude: props.user.latitude || null,
     longitude: props.user.longitude || null,
+    gym_ids: props.user.gyms ? props.user.gyms.map(g => g.id) : [],
     profile_picture: null, // Nueva foto de perfil
     remove_profile_picture: false, // Flag para eliminar foto
 });
@@ -77,6 +92,8 @@ const form = useForm({
 const profilePicturePreview = ref(null);
 const fileInputRef = ref(null);
 const showRemovePhotoModal = ref(false);
+const showLocationPermissionModal = ref(false);
+const showGymMapModal = ref(false);
 
 const { error: showError } = useToast();
 
@@ -100,6 +117,23 @@ function getUserLocation() {
         },
         () => { locationStatus.value = 'No se pudo obtener la ubicación.'; }
     );
+}
+
+function openMapView() {
+    if (!form.latitude || !form.longitude) {
+        showLocationPermissionModal.value = true;
+        return;
+    }
+    showGymMapModal.value = true;
+}
+
+function handleGymToggle(gymId) {
+    const index = form.gym_ids.indexOf(gymId);
+    if (index === -1) {
+        form.gym_ids.push(gymId);
+    } else {
+        form.gym_ids.splice(index, 1);
+    }
 }
 
 function saveProfile() {
@@ -255,6 +289,37 @@ function confirmRemovePhoto() {
                                             Activar GPS
                                         </button>
                                         <p v-if="locationStatus" class="mt-2 text-xs text-center text-indigo-600 dark:text-indigo-400 animate-pulse transition-colors">{{ locationStatus }}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tarjeta de Gimnasio -->
+                            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors">
+                                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2 transition-colors">
+                                    <span class="text-xl">🏋️</span> Mis Centros de Entrenamiento
+                                </h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <MultiSelectInput
+                                            id="gym_ids"
+                                            label="Mis Centros"
+                                            v-model="form.gym_ids"
+                                            :options="gymOptions"
+                                            placeholder="Selecciona tus centros..."
+                                        />
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Busca tu gimnasio, box de CrossFit o estudio (filtrado por tu ciudad)</p>
+                                        <InputError class="mt-2" :message="form.errors.gym_ids" />
+                                    </div>
+
+                                    <div class="pt-2 border-t border-gray-100 dark:border-gray-700">
+                                        <button 
+                                            type="button" 
+                                            @click="openMapView" 
+                                            class="w-full flex items-center justify-center px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700 rounded-lg text-xs font-bold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+                                        >
+                                            <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+                                            Buscar en Mapa
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -414,6 +479,28 @@ function confirmRemovePhoto() {
             cancel-text="Cancelar"
             @confirm="confirmRemovePhoto"
             @cancel="showRemovePhotoModal = false"
+        />
+
+        <!-- Modal de permisos de geolocalización -->
+        <ConfirmModal
+            :show="showLocationPermissionModal"
+            type="info"
+            title="📍 Permisos de Ubicación Requeridos"
+            message="Para utilizar el mapa y buscar gimnasios cercanos, primero debes permitir el acceso a tu ubicación GPS. Haz clic en 'Activar GPS' en la sección de Ubicación."
+            confirm-text="Entendido"
+            :show-cancel="false"
+            @confirm="showLocationPermissionModal = false"
+        />
+
+        <!-- Modal de mapa de gimnasios -->
+        <GymMapModal
+            :show="showGymMapModal"
+            :user-lat="form.latitude"
+            :user-lon="form.longitude"
+            :gyms="gyms"
+            :selected-gyms="form.gym_ids"
+            @toggle-gym="handleGymToggle"
+            @close="showGymMapModal = false"
         />
     </AuthenticatedLayout>
 </template>

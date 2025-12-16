@@ -117,7 +117,7 @@ class ProgressController extends Controller
             'avg_duration' => round($logs->avg('duration_minutes')),
             'total_volume' => array_sum(array_column($exerciseProgress, 'total_volume')),
             'best_time' => $logs->min('duration_minutes'),
-            'last_completed' => Carbon::parse($logs->last()->created_at)->diffForHumans()
+            'last_completed' => Carbon::parse($logs->last()->created_at)->locale('es')->diffForHumans()
         ];
 
         // Calcular récords personales (mejor set por ejercicio)

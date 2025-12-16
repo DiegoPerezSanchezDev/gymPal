@@ -204,12 +204,24 @@ const submitComment = async () => {
                     <Link :href="route('profile.show.public', { user: post.user.username })" class="font-bold text-sm text-gray-800 dark:text-white hover:underline transition-colors">
                         {{ post.user.name }}
                     </Link>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 flex-wrap">
                         <p class="text-xs text-gray-500 dark:text-gray-400 transition-colors">{{ formattedDate }}</p>
                         <span v-if="formattedDistance" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full flex items-center gap-1 transition-colors">
                             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                             A {{ formattedDistance }}
                         </span>
+                        
+                        <!-- GYM BADGE -->
+                        <Link 
+                            v-if="post.user.gyms && post.user.gyms.length > 0"
+                            :href="route('discover.index', { search: post.user.gyms[0].name })"
+                            class="text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full flex items-center gap-1 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            title="Ver gimnasio"
+                        >
+                            <span>{{ post.user.gyms[0].type === 'pool' ? '🏊' : (post.user.gyms[0].type === 'yoga' ? '🧘' : (post.user.gyms[0].type === 'crossfit' ? '🔥' : (post.user.gyms[0].type === 'park' ? '🤸' : '🏋️'))) }}</span>
+                            <span class="truncate max-w-[100px]">{{ post.user.gyms[0].name }}</span>
+                            <span v-if="post.user.gyms.length > 1" class="text-xs opacity-70">+{{ post.user.gyms.length - 1 }}</span>
+                        </Link>
                     </div>
                 </div>
             </div>
@@ -238,6 +250,36 @@ const submitComment = async () => {
         <p v-if="post.content" class="px-5 pb-4 text-gray-700 dark:text-gray-300 whitespace-pre-line text-[15px] leading-relaxed transition-colors">
             {{ post.content }}
         </p>
+
+        <!-- ================== Tarjeta de Logro (Achievement Premium) ================== -->
+        <div v-if="post.type === 'achievement' && post.metadata" class="mx-5 mb-6 p-8 relative overflow-hidden rounded-2xl border border-yellow-200/60 dark:border-yellow-700/50 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-amber-900/10 dark:via-orange-900/10 dark:to-yellow-900/10 shadow-sm hover:shadow-md transition-all duration-300 group">
+             
+             <!-- Decoración de fondo (Glows abstractos) -->
+             <div class="absolute -top-12 -right-12 w-40 h-40 bg-yellow-300/20 dark:bg-yellow-600/10 rounded-full blur-3xl pointer-events-none"></div>
+             <div class="absolute -bottom-12 -left-12 w-32 h-32 bg-orange-300/20 dark:bg-orange-600/10 rounded-full blur-2xl pointer-events-none"></div>
+             
+             <div class="relative z-10 flex flex-col items-center text-center">
+                 <!-- Icono con animación suave -->
+                 <div class="text-7xl mb-5 filter drop-shadow-sm transform transition-transform duration-500 cubic-bezier(0.34, 1.56, 0.64, 1) group-hover:scale-110 group-hover:rotate-6 cursor-default select-none">
+                    {{ post.metadata.badge_icon || '🏆' }}
+                 </div>
+                 
+                 <!-- Badge Tag -->
+                 <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/60 dark:bg-black/20 border border-yellow-200/50 dark:border-yellow-700/30 backdrop-blur-sm mb-3 shadow-sm">
+                    <span class="text-[10px] sm:text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest">
+                        Logro Desbloqueado
+                    </span>
+                 </div>
+
+                 <!-- Título y Descripción -->
+                 <h3 class="text-2xl font-black text-gray-900 dark:text-gray-100 mb-2 tracking-tight">
+                    {{ post.metadata.badge_name }}
+                 </h3>
+                 <p class="text-sm text-gray-600 dark:text-gray-400 font-medium max-w-xs mx-auto leading-relaxed">
+                    {{ post.metadata.description }}
+                 </p>
+             </div>
+        </div>
 
         <!-- ================== Tarjeta de Workout Log (si existe y NO hay imagen) ================== -->
         <div v-if="post.workout_log && !postImageUrl" class="px-5 pb-4">

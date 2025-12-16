@@ -35,7 +35,9 @@ class User extends Authenticatable
         'looking_for_interest_id',
         'latitude',
         'longitude',
+        'gym_id',
         'availability_general',
+        'onboarding_completed',
     ];
 
     /**
@@ -59,7 +61,13 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'availability_general' => 'array',
+            'onboarding_completed' => 'boolean',
         ];
+    }
+
+    public function badges(): BelongsToMany
+    {
+        return $this->belongsToMany(Badge::class)->withTimestamps();
     }
 
     // --- RELACIONES ESENCIALES DEL PERFIL ---
@@ -138,6 +146,14 @@ class User extends Authenticatable
      */
     public function getGymPalsAttribute()
     {
+        // En un sistema de "Solicitud", una conexión accepted significa amistad bidireccional si la lógica es "A pide a B, B acepta".
+        // Si la conexión es única (A->B accepted), son amigos.
+        // Si el sistema anterior usaba registros dobles, habrá que ver. 
+        // Basándome en la migración original: "$table->unique(['sender_id', 'receiver_id']);".
+        // Asumimos que A->B accepted es suficiente para que sean amigos, o...
+        // Espera, el código original de User.php antes de mi cambio usaba sentAndAccepted MERGE receivedAndAccepted.
+        // Restauro esa lógica exacta.
+
         $sentAndAccepted = Connection::where('sender_id', $this->id)
                                 ->where('status', 'accepted')
                                 ->with('receiver')
@@ -221,5 +237,24 @@ class User extends Authenticatable
     public function workoutLogs(): HasMany
     {
         return $this->hasMany(WorkoutLog::class);
+    }
+
+    // --- RELACIONES PARA STORIES ---
+    public function stories(): HasMany
+    {
+        return $this->hasMany(Story::class)->orderBy('created_at', 'asc');
+    }
+
+    public function activeStories(): HasMany
+    {
+        return $this->hasMany(Story::class)
+            ->where('created_at', '>=', now()->subHours(24))
+            ->orderBy('created_at', 'asc');
+    }
+
+    // --- RELACIONES PARA GYMS ---
+    public function gyms(): BelongsToMany
+    {
+        return $this->belongsToMany(Gym::class, 'gym_user')->withTimestamps();
     }
 }
