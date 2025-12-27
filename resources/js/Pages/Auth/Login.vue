@@ -5,6 +5,7 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
+import GoogleButton from '@/Components/GoogleButton.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
 defineProps({
@@ -124,12 +125,7 @@ const submit = () => {
                     <div class="flex-grow border-t border-gray-200 dark:border-gray-700"></div>
                 </div>
 
-                <a :href="route('auth.google')" class="w-full flex items-center justify-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all shadow-sm font-semibold text-sm">
-                    <svg class="h-5 w-5" aria-hidden="true" viewBox="0 0 24 24">
-                        <path d="M12.0003 20.45c4.653 0 8.5523-3.2355 9.7716-7.6041H12.0003v-4.1818h13.2954c.1455.7779.2272 1.5833.2272 2.4172 0 7.4299-5.1126 12.9189-12.7226 12.9189-7.237 0-13.1091-5.8721-13.1091-13.1091s5.8721-13.1091 13.1091-13.1091c3.5182 0 6.6136 1.3418 8.9455 3.5182l-3.3273 3.3273c-1.2545-1.2-3.1418-2.0727-5.6182-2.0727-4.9964 0-9.0545 4.0582-9.0545 9.0545s4.0581 9.0545 9.0545 9.0545z" fill="currentColor" />
-                    </svg>
-                    Google
-                </a>
+                <GoogleButton :href="route('auth.google')" text="Iniciar sesión con Google" />
             </div>
 
             <div class="mt-8 text-center">
