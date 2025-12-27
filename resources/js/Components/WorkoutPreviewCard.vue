@@ -9,17 +9,7 @@ const props = defineProps({
     }
 });
 
-const categoryIcons = {
-    'Gym': '🏋️',
-    'Calistenia': '🤸',
-    'Running': '🏃',
-    'Ciclismo': '🚴',
-    'Yoga': '🧘',
-    'Deportes de equipo': '⚽',
-    'Artes Marciales': '🥊',
-    'Natación': '🏊',
-    'Otro': '💪'
-};
+
 
 const difficultyColors = {
     Principiante: 'from-emerald-500 to-teal-600',
@@ -34,10 +24,7 @@ const difficultyLabel = {
 };
 
 const categoryIcon = computed(() => {
-    if (!props.workout.category) return '💪';
-    // Eliminar emoji del nombre de categoría si existe
-    const cleanCategory = props.workout.category.replace(/[^\w\s]/gi, '').trim();
-    return categoryIcons[cleanCategory] || categoryIcons[props.workout.category] || '💪';
+    return props.workout.category?.icon || '💪';
 });
 
 const gradientClass = computed(() => {
@@ -50,8 +37,7 @@ const workoutUrl = computed(() => {
     return isFromMyWorkouts ? `${baseUrl}?from=my-workouts` : baseUrl;
 });
 const cleanCategoryName = computed(() => {
-    if (!props.workout.category) return 'General';
-    return props.workout.category.replace(/[^\w\s]/gi, '').trim();
+    return props.workout.category?.name || props.workout.category || 'General';
 });
 </script>
 

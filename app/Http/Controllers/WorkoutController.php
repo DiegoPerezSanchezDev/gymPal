@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Workout;
 use App\Models\WorkoutExercise;
+use App\Models\Category;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,7 +19,7 @@ class WorkoutController extends Controller
     public function index(Request $request)
     {
         $query = Workout::query()
-            ->with(['user:id,name,username,profile_picture_url', 'exercises'])
+            ->with(['user:id,name,username,profile_picture_url', 'exercises', 'category'])
             ->public();
 
         // Excluir rutinas propias y limitar a seguidos
@@ -33,7 +34,13 @@ class WorkoutController extends Controller
 
         // Filtros opcionales
         if ($request->category) {
-            $query->where('category', $request->category);
+            $query->where(function($q) use ($request) {
+                $q->where('category', $request->category)
+                  ->orWhereHas('category', function($q2) use ($request) {
+                      $q2->where('slug', $request->category)
+                         ->orWhere('id', $request->category);
+                  });
+            });
         }
         
         if ($request->difficulty) {
@@ -75,6 +82,7 @@ class WorkoutController extends Controller
 
         return Inertia::render('Workouts/Index', [
             'workouts' => $workouts,
+            'categories' => Category::all(),
             'title' => 'Explorar Rutinas',
             'filters' => [
                 'category' => $request->category,
@@ -92,6 +100,7 @@ class WorkoutController extends Controller
     {
         return Inertia::render('Workouts/Create', [
             'title' => 'Crear Rutina',
+            'categories' => Category::all(),
         ]);
     }
 
@@ -106,7 +115,7 @@ class WorkoutController extends Controller
                 'description' => 'nullable|string',
                 'difficulty' => 'required|in:Principiante,Intermedio,Avanzado',
                 'duration_minutes' => 'nullable|integer|min:1',
-                'category' => 'required|string|max:100',
+                'category_id' => 'required|exists:categories,id',
                 'is_public' => 'boolean',
                 'exercises' => 'required|array|min:1',
                 'exercises.*.exercise_name' => 'required|string|max:255',
@@ -118,13 +127,16 @@ class WorkoutController extends Controller
                 'exercises.*.notes' => 'nullable|string',
             ]);
 
+            $category = Category::find($validated['category_id']);
+
             $workout = Workout::create([
                 'user_id' => Auth::id(),
                 'name' => $validated['name'],
                 'description' => $validated['description'] ?? null,
                 'difficulty' => $validated['difficulty'],
                 'duration_minutes' => $validated['duration_minutes'] ?? null,
-                'category' => $validated['category'],
+                'category_id' => $validated['category_id'],
+                'category' => $category->name, // Keep for backward compatibility
                 'is_public' => $validated['is_public'] ?? true,
             ]);
 
@@ -214,6 +226,7 @@ class WorkoutController extends Controller
 
         return Inertia::render('Workouts/Edit', [
             'workout' => $workout,
+            'categories' => Category::all(),
             'title' => 'Editar Rutina',
         ]);
     }
@@ -234,7 +247,7 @@ class WorkoutController extends Controller
                 'description' => 'nullable|string',
                 'difficulty' => 'required|in:Principiante,Intermedio,Avanzado',
                 'duration_minutes' => 'nullable|integer|min:1',
-                'category' => 'required|string|max:100',
+                'category_id' => 'required|exists:categories,id',
                 'is_public' => 'boolean',
                 'exercises' => 'required|array|min:1',
                 'exercises.*.exercise_name' => 'required|string|max:255',
@@ -246,12 +259,15 @@ class WorkoutController extends Controller
                 'exercises.*.notes' => 'nullable|string',
             ]);
 
+            $category = Category::find($validated['category_id']);
+
             $workout->update([
                 'name' => $validated['name'],
                 'description' => $validated['description'] ?? null,
                 'difficulty' => $validated['difficulty'],
                 'duration_minutes' => $validated['duration_minutes'] ?? null,
-                'category' => $validated['category'],
+                'category_id' => $validated['category_id'],
+                'category' => $category->name, // Keep for backward compatibility
                 'is_public' => $validated['is_public'] ?? true,
             ]);
 
@@ -506,7 +522,7 @@ class WorkoutController extends Controller
     public function myWorkouts(Request $request)
     {
         $query = Workout::query()
-            ->with(['exercises'])
+            ->with(['exercises', 'category'])
             ->where('user_id', Auth::id());
 
         // Filtro de visibilidad
@@ -519,9 +535,15 @@ class WorkoutController extends Controller
             // Si es 'all' o no está definido, no filtramos
         }
 
-        // Filtro de categoría
+        // Filtro de categoría (por ID, Slug o Nombre)
         if ($request->category) {
-            $query->where('category', $request->category);
+            $query->where(function($q) use ($request) {
+                $q->where('category', $request->category)
+                  ->orWhereHas('category', function($q2) use ($request) {
+                      $q2->where('slug', $request->category)
+                         ->orWhere('id', $request->category);
+                  });
+            });
         }
 
         // Filtro de dificultad
@@ -539,6 +561,7 @@ class WorkoutController extends Controller
 
         return Inertia::render('Workouts/MyWorkouts', [
             'workouts' => $workouts,
+            'categories' => Category::all(),
             'totalPublic' => $totalPublic,
             'totalPrivate' => $totalPrivate,
             'title' => 'Mis Rutinas',

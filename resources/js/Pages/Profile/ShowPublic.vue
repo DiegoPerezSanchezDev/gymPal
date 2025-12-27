@@ -36,6 +36,7 @@ const props = defineProps({
         type: Array,
         default: () => []
     }, // Rutinas del usuario
+    progressCharts: Object, // Gráficas de progreso (V2)
 });
 
 const processingConnection = ref(false);
@@ -101,7 +102,10 @@ const bannerColors = [
 // Detectar tab desde URL
 const urlParams = new URLSearchParams(window.location.search);
 const tabParam = urlParams.get('tab');
-const activeContentTab = ref(tabParam === 'rutinas' ? 'rutinas' : 'publicaciones');
+const activeContentTab = ref(
+    tabParam === 'rutinas' ? 'rutinas' : 
+    (tabParam === 'stats' ? 'estadisticas' : 'publicaciones')
+);
 
 // Lógica para mostrar rutinas limitadas
 const showAllWorkouts = ref(false);
@@ -577,6 +581,16 @@ const getExperienceLevelColor = (level) => {
                                 </span>
                             </span>
                         </button>
+
+                        <button
+                            @click="activeContentTab = 'estadisticas'"
+                            class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2 relative overflow-hidden"
+                            :class="activeContentTab === 'estadisticas' ? 'bg-white dark:bg-gray-600 text-indigo-600 dark:text-indigo-300 shadow-sm ring-1 ring-black/5 dark:ring-white/10' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
+                        >
+                            <span class="relative z-10 flex items-center gap-2">
+                                📊 Stats
+                            </span>
+                        </button>
                     </div>
                 </div>
 
@@ -756,6 +770,15 @@ const getExperienceLevelColor = (level) => {
                                 Crear Post
                             </button>
                         </div>
+                    </div>
+
+                    <!-- Stats Tab -->
+                    <div v-else-if="activeContentTab === 'estadisticas'" key="estadisticas">
+                        <ProfileStats 
+                            :stats="stats" 
+                            :show-chart="true"
+                            :progress-charts="progressCharts"
+                        />
                     </div>
                 </Transition>
             </div>

@@ -8,7 +8,8 @@ import { useToast } from '@/composables/useToast';
 const { success, error } = useToast();
 
 defineProps({
-    title: String
+    title: String,
+    categories: Array
 });
 
 const form = ref({
@@ -16,7 +17,7 @@ const form = ref({
     description: '',
     difficulty: 'Intermedio',
     duration_minutes: null,
-    category: 'Gym',
+    category_id: null,
     is_public: true,
     exercises: [
         { 
@@ -30,19 +31,15 @@ const form = ref({
 
 const isSubmitting = ref(false);
 
-const categories = [
-    '🏋️ Gym', 
-    '🤸 Calistenia', 
-    '🏃 Running', 
-    '🚴 Ciclismo', 
-    '🧘 Yoga',
-    '⚽ Deportes de equipo',
-    '🥊 Artes Marciales',
-    '🏊 Natación',
-    '💪 Otro'
-];
+const categoryOptions = props.categories?.map(cat => ({ 
+    value: cat.id, 
+    label: `${cat.icon} ${cat.name}` 
+})) || [];
 
-const categoryOptions = categories.map(cat => ({ value: cat, label: cat }));
+// Set default category if none
+if (!form.value.category_id && props.categories?.length > 0) {
+    form.value.category_id = props.categories[0].id;
+}
 
 const difficultyOptions = [
     { value: 'Principiante', label: 'Principiante' },
@@ -184,7 +181,7 @@ const submit = () => {
                                 <SelectInput
                                     id="category"
                                     label="Categoría *"
-                                    v-model="form.category"
+                                    v-model="form.category_id"
                                     :options="categoryOptions"
                                     required
                                 />

@@ -7,6 +7,7 @@ import axios from 'axios';
 
 const props = defineProps({
     workouts: Object,
+    categories: Array,
     totalPublic: Number,
     totalPrivate: Number,
     title: String,
@@ -15,6 +16,7 @@ const props = defineProps({
 
 const visibilityFilter = ref(props.filters?.visibility || 'all');
 const difficultyFilter = ref(props.filters?.difficulty || '');
+const categoryFilter = ref(props.filters?.category || '');
 
 // Scroll Infinito
 const allWorkouts = ref([...props.workouts.data]);
@@ -40,7 +42,8 @@ const loadMoreItems = async () => {
             },
             params: {
                 visibility: visibilityFilter.value,
-                difficulty: difficultyFilter.value
+                difficulty: difficultyFilter.value,
+                category: categoryFilter.value
             }
         });
         
@@ -79,7 +82,8 @@ onUnmounted(() => {
 const applyFilters = () => {
     router.get(route('workouts.my-workouts'), {
         visibility: visibilityFilter.value,
-        difficulty: difficultyFilter.value
+        difficulty: difficultyFilter.value,
+        category: categoryFilter.value
     }, {
         preserveState: true,
         replace: true
@@ -89,13 +93,14 @@ const applyFilters = () => {
 const clearFilters = () => {
     visibilityFilter.value = 'all';
     difficultyFilter.value = '';
+    categoryFilter.value = '';
     applyFilters();
 };
 
 const totalWorkouts = computed(() => props.totalPublic + props.totalPrivate);
 
 const hasActiveFilters = computed(() => {
-    return visibilityFilter.value !== 'all' || difficultyFilter.value !== '';
+    return visibilityFilter.value !== 'all' || difficultyFilter.value !== '' || categoryFilter.value !== '';
 });
 </script>
 
@@ -154,6 +159,31 @@ const hasActiveFilters = computed(() => {
                                 class="text-xs font-bold text-indigo-600 dark:text-indigo-400 active:text-indigo-800 dark:active:text-indigo-300 transition-colors"
                             >
                                 Limpiar
+                            </button>
+                        </div>
+
+                        <!-- Categorías -->
+                        <div class="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide mb-3">
+                            <button 
+                                @click="categoryFilter = ''; applyFilters()"
+                                class="flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition active:scale-95"
+                                :class="categoryFilter === '' 
+                                    ? 'bg-indigo-600 text-white shadow-md' 
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+                            >
+                                Todas
+                            </button>
+                            <button 
+                                v-for="cat in categories"
+                                :key="cat.id"
+                                @click="categoryFilter = cat.slug; applyFilters()"
+                                class="flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition active:scale-95 flex items-center gap-2"
+                                :class="categoryFilter === cat.slug 
+                                    ? 'bg-indigo-600 text-white shadow-md' 
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+                            >
+                                <span>{{ cat.icon }}</span>
+                                {{ cat.name }}
                             </button>
                         </div>
 

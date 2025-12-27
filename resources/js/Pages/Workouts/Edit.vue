@@ -7,7 +7,8 @@ import { useToast } from '@/composables/useToast';
 
 const props = defineProps({
     title: String,
-    workout: Object
+    workout: Object,
+    categories: Array
 });
 
 const { success, error } = useToast();
@@ -17,26 +18,17 @@ const form = ref({
     description: '',
     difficulty: 'Intermedio',
     duration_minutes: null,
-    category: 'Gym',
+    category_id: null,
     is_public: true,
     exercises: []
 });
 
 const isSubmitting = ref(false);
 
-const categories = [
-    '🏋️ Gym', 
-    '🤸 Calistenia', 
-    '🏃 Running', 
-    '🚴 Ciclismo', 
-    '🧘 Yoga',
-    '⚽ Deportes de equipo',
-    '🥊 Artes Marciales',
-    '🏊 Natación',
-    '💪 Otro'
-];
-
-const categoryOptions = categories.map(cat => ({ value: cat, label: cat }));
+const categoryOptions = props.categories?.map(cat => ({ 
+    value: cat.id, 
+    label: `${cat.icon} ${cat.name}` 
+})) || [];
 
 const difficultyOptions = [
     { value: 'Principiante', label: 'Principiante' },
@@ -58,7 +50,7 @@ onMounted(() => {
         form.value.description = props.workout.description;
         form.value.difficulty = props.workout.difficulty;
         form.value.duration_minutes = props.workout.duration_minutes;
-        form.value.category = props.workout.category;
+        form.value.category_id = props.workout.category_id;
         form.value.is_public = !!props.workout.is_public; // Ensure boolean
         
         // Map exercises
@@ -202,7 +194,7 @@ const submit = () => {
                                 <SelectInput
                                     id="category"
                                     label="Categoría *"
-                                    v-model="form.category"
+                                    v-model="form.category_id"
                                     :options="categoryOptions"
                                     required
                                 />

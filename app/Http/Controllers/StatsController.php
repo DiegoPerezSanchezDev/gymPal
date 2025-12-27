@@ -102,7 +102,11 @@ class StatsController extends Controller
             'streak' => $streak,
             'personalRecords' => $personalRecords,
             'badges' => $badges,
-            'progressCharts' => $progressCharts,
+            'progressCharts' => [
+                'weeklyVolume' => $progressCharts['weeklyVolume'],
+                'monthlyFrequency' => $progressCharts['monthlyFrequency'],
+                'categories' => $this->getCategoryDistribution($user)
+            ],
             'insights' => $insights,
             'goals' => $this->getGoals($user), // <--- NUEVO
             'leaderboard' => $this->getLeaderboard($user),
@@ -144,9 +148,10 @@ class StatsController extends Controller
                     'id' => $friend->id,
                     'name' => $friend->name,
                     'username' => $friend->username,
-                    'avatar' => $friend->profile_picture_url,
+                    'profile_picture_url' => $friend->profile_picture_url,
                     'workouts' => $friend->weekly_workouts,
-                    'is_me' => $friend->id === $user->id
+                    'is_me' => $friend->id === Auth::id(),
+                    'is_target' => $friend->id === $user->id && $friend->id !== Auth::id()
                 ];
             })
             ->sortByDesc('workouts')
@@ -670,6 +675,18 @@ class StatsController extends Controller
             'weeklyVolume' => $weeklyVolume,
             'monthlyFrequency' => $monthlyFrequency,
         ];
+    }
+
+    /**
+     * Obtener distribución por categorías con normalización (Igual que en Perfil)
+     */
+    private function getCategoryDistribution(User $user)
+    {
+        return \App\Models\WorkoutLog::where('workout_logs.user_id', $user->id)
+            ->join('categories', 'workout_logs.category_id', '=', 'categories.id')
+            ->select('categories.name as category_name', 'categories.icon', 'categories.color', \DB::raw('count(*) as count'))
+            ->groupBy('categories.id', 'categories.name', 'categories.icon', 'categories.color')
+            ->get();
     }
     
     private function generateInsights($user, $stats, $streak)

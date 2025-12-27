@@ -255,11 +255,11 @@ class ProfileController extends Controller
             'active_days_month' => $user->workoutLogs()
                 ->whereMonth('created_at', now()->month)
                 ->whereYear('created_at', now()->year)
-                ->distinct('created_at')
-                ->count(\DB::raw('DATE(created_at)')),
+                ->distinct()
+                ->selectRaw('DATE(created_at) as date')
+                ->get()
+                ->count(),
             'streak_days' => $this->calculateStreak($user),
-            'workouts_created' => $user->workouts()->count(),
-            'posts_count' => $user->posts()->count(),
             'level' => $this->calculateLevel($user),
         ];
 
@@ -331,9 +331,56 @@ class ProfileController extends Controller
             // Estadísticas del usuario
             'stats' => $stats,
             
+            // Gráficas de progreso (V2)
+            'progressCharts' => $this->getProfileProgressCharts($user),
+            
             'posts' => $posts, // Pasar los posts
             'workouts' => $workouts, // Pasar las rutinas
         ]);
+    }
+
+    /**
+     * Obtener datos para las gráficas del perfil (V2 Premium)
+     */
+    private function getProfileProgressCharts(User $user)
+    {
+        $targetDate = \Carbon\Carbon::now();
+        $startDate = $targetDate->copy()->subWeeks(12);
+        
+        // 1. Frecuencia Semanal (Días entrenados por semana)
+        $weeklyFrequencyData = \App\Models\WorkoutLog::where('user_id', $user->id)
+            ->whereBetween('created_at', [$startDate, $targetDate])
+            ->get()
+            ->groupBy(function($log) {
+                return \Carbon\Carbon::parse($log->created_at)->startOfWeek()->format('M d');
+            })
+            ->map(function ($logs) {
+                // Contar días únicos entrenados en esa semana
+                return $logs->pluck('created_at')->map(fn($c) => $c->format('Y-m-d'))->unique()->count();
+            });
+            
+        $weeklyFrequency = [];
+        $currentWeek = $startDate->copy()->startOfWeek();
+        for ($i = 0; $i < 12; $i++) {
+            $weekKey = $currentWeek->format('M d');
+            $weeklyFrequency[] = [
+                'week' => $weekKey,
+                'days' => $weeklyFrequencyData[$weekKey] ?? 0
+            ];
+            $currentWeek->addWeek();
+        }
+
+        // 2. Distribución por Categorías desde la Base de Datos
+        $categories = \App\Models\WorkoutLog::where('workout_logs.user_id', $user->id)
+            ->join('categories', 'workout_logs.category_id', '=', 'categories.id')
+            ->select('categories.name as category_name', 'categories.icon', 'categories.color', \DB::raw('count(*) as count'))
+            ->groupBy('categories.id', 'categories.name', 'categories.icon', 'categories.color')
+            ->get();
+        
+        return [
+            'weeklyFrequency' => $weeklyFrequency,
+            'categories' => $categories
+        ];
     }
 
     public function updateLookingForInterest(Request $request): \Illuminate\Http\JsonResponse

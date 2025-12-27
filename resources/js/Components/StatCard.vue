@@ -69,20 +69,23 @@ function handleClick() {
 <style scoped>
 .stat-card {
     background: white;
-    border-radius: 16px;
-    padding: 20px;
+    border-radius: 24px;
+    padding: 24px;
     display: flex;
     align-items: center;
-    gap: 16px;
-    border: 2px solid transparent;
-    transition: all 0.3s ease;
+    gap: 20px;
+    border: 1px solid #f1f5f9;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .dark .stat-card.default {
-    background: #1f2937;
-    border-color: #374151;
+    background: rgba(30, 41, 59, 0.5);
+    border-color: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    box-shadow: none;
 }
 
 .stat-card::before {
@@ -102,8 +105,23 @@ function handleClick() {
 }
 
 .stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(99, 102, 241, 0.15);
+    transform: translateY(-6px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border-color: #6366f1;
+}
+
+.dark .stat-card:hover {
+    border-color: rgba(99, 102, 241, 0.4);
+    background: rgba(30, 41, 59, 0.7);
+}
+
+.stat-card:hover .stat-icon {
+    animation: float 2s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    50% { transform: translateY(-5px) rotate(10deg); }
 }
 
 .stat-card.clickable {

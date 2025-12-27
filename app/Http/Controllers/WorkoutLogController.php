@@ -79,6 +79,7 @@ class WorkoutLogController extends Controller
     {
         $validated = $request->validate([
             'workout_id' => 'nullable|exists:workouts,id',
+            'category_id' => 'nullable|exists:categories,id',
             'workout_name' => 'required|string|max:255',
             'exercises_data' => 'required|array',
             'duration_minutes' => 'nullable|integer|min:1',
@@ -90,6 +91,7 @@ class WorkoutLogController extends Controller
         $log = WorkoutLog::create([
             'user_id' => Auth::id(),
             'workout_id' => $validated['workout_id'] ?? null,
+            'category_id' => $validated['category_id'] ?? null,
             'workout_name' => $validated['workout_name'],
             'exercises_data' => $validated['exercises_data'],
             'duration_minutes' => $validated['duration_minutes'] ?? null,
