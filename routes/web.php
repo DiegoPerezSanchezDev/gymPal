@@ -184,7 +184,7 @@ Route::middleware('auth')->group(function () {
     // Estadísticas
     Route::get('/stats', [StatsController::class, 'index'])->name('stats.index');
     Route::post('/goals', [StatsController::class, 'storeGoal'])->name('goals.store');
-    Route::delete('/goals/{goal}', [StatsController::class, 'destroyGoal'])->name('goals.destroy');
+    Route::delete('/goals/delete/{id}', [StatsController::class, 'destroyGoal'])->name('goals.destroy');
     Route::get('/stats/{user:username}', [StatsController::class, 'show'])->name('stats.show');
     Route::post('/stats/share-achievement', [StatsController::class, 'shareAchievement'])->name('stats.share');
     Route::get('/api/stats/day-details', [StatsController::class, 'dayDetails'])->name('stats.day_details');
