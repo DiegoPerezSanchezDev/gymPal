@@ -46,6 +46,8 @@ class HandleInertiaRequests extends Middleware
                     'availability_general' => $user->availability_general, // Asume que esto es un atributo directo o ya procesado
                     'experience_level' => $user->experience_level,
                     'looking_for_interest_id' => $user->looking_for_interest_id,
+                    'onboarding_completed' => (bool) $user->onboarding_completed,
+                    'onboarding_skipped' => (bool) $user->onboarding_skipped,
                     // Cargar la relación fitnessInterests si el usuario existe
                     'fitness_interests' => $user->loadMissing('fitnessInterests')->fitnessInterests
                 ] : null,

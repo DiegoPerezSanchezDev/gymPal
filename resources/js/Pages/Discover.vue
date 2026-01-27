@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import UserCardSkeleton from '@/Components/Skeletons/UserCardSkeleton.vue';
 import GymDetailsModal from '@/Components/GymDetailsModal.vue';
+import GymMembersModal from '@/Components/GymMembersModal.vue';
 import CityAutocomplete from '@/Components/CityAutocomplete.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { Head, useForm, router, Link } from '@inertiajs/vue3';
@@ -11,6 +12,20 @@ import MultiSelectInput from '@/Components/MultiSelectInput.vue';
 import _ from 'lodash';
 import "leaflet/dist/leaflet.css";
 import { LMap, LTileLayer, LMarker, LPopup, LIcon, LCircle } from "@vue-leaflet/vue-leaflet";
+
+// Mapping colors for sport interests
+const getInterestColorClass = (name) => {
+    const n = name.toLowerCase();
+    if (n.includes('gym') || n.includes('pesasm') || n.includes('bodybuilding')) return 'bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border-indigo-100 dark:border-indigo-800';
+    if (n.includes('calistenia')) return 'bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border-emerald-100 dark:border-emerald-800';
+    if (n.includes('crossfit')) return 'bg-orange-50 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 border-orange-100 dark:border-orange-800';
+    if (n.includes('yoga') || n.includes('pilates')) return 'bg-purple-50 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border-purple-100 dark:border-purple-800';
+    if (n.includes('running') || n.includes('ciclismo')) return 'bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-blue-100 dark:border-blue-800';
+    if (n.includes('boxeo') || n.includes('artes marciales') || n.includes('mma')) return 'bg-red-50 dark:bg-red-900/40 text-red-700 dark:text-red-300 border-red-100 dark:border-red-800';
+    if (n.includes('natación')) return 'bg-cyan-50 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 border-cyan-100 dark:border-cyan-800';
+    if (n.includes('baile') || n.includes('zumba')) return 'bg-pink-50 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300 border-pink-100 dark:border-pink-800';
+    return 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-100 dark:border-gray-700'; 
+};
 
 const props = defineProps({
     title: String,
@@ -30,6 +45,7 @@ const zoom = ref(14);
 const showFilters = ref(false);
 const isLoading = ref(true);
 const showLocationPermissionModal = ref(false);
+const intentAfterLocation = ref('grid'); // 'grid' o 'map'
 
 const form = useForm({
     search: props.filters.search || '',
@@ -139,10 +155,17 @@ function mapGymBackendToFrontend(gym) {
 // Modal Logic
 const selectedGymId = ref(null);
 const showGymModal = ref(false);
+const showGymMembersModal = ref(false);
+const selectedGymForMembers = ref(null);
 
 const openGymModal = (gymId) => {
     selectedGymId.value = gymId;
     showGymModal.value = true;
+};
+
+const openGymMembersModal = (gym) => {
+    selectedGymForMembers.value = gym;
+    showGymMembersModal.value = true;
 };
 
 const updateGymData = (updatedGym) => {
@@ -183,11 +206,51 @@ const onMapMoveEnd = (e) => {
     fetchGyms(e.target.getBounds());
 };
 
+const allUsers = ref(props.users.data);
+const nextPageUrl = ref(props.users.next_page_url);
+const isLoadingMore = ref(false);
+const loadMoreTrigger = ref(null);
+
 // Lifecycle
 onMounted(() => {
-    if (props.users) setTimeout(() => isLoading.value = false, 1500);
-}); 
+    if (props.users) setTimeout(() => isLoading.value = false, 1000);
 
+    const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && nextPageUrl.value && !isLoadingMore.value && !isLoading.value) {
+            loadMoreUsers();
+        }
+    }, { threshold: 0.1 });
+
+    if (loadMoreTrigger.value) {
+        observer.observe(loadMoreTrigger.value);
+    }
+});
+
+watch(() => props.users, (newUsers) => {
+    if (newUsers.current_page === 1) {
+        allUsers.value = newUsers.data;
+    } else {
+        // En caso de navegación directa a páginas > 1 (poco común aquí)
+        allUsers.value = newUsers.data;
+    }
+    nextPageUrl.value = newUsers.next_page_url;
+});
+
+function loadMoreUsers() {
+    if (!nextPageUrl.value || isLoadingMore.value) return;
+
+    isLoadingMore.value = true;
+    router.get(nextPageUrl.value, {}, {
+        preserveState: true,
+        preserveScroll: true,
+        onSuccess: (page) => {
+            allUsers.value = [...allUsers.value, ...page.props.users.data];
+            nextPageUrl.value = page.props.users.next_page_url;
+            isLoadingMore.value = false;
+        },
+        onFinish: () => isLoadingMore.value = false
+    });
+}
 // (Eliminamos watcher de lat/lon antiguo porque ahora va por evento de mapa)
 
 // Actions
@@ -213,8 +276,9 @@ watch(() => form.gym_id, () => { isLoading.value = true; submit(); });
 const aplicarFiltroRapido = (tipo) => {
     form.filtro_rapido = form.filtro_rapido === tipo ? '' : tipo; // Toggle
     
-    // Limpiar otros filtros si se activa uno rápido
+    // Si se activa un filtro rápido, ocultamos el mapa y volvemos a la lista
     if (form.filtro_rapido) {
+        viewMode.value = 'grid';
         form.search = ''; form.city = ''; form.interests = []; form.availability_general = []; form.experience_level = ''; form.looking_for_interest_id = '';
         if (tipo !== 'cerca_de_mi') { form.lat = null; form.lon = null; }
         if (tipo === 'buscando_companero' && props.user?.looking_for_interest_id) {
@@ -223,28 +287,79 @@ const aplicarFiltroRapido = (tipo) => {
     } else {
         form.interest_id = '';
     }
+    isLoading.value = true;
     submit();
 };
 
 const buscarPorUbicacion = () => {
+    // Si ya está activo el filtro en el form, lo desactivamos (Toggle)
+    if (form.lat || form.lon) {
+        form.lat = null;
+        form.lon = null;
+        isLoading.value = true;
+        submit();
+        return;
+    }
+
     if (!navigator.geolocation) { 
         showLocationPermissionModal.value = true;
         return; 
     }
+    
+    intentAfterLocation.value = 'grid';
+
+    // Si ya tenemos coordenadas en el perfil del usuario, vamos directo al GPS sin modal previo
+    if (props.user?.latitude && props.user?.longitude) {
+        confirmarUbicacion();
+    } else {
+        showLocationPermissionModal.value = true;
+    }
+};
+
+const toggleMapa = () => {
+    if (viewMode.value === 'grid') {
+        // Si no hay coordenadas ni en el form ni en el perfil, pedimos permiso
+        if (!form.lat && !form.lon && (!props.user?.latitude || !props.user?.longitude)) {
+            intentAfterLocation.value = 'map';
+            showLocationPermissionModal.value = true;
+        } else {
+            // Si ya tenemos algo, intentamos ir al mapa directamente
+            viewMode.value = 'map';
+        }
+    } else {
+        viewMode.value = 'grid';
+    }
+};
+
+const confirmarUbicacion = () => {
+    showLocationPermissionModal.value = false;
+    isLoading.value = true;
+    
     navigator.geolocation.getCurrentPosition((position) => {
         form.lat = position.coords.latitude;
         form.lon = position.coords.longitude;
         form.filtro_rapido = '';
-        viewMode.value = 'map'; // Auto-switch to map view
+        viewMode.value = intentAfterLocation.value;
         submit();
     }, () => {
-        showLocationPermissionModal.value = true;
+        isLoading.value = false;
+        // Si falla el GPS y no tenemos NADA previo (ni form ni perfil), bloqueamos
+        if (!form.lat && !form.lon && (!props.user?.latitude || !props.user?.longitude)) {
+            error('No se pudo obtener tu ubicación. Esta función requiere GPS.');
+        } else {
+            // Si teníamos algo previo (ej: perfil), cargamos eso si queríamos ir al mapa
+            if (intentAfterLocation.value === 'map') {
+                viewMode.value = 'map';
+            }
+            error('No pudimos actualizar tu ubicación exacta por GPS.');
+        }
     });
 };
 
 const limpiarFiltros = () => {
     form.reset();
     form.interests = []; form.availability_general = [];
+    isLoading.value = true;
     submit();
 };
 
@@ -319,7 +434,7 @@ const handleCitySelected = (cityData) => {
                             class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border"
                             :class="form.filtro_rapido === 'mas_activos' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700 shadow-sm' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'"
                         >
-                            🔥 Más Activos
+                            🔥 Más activos
                         </button>
                         <button 
                             @click="aplicarFiltroRapido('nuevos_en_ciudad')"
@@ -421,7 +536,7 @@ const handleCitySelected = (cityData) => {
 
                     <!-- Filtro Específico para "Buscan Compañero" -->
                     <div v-if="form.filtro_rapido === 'buscando_companero'" class="mt-6 pt-6 border-t border-indigo-100 dark:border-indigo-800 bg-indigo-50/30 dark:bg-indigo-900/20 -mx-6 px-6 pb-6 rounded-b-xl transition-colors">
-                        <label class="block text-sm font-bold text-indigo-700 mb-3 flex items-center gap-2">
+                        <label class="block text-sm font-bold text-indigo-700 dark:text-indigo-400 mb-3 flex items-center gap-2">
                             <span class="text-lg">🤝</span>
                             <span>Buscar compañero para</span>
                         </label>
@@ -430,7 +545,7 @@ const handleCitySelected = (cityData) => {
                             v-model="form.interest_id"
                             :options="interestOptions"
                         />
-                        <p class="text-xs text-indigo-600 mt-2 flex items-center gap-1">
+                        <p class="text-xs text-indigo-600 dark:text-indigo-400 mt-2 flex items-center gap-1">
                             <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
                             Las tarjetas que coincidan se resaltarán automáticamente
                         </p>
@@ -438,9 +553,9 @@ const handleCitySelected = (cityData) => {
                 </div>
 
                 <!-- Botón Alternar Mapa/Lista (Ubicado debajo de filtros) -->
-                <div class="flex justify-end mb-6">
+                <div v-if="!form.filtro_rapido && !form.lat" class="flex justify-end mb-6">
                     <button 
-                        @click="viewMode = viewMode === 'grid' ? 'map' : 'grid'"
+                        @click="toggleMapa"
                         class="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold shadow-sm border transition-all duration-200"
                         :class="viewMode === 'grid' 
                             ? 'bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-md' 
@@ -564,8 +679,8 @@ const handleCitySelected = (cityData) => {
                     </div>
 
                     <div v-else>
-                        <div v-if="users.data.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <div v-for="user in users.data" :key="user.id" 
+                        <div v-if="allUsers.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div v-for="user in allUsers" :key="user.id" 
                                  class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col h-full group relative transform scale-[0.98]"
                              :class="{
                                  'border-2 border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-900': form.filtro_rapido === 'buscando_companero' && form.interest_id && user.looking_for_interest_id == form.interest_id,
@@ -595,25 +710,28 @@ const handleCitySelected = (cityData) => {
                             <!-- Header / Avatar -->
                             <div class="p-6 flex flex-col items-center flex-grow">
                                 
-                                <div class="relative mb-4">
+                                <div class="relative mb-4 flex-shrink-0 w-24 h-24">
                                     <img 
                                         :src="user.profile_picture_url ? '/storage/' + user.profile_picture_url : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.name) + '&background=random&color=fff'" 
                                         :alt="user.name" 
-                                        class="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-gray-700 shadow-md group-hover:scale-105 transition-transform duration-300"
+                                        class="w-full h-full rounded-full object-cover border-4 border-white dark:border-gray-700 shadow-md group-hover:scale-105 transition-transform duration-300"
                                     >
-                                    <span v-if="user.connection_status === 'accepted'" class="absolute bottom-1 right-1 bg-green-500 w-5 h-5 rounded-full border-2 border-white" title="Conectado"></span>
                                 </div>
                                 
                                 <h3 class="text-lg font-bold text-gray-900 dark:text-white text-center mt-2 transition-colors">{{ user.name }}</h3>
-                                <p class="text-sm text-gray-500 dark:text-gray-400 font-medium mb-3 transition-colors">@{{ user.username }}</p>
-                                
+                                <div class="flex items-center justify-center gap-1.5 mb-3">
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 font-medium transition-colors">@{{ user.username }}</p>
+                                    <span v-if="user.is_following_me" class="px-1.5 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-900/40 text-[8px] font-black text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800 transition-colors uppercase tracking-widest shrink-0">
+                                        Te sigue
+                                    </span>
+                                </div>                                
                                 <!-- Ubicación y Distancia -->
                                 <div class="flex items-center justify-center gap-2 mb-4 text-xs text-gray-500 dark:text-gray-400 transition-colors">
                                     <span v-if="user.location_city" class="flex items-center">
                                         📍 {{ user.location_city }}
                                     </span>
                                     <span v-if="user.distance !== undefined && user.distance !== null" class="flex items-center font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded transition-colors">
-                                        📏 A {{ parseFloat(user.distance).toFixed(2) }} km
+                                        📏 {{ parseFloat(user.distance) < 0.05 ? 'Muy cerca' : 'A ' + parseFloat(user.distance).toFixed(2) + ' km' }}
                                     </span>
                                 </div>
 
@@ -639,7 +757,8 @@ const handleCitySelected = (cityData) => {
                                     <p class="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-bold mb-2 text-center transition-colors">Practica</p>
                                     <div class="flex flex-wrap justify-center gap-1.5">
                                         <span v-for="interest in user.fitness_interests.slice(0, 3)" :key="interest.id" 
-                                              class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-700 shadow-sm transition-colors">
+                                              class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold border shadow-sm transition-colors"
+                                              :class="getInterestColorClass(interest.name)">
                                             {{ interest.name }}
                                         </span>
                                         <span v-if="user.fitness_interests.length > 3" class="text-[10px] text-gray-400 dark:text-gray-500 font-bold flex items-center justify-center bg-gray-50 dark:bg-gray-700 rounded-full border border-gray-100 dark:border-gray-600 h-6 w-6 transition-colors">
@@ -671,10 +790,19 @@ const handleCitySelected = (cityData) => {
                                 </button>
                             </div>
                         </div>
+                        </div>
+
+                        <!-- Trigger Infinite Scroll (Grid) -->
+                        <div ref="loadMoreTrigger" class="h-20 flex items-center justify-center mt-8">
+                            <div v-if="isLoadingMore" class="flex flex-col items-center gap-2">
+                                <div class="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                                <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Buscando más GymPals...</span>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Empty State -->
-                    <div v-else class="text-center py-16">
+                    <div v-if="!isLoading && allUsers.length === 0" class="text-center py-16">
                         <div class="mx-auto h-24 w-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4 transition-colors">
                             <svg class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -688,33 +816,32 @@ const handleCitySelected = (cityData) => {
                     </div>
                 </div>
             </div>
-
-                <!-- Paginación -->
-                <div v-if="!isLoading && users.links.length > 3" class="mt-8 flex justify-center">
-                     <template v-for="(link, key) in users.links" :key="key">
-                        <div v-if="link.url === null" class="mr-1 mb-1 px-4 py-3 text-sm leading-4 text-gray-400 border rounded" v-html="link.label" />
-                        <Link v-else class="mr-1 mb-1 px-4 py-3 text-sm leading-4 border rounded hover:bg-white focus:border-indigo-500 focus:text-indigo-500" :class="{ 'bg-indigo-500 text-white': link.active }" :href="link.url" v-html="link.label" preserve-scroll />
-                    </template>
-                </div>
-
             </div>
-        </div>
 
         <GymDetailsModal 
             :show="showGymModal" 
             :gymId="selectedGymId" 
             @close="showGymModal = false"
             @update:gym="updateGymData"
+            @view-all-members="openGymMembersModal"
+        />
+
+        <GymMembersModal
+            :show="showGymMembersModal"
+            :gym="selectedGymForMembers"
+            @close="showGymMembersModal = false"
         />
 
         <ConfirmModal
             :show="showLocationPermissionModal"
             type="info"
             title="📍 Permisos de Ubicación Requeridos"
-            message="Para utilizar el mapa y buscar gimnasios cercanos, necesitas permitir el acceso a tu ubicación GPS en tu navegador."
-            confirm-text="Entendido"
-            :show-cancel="false"
-            @confirm="showLocationPermissionModal = false"
+            message="Para utilizar la búsqueda por cercanía y ver gimnasios en el mapa, necesitamos acceder a tu ubicación GPS."
+            confirm-text="Permitir acceso"
+            :show-cancel="true"
+            cancel-text="Ahora no"
+            @confirm="confirmarUbicacion"
+            @cancel="showLocationPermissionModal = false"
         />
     </AuthenticatedLayout>
 </template>

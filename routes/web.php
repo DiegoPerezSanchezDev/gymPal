@@ -83,6 +83,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/gyms/{gym}/join', [\App\Http\Controllers\GymController::class, 'join'])->name('gyms.join');
     Route::post('/gyms/{gym}/leave', [\App\Http\Controllers\GymController::class, 'leave'])->name('gyms.leave');
     Route::get('/gyms/{gym}', [\App\Http\Controllers\GymController::class, 'show'])->name('gyms.show');
+    Route::get('/gyms/{gym}/members', [\App\Http\Controllers\GymController::class, 'members'])->name('gyms.members');
 
     // RUTA PARA GUARDAR MENSAJES EN UNA CONVERSACIÓN
     Route::post('/chat/conversations/{conversation}/messages', [ChatController::class, 'storeMessage'])

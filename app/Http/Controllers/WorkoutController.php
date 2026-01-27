@@ -37,8 +37,10 @@ class WorkoutController extends Controller
             $query->where(function($q) use ($request) {
                 $q->where('category', $request->category)
                   ->orWhereHas('category', function($q2) use ($request) {
-                      $q2->where('slug', $request->category)
-                         ->orWhere('id', $request->category);
+                      $q2->where('slug', $request->category);
+                      if (is_numeric($request->category)) {
+                          $q2->orWhere('id', (int)$request->category);
+                      }
                   });
             });
         }
@@ -481,6 +483,7 @@ class WorkoutController extends Controller
 
         foreach ($logs as $log) {
             foreach ($log->exercises_data as $exercise) {
+                if (!isset($exercise['name'])) continue;
                 $name = strtolower($exercise['name']);
                 if (in_array($name, $exerciseNames->toArray())) {
                     foreach ($exercise['sets'] as $set) {
@@ -540,8 +543,10 @@ class WorkoutController extends Controller
             $query->where(function($q) use ($request) {
                 $q->where('category', $request->category)
                   ->orWhereHas('category', function($q2) use ($request) {
-                      $q2->where('slug', $request->category)
-                         ->orWhere('id', $request->category);
+                      $q2->where('slug', $request->category);
+                      if (is_numeric($request->category)) {
+                          $q2->orWhere('id', (int)$request->category);
+                      }
                   });
             });
         }

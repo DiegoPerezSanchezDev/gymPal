@@ -43,15 +43,17 @@ class GymController extends Controller
      */
     public function show(Gym $gym)
     {
-        $gym->load(['users' => function($query) {
-            $query->limit(12)->inRandomOrder(); // Solo mostramos algunos para "preview"
-        }]);
-        
-        // Verificar si el usuario actual es miembro
-        $isMember = Auth::check() ? Auth::user()->gyms()->where('gym_id', $gym->id)->exists() : false;
+        try {
+            $gym->load(['users' => function($query) {
+                $query->limit(12)->inRandomOrder(); // Solo mostramos algunos para "preview"
+            }]);
+            
+            // Verificar si el usuario actual es miembro
+            $isMember = Auth::check() ? Auth::user()->gyms()->where('gym_id', $gym->id)->exists() : false;
 
-        // Devolvemos JSON si es una petición AJAX (desde el mapa)
-        if (request()->wantsJson()) {
+            $currentUser = Auth::user();
+        $followingMeIds = $currentUser ? \App\Models\Connection::where('receiver_id', $currentUser->id)->where('status', 'accepted')->pluck('sender_id')->toArray() : [];
+
             return response()->json([
                 'gym' => $gym,
                 'members' => $gym->users->map(fn($u) => [
@@ -59,12 +61,32 @@ class GymController extends Controller
                     'name' => $u->name,
                     'username' => $u->username,
                     'profile_picture_url' => $u->profile_picture_url,
+                    'is_following_me' => in_array($u->id, $followingMeIds),
                 ]),
                 'is_member' => $isMember
             ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in GymController@show: ' . $e->getMessage());
+            return response()->json(['error' => 'Error loading gym details'], 500);
         }
+    }
 
-        // Si fuera una página completa, aquí iría el Inertia render
-        // return Inertia::render('Gyms/Show', ...);
+    /**
+     * Obtener todos los miembros de un gimnasio (paginado).
+     */
+    public function members(Gym $gym)
+    {
+        $currentUser = Auth::user();
+        $followingMeIds = $currentUser ? \App\Models\Connection::where('receiver_id', $currentUser->id)->where('status', 'accepted')->pluck('sender_id')->toArray() : [];
+
+        $members = $gym->users()
+            ->select('users.id', 'users.name', 'users.username', 'users.profile_picture_url')
+            ->paginate(40)
+            ->through(function ($u) use ($followingMeIds) {
+                $u->is_following_me = in_array($u->id, $followingMeIds);
+                return $u;
+            });
+
+        return response()->json($members);
     }
 }

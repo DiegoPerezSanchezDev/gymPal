@@ -165,6 +165,15 @@ onUnmounted(() => {
                     <div class="flex flex-col gap-4">
                         <!-- Categorías -->
                         <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 justify-start sm:justify-center">
+                            <!-- Botón Todas -->
+                            <button 
+                                @click="setCategory(null)"
+                                class="px-4 py-2 rounded-full text-sm font-bold transition-all border-2 whitespace-nowrap"
+                                :class="!filters.category ? 'bg-slate-700 dark:bg-slate-500 text-white border-slate-700 dark:border-slate-500 shadow-md' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-slate-300 dark:hover:border-slate-600'"
+                            >
+                                Todas
+                            </button>
+
                             <button 
                                 v-for="cat in categories" 
                                 :key="cat.id"
@@ -210,21 +219,21 @@ onUnmounted(() => {
                             <button 
                                 @click="setSort('popular')"
                                 class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
-                                :class="filters.sort === 'popular' || !filters.sort ? 'bg-indigo-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'"
+                                :class="filters.sort === 'popular' || !filters.sort ? 'bg-slate-700 dark:bg-slate-500 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'"
                             >
                                 🔥 Más populares
                             </button>
                             <button 
                                 @click="setSort('recent')"
                                 class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
-                                :class="filters.sort === 'recent' ? 'bg-indigo-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'"
+                                :class="filters.sort === 'recent' ? 'bg-slate-700 dark:bg-slate-500 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'"
                             >
                                 🆕 Más recientes
                             </button>
                             <button 
                                 @click="setSort('exercises')"
                                 class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
-                                :class="filters.sort === 'exercises' ? 'bg-indigo-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'"
+                                :class="filters.sort === 'exercises' ? 'bg-slate-700 dark:bg-slate-500 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'"
                             >
                                 📊 Más completas
                             </button>
@@ -256,7 +265,7 @@ onUnmounted(() => {
                                     class="w-16 h-16 rounded-2xl border-4 border-white dark:border-gray-800 shadow-md bg-white dark:bg-gray-700 object-cover transition-colors"
                                     :alt="workout.user.name"
                                 />
-                                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg transition-colors flex items-center gap-1">
+                                <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-lg transition-colors flex items-center gap-1.5 border border-indigo-100/50 dark:border-indigo-800/50 shadow-sm">
                                     <span v-if="workout.category?.icon">{{ workout.category.icon }}</span>
                                     {{ workout.category?.name || workout.category }}
                                 </span>
@@ -276,8 +285,10 @@ onUnmounted(() => {
                                 </span>
                                 
                                 <!-- Pública/Privada -->
-                                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-lg transition-colors"
-                                      :class="workout.is_public ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'">
+                                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-lg transition-colors border"
+                                      :class="workout.is_public 
+                                          ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800' 
+                                          : 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-100 dark:border-rose-800'">
                                     {{ workout.is_public ? '🌐 Pública' : '🔒 Privada' }}
                                 </span>
                             </div>

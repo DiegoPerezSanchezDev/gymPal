@@ -18,7 +18,7 @@ const isOpen = ref(false);
 const dropdownRef = ref(null);
 
 const selectedOption = computed(() => {
-    return props.options.find(opt => opt.value === props.modelValue) || props.options[0];
+    return props.options.find(opt => opt.value === props.modelValue);
 });
 
 const toggleDropdown = () => {

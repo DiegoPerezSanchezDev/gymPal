@@ -9,7 +9,9 @@ import TagsInput from '@/Components/TagsInput.vue';
 import SelectInput from '@/Components/SelectInput.vue';
 import CityAutocomplete from '@/Components/CityAutocomplete.vue';
 import { useToast } from '@/composables/useToast';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 import axios from 'axios';
+import ToastContainer from '@/Components/ToastContainer.vue';
 
 const props = defineProps({
     interests: Array,
@@ -48,6 +50,7 @@ const gymOptions = computed(() => {
 });
 const isSearchingGyms = ref(false);
 const selectedGym = ref(null);
+const showSkipModal = ref(false);
 
 // --- HELPER COMPUTEDS & FUNCTIONS ---
 
@@ -138,6 +141,12 @@ function selectGym(gym) {
 }
 
 function nextStep() {
+    // Validación: La ciudad es obligatoria en el primer paso para poder buscar gimnasios después
+    if (currentStep.value === 0 && !form.location_city) {
+        showError('Por favor, selecciona una ciudad para continuar. Es necesario para encontrar gimnasios y compañeros cerca de ti.');
+        return;
+    }
+
     if (currentStep.value < steps.length - 1) {
         currentStep.value++;
     } else {
@@ -162,9 +171,11 @@ function submit() {
 }
 
 function skipOnboarding() {
-    if (confirm('¿Estás seguro? Podrás completar tu perfil más tarde en la configuración.')) {
-        form.post(route('onboarding.skip'));
-    }
+    showSkipModal.value = true;
+}
+
+function confirmSkip() {
+    form.post(route('onboarding.skip'));
 }
 
 // Watch for step changes to auto-load gyms
@@ -234,7 +245,7 @@ watch(currentStep, (newStep) => {
                         </div>
 
                         <div>
-                            <InputLabel for="display_name" value="Nombre Público (Display Name)" />
+                            <InputLabel for="display_name" value="Nombre Público" />
                             <TextInput id="display_name" type="text" class="mt-1 block w-full rounded-xl" v-model="form.display_name" required autofocus />
                             <InputError class="mt-2" :message="form.errors.display_name" />
                         </div>
@@ -406,6 +417,20 @@ watch(currentStep, (newStep) => {
             </div>
         </div>
     </div>
+
+    <ConfirmModal
+        :show="showSkipModal"
+        title="¿Saltar configuración?"
+        message="Te recomendamos completar tu perfil ahora para una mejor experiencia y para que otros GymPals puedan encontrarte. Si saltas ahora, este aviso volverá a aparecer la próxima vez que inicies sesión hasta que completes tu perfil."
+        confirm-text="Saltar por ahora"
+        cancel-text="Continuar configurando"
+        type="warning"
+        @confirm="confirmSkip"
+        @cancel="showSkipModal = false"
+    />
+
+    <!-- Toasts Notifications -->
+    <ToastContainer />
 </template>
 
 <style scoped>

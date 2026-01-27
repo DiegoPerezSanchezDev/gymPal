@@ -18,14 +18,21 @@ const allPosts = ref(props.posts.data);
 const postToDelete = ref(null);
 const isLoading = ref(false);
 const isLoadingMore = ref(false);
+const loadMoreTrigger = ref(null);
 
 // Variable para controlar la URL de la siguiente página
 let nextPageUrl = ref(props.posts.next_page_url);
 
-// Detectar navegación inicial vs actualizaciones
 onMounted(() => {
-    // Si no hay posts y no es la primera carga (ej: navegación SPA), podría ser loading
-    // Pero Inertia maneja el estado inicial. Lo usaremos para cambios de tab.
+    const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && nextPageUrl.value && !isLoadingMore.value && !isLoading.value) {
+            loadMorePosts();
+        }
+    }, { threshold: 0.1 });
+
+    if (loadMoreTrigger.value) {
+        observer.observe(loadMoreTrigger.value);
+    }
 });
 
 watch(() => props.posts, (newPosts) => {
@@ -51,7 +58,7 @@ function setActiveTab(tabName) {
 }
 
 function loadMorePosts() {
-    if (!nextPageUrl.value) return;
+    if (!nextPageUrl.value || isLoadingMore.value) return;
 
     isLoadingMore.value = true;
     router.get(nextPageUrl.value, {}, {
@@ -139,11 +146,28 @@ function closeDeleteModal() {
 
         <!-- Contenido del Feed -->
         <div class="container mx-auto px-2 sm:px-4 py-4 md:py-8">
+            
+            <!-- Banner de Completar Perfil (Si se saltó el onboarding) -->
+            <div v-if="$page.props.auth.user.onboarding_skipped && !$page.props.auth.user.onboarding_completed" 
+                 class="max-w-2xl mx-auto mb-8 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
+                <!-- Decoración -->
+                <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-500"></div>
+                
+                <div class="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6">
+                    <div class="text-center sm:text-left">
+                        <h3 class="text-xl font-black text-white mb-1 leading-tight tracking-tight">¡Tu perfil está incompleto! 🏋️‍♂️</h3>
+                        <p class="text-indigo-100 text-sm font-medium">Completa tu información para conectar con otros GymPals y encontrar tu gimnasio.</p>
+                    </div>
+                    <Link :href="route('profile.edit')" 
+                          class="whitespace-nowrap px-6 py-3 bg-white text-indigo-600 font-extrabold rounded-xl shadow-lg hover:bg-indigo-50 transform hover:-translate-y-0.5 transition-all text-sm">
+                        Completar ahora
+                    </Link>
+                </div>
+            </div>
+
             <h2 v-if="title" class="text-2xl font-bold text-gray-800 dark:text-white mb-6 hidden md:block text-center transition-colors">{{ title }}</h2>
 
-            <!-- Barra de Historias (Stories) - Desactivado temporalmente
-            <StoryBar class="max-w-2xl mx-auto" />
-            -->
+            <!-- Barra de Historias (Oculta por petición) -->
 
             <!-- Estado de Carga (Skeletons) -->
             <div v-if="isLoading" class="space-y-6 max-w-2xl mx-auto">
@@ -158,53 +182,67 @@ function closeDeleteModal() {
                     />
                 </div>
 
-                <!-- Botón para Cargar Más -->
-                <div v-if="nextPageUrl" class="text-center mt-8 mb-12">
-                    <button 
-                        @click="loadMorePosts" 
-                        :disabled="isLoadingMore"
-                        class="bg-indigo-600 text-white font-semibold py-2 px-6 rounded-full hover:bg-indigo-700 transition-all transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 shadow-md"
-                    >
-                        <span v-if="isLoadingMore" class="flex items-center gap-2">
-                            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Cargando...
-                        </span>
-                        <span v-else>Cargar más</span>
-                    </button>
+                <!-- Trigger para Cargar Más (Intersection Observer) -->
+                <div ref="loadMoreTrigger" class="h-20 flex items-center justify-center mt-4 mb-20">
+                    <div v-if="isLoadingMore" class="flex flex-col items-center gap-2">
+                        <div class="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                        <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Cargando más...</span>
+                    </div>
                 </div>
             </div>
         
-            <!-- Estado Vacío -->
+            <!-- Estado Vacío o Sin GPS -->
             <div v-else class="text-center py-12 max-w-lg mx-auto bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-100 dark:border-gray-700 p-8 transition-colors">
-                <div class="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 dark:text-indigo-400 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl transition-colors">
-                    {{ activeTab === 'populares' ? '🔥' : (activeTab === 'cerca' ? '📍' : '📭') }}
-                </div>
-                
-                <h3 class="mt-2 text-xl font-bold text-gray-900 dark:text-white transition-colors">
-                    {{ 
-                        activeTab === 'populares' ? 'Aún no hay tendencias' : 
-                        (activeTab === 'cerca' ? 'No hay actividad cercana' : 'Tu feed está tranquilo') 
-                    }}
-                </h3>
-                
-                <p class="mt-2 text-gray-500 dark:text-gray-400 max-w-sm mx-auto transition-colors">
-                    {{ 
-                        activeTab === 'populares' ? 'Las publicaciones más destacadas de la comunidad aparecerán aquí. ¡Crea contenido genial para ser el primero!' : 
-                        (activeTab === 'cerca' ? 'Parece que no hay actividad cerca. ¡Busca tu gimnasio en el mapa y únete a su comunidad!' : 'Sigue a más atletas o encuentra tu gimnasio para ver actividad aquí.') 
-                    }}
-                </p>
+                <!-- Caso 1: Sin GPS en pestaña Cerca -->
+                <template v-if="activeTab === 'cerca' && (!$page.props.auth.user.latitude || !$page.props.auth.user.longitude)">
+                    <div class="w-16 h-16 bg-amber-50 dark:bg-amber-900/30 text-amber-500 dark:text-amber-400 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl transition-colors">
+                        📍
+                    </div>
+                    
+                    <h3 class="mt-2 text-xl font-bold text-gray-900 dark:text-white transition-colors">
+                        Ubicación necesaria
+                    </h3>
+                    
+                    <p class="mt-2 text-gray-500 dark:text-gray-400 max-w-sm mx-auto transition-colors">
+                        Para mostrarte GymPals y actividad cerca de ti, necesitamos conocer tu ubicación. Completa tu perfil con tu ciudad para activar esta función.
+                    </p>
 
-                <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-                    <Link :href="route('posts.create')" class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent shadow-lg text-sm font-bold rounded-xl text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transform hover:-translate-y-0.5 transition-all">
-                        ✨ Crear Publicación
-                    </Link>
-                    <Link :href="route('discover.index')" class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border-2 border-gray-100 dark:border-gray-600 shadow-sm text-sm font-bold rounded-xl text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-gray-200 dark:hover:border-gray-500 transition-all">
-                        �️ Explorar Mapa y Gimnasios
-                    </Link>
-                </div>
+                    <div class="mt-8">
+                        <Link :href="route('profile.edit')" class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent shadow-lg text-sm font-bold rounded-xl text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 transform hover:-translate-y-0.5 transition-all">
+                            📍 Configurar Ubicación
+                        </Link>
+                    </div>
+                </template>
+
+                <!-- Caso 2: Pestaña vacía normal -->
+                <template v-else>
+                    <div class="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 dark:text-indigo-400 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl transition-colors">
+                        {{ activeTab === 'populares' ? '🔥' : (activeTab === 'cerca' ? '📍' : '📭') }}
+                    </div>
+                    
+                    <h3 class="mt-2 text-xl font-bold text-gray-900 dark:text-white transition-colors">
+                        {{ 
+                            activeTab === 'populares' ? 'Aún no hay tendencias' : 
+                            (activeTab === 'cerca' ? 'No hay actividad cercana' : 'Tu feed está tranquilo') 
+                        }}
+                    </h3>
+                    
+                    <p class="mt-2 text-gray-500 dark:text-gray-400 max-w-sm mx-auto transition-colors">
+                        {{ 
+                            activeTab === 'populares' ? 'Las publicaciones más destacadas de la comunidad aparecerán aquí. ¡Crea contenido genial para ser el primero!' : 
+                            (activeTab === 'cerca' ? 'Parece que no hay actividad cerca. ¡Busca tu gimnasio en el mapa y únete a su comunidad!' : 'Sigue a más atletas o encuentra tu gimnasio para ver actividad aquí.') 
+                        }}
+                    </p>
+
+                    <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+                        <Link :href="route('posts.create')" class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent shadow-lg text-sm font-bold rounded-xl text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transform hover:-translate-y-0.5 transition-all">
+                            ✨ Crear Publicación
+                        </Link>
+                        <Link :href="route('discover.index')" class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border-2 border-gray-100 dark:border-gray-600 shadow-sm text-sm font-bold rounded-xl text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-gray-200 dark:hover:border-gray-500 transition-all">
+                            🗺️ Explorar Mapa y Gimnasios
+                        </Link>
+                    </div>
+                </template>
             </div>
 
         </div>

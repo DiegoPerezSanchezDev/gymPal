@@ -64,11 +64,11 @@ const cleanCategoryName = computed(() => {
             </div>
             <div class="flex gap-2">
                 <!-- Badge de visibilidad -->
-                <div v-if="workout.is_public" class="px-2 py-1 rounded-full text-[9px] font-bold text-white bg-white/20 backdrop-blur-sm border border-white/30 flex items-center gap-1">
+                <div v-if="workout.is_public" class="px-2 py-1 rounded-full text-[9px] font-bold text-white bg-emerald-500/30 backdrop-blur-sm border border-white/30 flex items-center gap-1">
                     <span>🌐</span>
                     <span>Pública</span>
                 </div>
-                <div v-else class="px-2 py-1 rounded-full text-[9px] font-bold text-white bg-black/20 backdrop-blur-sm border border-white/20 flex items-center gap-1">
+                <div v-else class="px-2 py-1 rounded-full text-[9px] font-bold text-white bg-rose-500/30 backdrop-blur-sm border border-white/20 flex items-center gap-1">
                     <span>🔒</span>
                     <span>Privada</span>
                 </div>
@@ -126,6 +126,7 @@ const cleanCategoryName = computed(() => {
 .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }

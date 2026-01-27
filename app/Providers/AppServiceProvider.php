@@ -20,6 +20,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Forzamos el idioma a Español
+        app()->setLocale('es');
+
         // Si detectamos que viene por el tÃºnel de Cloudflare, adaptamos la URL de la app
         if (isset($_SERVER['HTTP_X_FORWARDED_HOST'])) {
             $tunnelUrl = 'https://' . $_SERVER['HTTP_X_FORWARDED_HOST'];

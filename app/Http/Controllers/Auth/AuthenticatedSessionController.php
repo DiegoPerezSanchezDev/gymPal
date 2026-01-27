@@ -33,7 +33,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        if (!$request->user()->onboarding_completed) {
+        if (!$request->user()->onboarding_completed && !$request->user()->onboarding_skipped) {
             return redirect()->route('onboarding.index');
         }
 

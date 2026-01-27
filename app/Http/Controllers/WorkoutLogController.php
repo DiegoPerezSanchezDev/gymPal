@@ -34,10 +34,16 @@ class WorkoutLogController extends Controller
         }
 
         if ($dateFrom) {
-            $query->whereDate('created_at', '>=', $dateFrom);
-        }
-
-        if ($dateTo) {
+            if (!$dateTo) {
+                // Si solo hay fecha inicio (un solo clic), filtramos ese día exacto
+                $query->whereDate('created_at', $dateFrom);
+            } else {
+                $query->whereDate('created_at', '>=', $dateFrom);
+                if ($dateTo) {
+                    $query->whereDate('created_at', '<=', $dateTo);
+                }
+            }
+        } elseif ($dateTo) {
             $query->whereDate('created_at', '<=', $dateTo);
         }
 

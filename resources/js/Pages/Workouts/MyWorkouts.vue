@@ -168,7 +168,7 @@ const hasActiveFilters = computed(() => {
                                 @click="categoryFilter = ''; applyFilters()"
                                 class="flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition active:scale-95"
                                 :class="categoryFilter === '' 
-                                    ? 'bg-indigo-600 text-white shadow-md' 
+                                    ? 'bg-slate-700 dark:bg-slate-500 text-white shadow-md' 
                                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
                             >
                                 Todas
@@ -193,7 +193,7 @@ const hasActiveFilters = computed(() => {
                                 @click="visibilityFilter = 'all'; applyFilters()"
                                 class="flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition active:scale-95"
                                 :class="visibilityFilter === 'all' 
-                                    ? 'bg-indigo-600 text-white shadow-md' 
+                                    ? 'bg-slate-700 dark:bg-slate-500 text-white shadow-md' 
                                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
                             >
                                 Todas
@@ -202,7 +202,7 @@ const hasActiveFilters = computed(() => {
                                 @click="visibilityFilter = 'public'; applyFilters()"
                                 class="flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition active:scale-95"
                                 :class="visibilityFilter === 'public' 
-                                    ? 'bg-green-600 text-white shadow-md' 
+                                    ? 'bg-emerald-600 text-white shadow-md' 
                                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
                             >
                                 🌐 Públicas
@@ -211,7 +211,7 @@ const hasActiveFilters = computed(() => {
                                 @click="visibilityFilter = 'private'; applyFilters()"
                                 class="flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition active:scale-95"
                                 :class="visibilityFilter === 'private' 
-                                    ? 'bg-gray-700 dark:bg-gray-600 text-white shadow-md' 
+                                    ? 'bg-rose-600 text-white shadow-md' 
                                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
                             >
                                 🔒 Privadas
@@ -224,7 +224,7 @@ const hasActiveFilters = computed(() => {
                                 @click="difficultyFilter = ''; applyFilters()"
                                 class="flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition active:scale-95"
                                 :class="difficultyFilter === '' 
-                                    ? 'bg-orange-600 text-white shadow-md' 
+                                    ? 'bg-slate-700 dark:bg-slate-500 text-white shadow-md' 
                                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
                             >
                                 Todas

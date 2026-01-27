@@ -135,6 +135,9 @@ class ProfileController extends Controller
             $user->availability_general = $data['availability_general'];
         }
 
+        // Al editar el perfil manualmente, consideramos el onboarding como completado
+        $user->onboarding_completed = true;
+
         $user->save();
 
         // Guardar intereses deportivos (relación muchos a muchos)
@@ -244,10 +247,27 @@ class ProfileController extends Controller
             ->select('id', 'name', 'username', 'profile_picture_url')
             ->get();
         
+        // IDs de las personas que siguen al usuario autenticado para la etiqueta "Te sigue"
+        $followingMeIds = $currentUser ? Connection::where('receiver_id', $currentUser->id)
+            ->where('status', 'accepted')
+            ->pluck('sender_id')
+            ->toArray() : [];
+
+        // Helper para mapear is_following_me
+        $attachFollowingMe = function($user) use ($followingMeIds) {
+            $user->is_following_me = in_array($user->id, $followingMeIds);
+            return $user;
+        };
+
         // Contadores
         $gymPalsCount = count($gymPalsIds);
         $followingCount = $followingAccepted->count();
         $followersCount = $followersAccepted->count();
+
+        // Mapear listas
+        $gymPals = $gymPals->map($attachFollowingMe);
+        $followersAccepted = $followersAccepted->map($attachFollowingMe);
+        $followingAccepted = $followingAccepted->map($attachFollowingMe);
 
         // Calcular estadísticas del usuario
         $stats = [
