@@ -284,17 +284,6 @@ function hideTooltip() {
     padding-top: 0;
 }
 
-.month-labels {
-    position: absolute;
-    top: 0;
-    left: 40px;
-    right: 0;
-    display: grid;
-    grid-template-columns: repeat(53, 12px);
-    gap: 3px;
-    height: 20px;
-}
-
 .month-labels-bottom {
     margin-left: 40px;
     margin-top: 8px;

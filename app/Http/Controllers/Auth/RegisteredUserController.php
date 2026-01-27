@@ -42,6 +42,15 @@ class RegisteredUserController extends Controller
                     ->numbers()
                     ->symbols()
             ],
+        ], [
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.mixed' => 'La contraseña debe tener al menos una mayúscula, una minúscula, un número y un símbolo especial.',
+            'password.numbers' => 'La contraseña debe incluir al menos un número.',
+            'password.symbols' => 'La contraseña debe incluir al menos un símbolo especial (ej: !@#$).',
+            'password.confirmed' => 'Las contraseñas no coinciden.',
+            'username.regex' => 'El usuario solo puede contener letras, números, guiones y guiones bajos.',
+            'username.unique' => 'Este nombre de usuario ya está en uso.',
+            'email.unique' => 'Este correo electrónico ya está registrado.',
         ]);
 
         $user = User::create([

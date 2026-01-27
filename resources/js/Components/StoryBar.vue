@@ -1,10 +1,6 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6 overflow-x-auto whitespace-nowrap scrollbar-hide">
-      <div v-if="loading" class="flex gap-4 animate-pulse px-2">
-           <div v-for="i in 5" :key="i" class="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex-shrink-0"></div>
-      </div>
-      
-      <div v-else class="flex gap-4 px-2">
+  <div v-if="!loading" class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6 overflow-x-auto whitespace-nowrap scrollbar-hide">
+      <div class="flex gap-4 px-2">
           <!-- Mi Historia (siempre primero) -->
           <StoryBubble 
               :image="$page.props.auth.user.profile_picture_url ? '/storage/' + $page.props.auth.user.profile_picture_url : 'https://ui-avatars.com/api/?name=' + $page.props.auth.user.name"

@@ -86,16 +86,18 @@ class OnboardingController extends Controller
     {
         $user = Auth::user();
         
-        $data = ['onboarding_completed' => true];
-        
-        // Ensure username exists
+        // No marcamos como completado para que vuelva a aparecer al entrar de nuevo
+        // Pero nos aseguramos de que tenga un username si no lo tiene (para que la app no pete)
         if (empty($user->username)) {
             $username = \Illuminate\Support\Str::slug($user->name);
             if (empty($username)) $username = 'user';
-            $data['username'] = $username . rand(1000, 9999);
+            $user->update([
+                'username' => $username . rand(1000, 9999),
+                'onboarding_skipped' => true
+            ]);
+        } else {
+            $user->update(['onboarding_skipped' => true]);
         }
-
-        $user->update($data);
         
         return redirect()->route('feed.index');
     }

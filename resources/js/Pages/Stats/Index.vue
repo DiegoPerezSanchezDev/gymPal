@@ -52,10 +52,18 @@
                 
                 <div class="comparison-grid">
                     <!-- User Names -->
-                    <div class="comparison-names">
-                        <span class="my-name">Tú</span>
-                        <span class="vs-badge">VS</span>
-                        <span class="their-name">{{ user.name }}</span>
+                    <div class="flex items-center justify-around gap-4 py-6 px-2 bg-gray-50/50 dark:bg-gray-900/30 rounded-3xl mb-8 border border-gray-100 dark:border-gray-800">
+                        <div class="flex flex-col items-center gap-1 flex-1">
+                            <span class="text-[9px] font-black text-indigo-500 uppercase tracking-[0.2em] mb-1">Tú</span>
+                            <span class="text-sm sm:text-lg font-black text-gray-900 dark:text-gray-100 text-center leading-tight">{{ $page.props.auth.user.name }}</span>
+                        </div>
+                        
+                        <div class="vs-badge shrink-0 scale-110">VS</div>
+                        
+                        <div class="flex flex-col items-center gap-1 flex-1">
+                            <span class="text-[9px] font-black text-orange-500 uppercase tracking-[0.2em] mb-1">GymPal</span>
+                            <span class="text-sm sm:text-lg font-black text-gray-900 dark:text-gray-100 text-center leading-tight">{{ user.name }}</span>
+                        </div>
                     </div>
 
                     <!-- Workouts Bar -->
@@ -99,8 +107,8 @@
                 </div>
             </div>
 
-            <!-- Insights personalizados -->
-            <div v-if="insights.length > 0" class="insights-section">
+            <!-- Insights personalizados (Solo se muestran en el perfil propio) -->
+            <div v-if="!isViewingOther && insights.length > 0" class="insights-section">
                 <div 
                     v-for="(insight, index) in insights" 
                     :key="index"
@@ -111,20 +119,124 @@
                 </div>
             </div>
 
+            <!-- Goals Section (Movido arriba para mejor visibilidad) -->
+            <div class="section mt-4" v-if="!isViewingOther">
+                <div class="flex flex-row justify-between items-center gap-4 mb-8 bg-white/30 dark:bg-gray-800/20 p-4 sm:p-5 rounded-[2rem] border border-white/50 dark:border-white/5 backdrop-blur-sm shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-indigo-500 shadow-lg shadow-indigo-500/30 flex items-center justify-center text-xl animate-bounce-slow shrink-0">
+                            🎯
+                        </div>
+                        <div>
+                            <h2 class="text-lg sm:text-xl font-black text-gray-900 dark:text-gray-100 leading-none">Metas Semanales</h2>
+                            <p class="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Tu progreso esta semana</p>
+                        </div>
+                    </div>
+                    <button 
+                        @click="openGoalModal" 
+                        class="px-4 py-2.5 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 transition-all font-black shadow-lg shadow-indigo-600/20 active:scale-95 flex items-center justify-center gap-2 group shrink-0"
+                    >
+                        <span class="text-lg group-hover:rotate-90 transition-transform duration-300">+</span> 
+                        <span class="hidden sm:inline">Nueva Meta</span>
+                    </button>
+                </div>
+
+                <!-- Active Goals -->
+                <div v-if="goals && goals.filter(g => !g.completed).length > 0" class="goals-grid mb-8">
+                    <div v-for="goal in goals.filter(g => !g.completed)" :key="goal.id" class="goal-card group bg-white dark:bg-gray-800/40 backdrop-blur-md border border-gray-100 dark:border-gray-700/50 rounded-3xl p-6 shadow-xl shadow-indigo-500/5 hover:shadow-indigo-500/10 transition-all duration-300 border-b-4 border-b-indigo-500/20">
+                        <div class="flex justify-between items-center mb-5">
+                            <div class="flex items-center gap-4">
+                                <div class="goal-icon w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 flex items-center justify-center shadow-inner">
+                                    <span v-if="goal.type === 'weekly_workouts'" class="text-2xl">📅</span>
+                                    <span v-else-if="goal.type === 'weekly_minutes'" class="text-2xl">⏱️</span>
+                                    <span v-else-if="goal.type === 'early_bird'" class="text-2xl">🌅</span>
+                                    <span v-else-if="goal.type === 'monthly_volume'" class="text-2xl">🚜</span>
+                                    <span v-else-if="goal.type === 'max_weight'" class="text-2xl">🏋️</span>
+                                    <span v-else class="text-2xl">🔥</span>
+                                </div>
+                                <div>
+                                    <h3 class="font-black text-gray-900 dark:text-gray-100 text-lg leading-tight">
+                                        {{ goal.target_value }} 
+                                        <span class="text-xs uppercase tracking-tighter opacity-60 block font-bold">
+                                            <span v-if="goal.type === 'weekly_workouts'">Días por semana</span>
+                                            <span v-else-if="goal.type === 'weekly_minutes'">Minutos / Semana</span>
+                                            <span v-else-if="goal.type === 'early_bird'">Club 7 AM</span>
+                                            <span v-else-if="goal.type === 'monthly_volume'">Volumen Mensual</span>
+                                            <span v-else-if="goal.type === 'max_weight'">Levantar {{ goal.target_value }}kg</span>
+                                            <span v-else>Racha de días</span>
+                                        </span>
+                                    </h3>
+                                </div>
+                            </div>
+                            <button 
+                                @click="deleteGoal(goal.id)" 
+                                class="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
+                            >
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v2m3 4h.01" /></svg>
+                            </button>
+                        </div>
+
+                        <div class="mt-4">
+                            <div class="flex justify-between items-end mb-2">
+                                <div class="text-2xl font-black text-indigo-600 dark:text-indigo-400">
+                                    {{ goal.current_value }}<span class="text-sm opacity-50 ml-0.5">/{{ goal.target_value }}</span>
+                                </div>
+                                <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">{{ Math.min(Math.round((goal.current_value / goal.target_value) * 100), 100) }}% COMPLETADO</span>
+                            </div>
+                            <div class="w-full bg-gray-100 dark:bg-gray-700/50 rounded-full h-4 overflow-hidden p-1 shadow-inner">
+                                <div 
+                                    class="h-full rounded-full transition-all duration-1000 ease-out shadow-lg" 
+                                    :class="goal.current_value >= goal.target_value ? 'bg-gradient-to-r from-emerald-400 to-green-500 shadow-green-500/20' : 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 shadow-indigo-500/20'"
+                                    :style="{ width: Math.min((goal.current_value / goal.target_value) * 100, 100) + '%' }"
+                                ></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div v-else-if="!goals || goals.filter(g => !g.completed).length === 0" class="empty-state text-center py-10 bg-white/50 dark:bg-gray-800/10 rounded-3xl mb-8 border-2 border-dashed border-gray-200 dark:border-gray-700 transition-colors">
+                    <div class="text-4xl mb-3 opacity-50">🧭</div>
+                    <p class="text-gray-500 dark:text-gray-400 font-medium px-4">No tienes metas activas para esta semana.</p>
+                    <button @click="openGoalModal" class="mt-3 text-indigo-600 dark:text-indigo-400 font-bold hover:underline">¡Crea tu primera meta!</button>
+                </div>
+
+                <!-- Historial Compacto de Metas -->
+                <div v-if="goals && goals.filter(g => g.completed).length > 0" class="mt-6 flex flex-wrap gap-3">
+                    <div class="flex items-center gap-2 bg-emerald-500/10 dark:bg-emerald-500/20 px-4 py-2 rounded-2xl border border-emerald-500/20">
+                        <span class="text-emerald-600 dark:text-emerald-400 text-lg">✨</span>
+                        <span class="text-sm font-black text-emerald-800 dark:text-emerald-300">
+                            {{ goals.filter(g => g.completed).length }} Metas Logradas
+                        </span>
+                    </div>
+                    <button 
+                        @click="showCompletedGoalsModal = true"
+                        class="text-xs font-black text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 uppercase tracking-widest px-4 py-2 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 transition-all flex items-center gap-2"
+                    >
+                        Ver Historial 📜
+                    </button>
+                </div>
+            </div>
+
             <!-- Ranking Semanal Leaderboard -->
-            <div class="section leaderboard-section">
-                <div class="section-header mb-4">
-                    <h2 class="section-title flex items-center gap-2">
-                        <span>🏆</span> Ranking Semanal
-                    </h2>
-                    <span class="text-sm text-gray-500 dark:text-gray-400">GymPals</span>
+            <div class="section leaderboard-section mt-6">
+                <div class="flex flex-row justify-between items-center gap-4 mb-6 bg-white/30 dark:bg-gray-800/10 p-4 sm:p-5 rounded-[2rem] border border-white/50 dark:border-white/5 backdrop-blur-sm shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-amber-500 shadow-lg shadow-amber-500/30 flex items-center justify-center text-xl animate-bounce-slow shrink-0">
+                            🏆
+                        </div>
+                        <div>
+                            <h2 class="text-lg sm:text-xl font-black text-gray-900 dark:text-gray-100 leading-none">
+                                Ranking de {{ isViewingOther ? user.name.split(' ')[0] : 'GymPals' }}
+                            </h2>
+                            <p class="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Actividad esta semana</p>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="leaderboard-list">
                     <div 
-                        v-for="(entry, index) in leaderboard" 
+                        v-for="(entry, index) in leaderboard.slice(0, 4)" 
                         :key="entry.id"
-                        :class="['leaderboard-item', { 'is-me': entry.is_me, 'clickable': true }]"
+                        :class="['leaderboard-item', { 'is-me': entry.is_me, 'is-target': entry.is_target, 'clickable': entry.username !== user.username }]"
                         @click="safe_visitUserStats(entry.username)"
                     >
                         <div class="rank-position">
@@ -135,15 +247,13 @@
                         </div>
                         
                         <div class="user-info">
-                            <div class="user-avatar-placeholder" :style="{ backgroundColor: safe_stringToColor(entry.username) }">
-                                {{ entry.name.charAt(0).toUpperCase() }}
-                            </div>
                             <div class="user-details">
-                                <span class="user-name">
+                                <span class="user-name flex items-center gap-2 font-bold text-gray-900 dark:text-gray-100">
                                     {{ entry.name }}
-                                    <span v-if="entry.is_me" class="me-badge">(Tú)</span>
+                                    <span v-if="entry.is_me" class="me-badge">Tú</span>
+                                    <span v-if="entry.is_target" class="gympal-badge">GymPal</span>
                                 </span>
-                                <span class="user-username">@{{ entry.username }}</span>
+                                <span class="user-username text-xs text-gray-400">@{{ entry.username }}</span>
                             </div>
                         </div>
                         
@@ -157,34 +267,54 @@
                         <p>No hay actividad esta semana todavía.</p>
                         <p class="text-sm mt-1">¡Sé el primero en entrenar!</p>
                     </div>
+
+                    <!-- Botón Ver Más Ranking -->
+                    <button 
+                        v-if="leaderboard.length > 4"
+                        @click="showLeaderboardModal = true"
+                        class="mt-4 w-full py-3 bg-gray-50 dark:bg-gray-800/40 hover:bg-gray-100 dark:hover:bg-gray-800/60 text-indigo-600 dark:text-indigo-400 font-black text-xs uppercase tracking-[0.2em] rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 transition-all flex items-center justify-center gap-2 group"
+                    >
+                        Ver Ranking Completo 
+                        <span class="group-hover:translate-x-1 transition-transform">→</span>
+                    </button>
                 </div>
             </div>
 
             <!-- Heatmap de Actividad -->
             <div class="section">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">
-                        Mapa de Actividad
-                    </h3>
-                    <div class="flex items-center bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 h-9">
-                        <button 
-                            @click="prevYear" 
-                            class="px-3 h-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700 transition flex items-center justify-center"
-                        >
-                            ←
-                        </button>
-                        <div class="px-4 font-bold text-sm text-gray-700 dark:text-gray-200 min-w-[60px] text-center">
-                            {{ selectedYear }}
+                <div class="mb-6">
+                    <div class="flex items-center gap-3 mb-4 bg-white/30 dark:bg-gray-800/10 p-4 sm:p-5 rounded-[2rem] border border-white/50 dark:border-white/5 backdrop-blur-sm shadow-sm">
+                        <div class="w-10 h-10 rounded-2xl bg-emerald-500 shadow-lg shadow-emerald-500/30 flex items-center justify-center text-xl animate-bounce-slow shrink-0">
+                            🗺️
                         </div>
-                        <button 
-                            @click="nextYear"
-                            :disabled="selectedYear >= currentYear"
-                            class="px-3 h-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 border-l border-gray-200 dark:border-gray-700 transition flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
-                        >
-                            →
-                        </button>
+                        <div>
+                            <h2 class="text-lg sm:text-xl font-black text-gray-900 dark:text-gray-100 leading-none">Mapa de Actividad</h2>
+                            <p class="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Historial visual de entrenos</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end">
+                        <div class="flex items-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 h-9 shadow-sm overflow-hidden p-1">
+                            <button 
+                                @click="prevYear" 
+                                class="px-3 h-full hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 border-r border-gray-100 dark:border-gray-700 transition flex items-center justify-center font-bold"
+                            >
+                                ←
+                            </button>
+                            <div class="px-3 font-black text-xs text-gray-700 dark:text-gray-200 min-w-[50px] text-center">
+                                {{ selectedYear }}
+                            </div>
+                            <button 
+                                @click="nextYear"
+                                :disabled="selectedYear >= currentYear"
+                                class="px-3 h-full hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 border-l border-gray-100 dark:border-gray-700 transition flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed font-bold"
+                            >
+                                →
+                            </button>
+                        </div>
                     </div>
                 </div>
+                
                 <Heatmap :data="heatmap" @day-click="handleDayClick" />
             </div>
 
@@ -231,73 +361,30 @@
                     icon="📅"
                     label="Este Mes"
                     :value="stats.workoutsThisMonth"
-                    :subtitle="`${stats.workoutsThisWeek} esta semana`"
+                    :subtitle="isViewingOther ? `${user.name} esta semana` : `${stats.workoutsThisWeek} esta semana`"
                     variant="success"
                 />
             </div>
 
-            <!-- Goals Section -->
-            <div class="section" v-if="!isViewingOther">
-                <div class="section-header">
-                    <h2 class="section-title">🎯 Mis Objetivos</h2>
-                    <button @click="openGoalModal" class="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium shadow-sm">
-                        + Nuevo Objetivo
-                    </button>
-                </div>
 
-                <div v-if="goals && goals.length > 0" class="goals-grid mb-8">
-                    <div v-for="goal in goals" :key="goal.id" class="goal-card group">
-                        <div class="flex justify-between items-start mb-3">
-                            <div class="goal-icon p-2 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                                <span v-if="goal.type === 'weekly_workouts'" class="text-xl">📅</span>
-                                <span v-else-if="goal.type === 'weekly_minutes'" class="text-xl">⏱️</span>
-                                <span v-else-if="goal.type === 'early_bird'" class="text-xl">🌅</span>
-                                <span v-else class="text-xl">🔥</span>
-                            </div>
-                            <button 
-                                @click="deleteGoal(goal.id)" 
-                                class="text-gray-400 hover:text-red-500 transition opacity-0 group-hover:opacity-100"
-                                title="Eliminar objetivo"
-                            >
-                                ✕
-                            </button>
-                        </div>
-                        
-                        <h3 class="font-bold text-gray-800 dark:text-gray-200 text-lg leading-tight mb-4">
-                            <span v-if="goal.type === 'weekly_workouts'">{{ goal.target_value }} Entrenos/Semana</span>
-                            <span v-else-if="goal.type === 'weekly_minutes'">{{ goal.target_value }} Minutos/Semana</span>
-                            <span v-else-if="goal.type === 'early_bird'">{{ goal.target_value }} Mañanas/Semana</span>
-                            <span v-else>Racha de {{ goal.target_value }} días</span>
-                        </h3>
-
-                        <div class="mt-auto">
-                            <div class="flex justify-between text-xs text-gray-500 mb-1 font-medium">
-                                <span v-if="goal.type === 'weekly_minutes'">{{ goal.current_value }} / {{ goal.target_value }} min</span>
-                                <span v-else>{{ goal.current_value }} / {{ goal.target_value }}</span>
-                                <span>{{ Math.min(Math.round((goal.current_value / goal.target_value) * 100), 100) }}%</span>
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700 overflow-hidden">
-                                <div 
-                                    class="h-full rounded-full transition-all duration-1000 ease-out" 
-                                    :class="goal.completed ? 'bg-green-500' : 'bg-blue-600'"
-                                    :style="{ width: Math.min((goal.current_value / goal.target_value) * 100, 100) + '%' }"
-                                ></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div v-else class="empty-state text-center py-8 bg-gray-50 dark:bg-gray-800/30 rounded-xl mb-8 border border-dashed border-gray-200 dark:border-gray-700">
-                    <p class="text-gray-500 mb-4">No tienes objetivos activos.</p>
-                    <button @click="openGoalModal" class="text-blue-600 font-medium hover:underline">¡Crea uno para motivarte!</button>
-                </div>
-            </div>
 
             <!-- Badges Section (Vitrina de Trofeos) -->
             <div class="section">
-                <div class="section-header">
-                    <h2 class="section-title">🏆 {{ isViewingOther ? 'Vitrina de Trofeos' : 'Mis Logros' }}</h2>
-                    <span class="badge-count">{{ badges.filter(b => b.unlocked).length }} conseguidos</span>
+                <div class="flex flex-row justify-between items-center gap-4 mb-8 bg-white/30 dark:bg-gray-800/10 p-4 sm:p-5 rounded-[2rem] border border-white/50 dark:border-white/5 backdrop-blur-sm shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-indigo-500 shadow-lg shadow-indigo-500/30 flex items-center justify-center text-xl animate-bounce-slow shrink-0">
+                            🏆
+                        </div>
+                        <div>
+                            <h2 class="text-lg sm:text-xl font-black text-gray-900 dark:text-gray-100 leading-none">
+                                {{ isViewingOther ? 'Trofeos de ' + user.name.split(' ')[0] : 'Mis Logros' }}
+                            </h2>
+                            <p class="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Hitos y condecoraciones</p>
+                        </div>
+                    </div>
+                    <div class="badge-count text-[10px] font-black text-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 px-3 py-1.5 rounded-2xl border border-indigo-100 dark:border-indigo-800 shrink-0 capitalize">
+                        {{ badges.filter(b => b.unlocked).length }} / {{ badges.length }}
+                    </div>
                 </div>
                 
                 <!-- Badges Desbloqueados -->
@@ -362,8 +449,16 @@
 
             <!-- Personal Records Section -->
             <div v-if="personalRecords.length > 0" class="section">
-                <div class="section-header">
-                    <h2 class="section-title">💪 Récords Personales</h2>
+                <div class="flex flex-row justify-between items-center gap-4 mb-8 bg-white/30 dark:bg-gray-800/10 p-4 sm:p-5 rounded-[2rem] border border-white/50 dark:border-white/5 backdrop-blur-sm shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-rose-500 shadow-lg shadow-rose-500/30 flex items-center justify-center text-xl animate-bounce-slow shrink-0">
+                            💪
+                        </div>
+                        <div>
+                            <h2 class="text-lg sm:text-xl font-black text-gray-900 dark:text-gray-100 leading-none">Récords Personales</h2>
+                            <p class="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Tus mejores levantamientos</p>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="records-list">
@@ -393,81 +488,130 @@
 
             <!-- Progress Charts Section -->
             <div class="section">
-                <div class="section-header">
-                    <h2 class="section-title">📊 Progreso en el Tiempo</h2>
+                <div class="flex flex-row justify-between items-center gap-4 mb-8 bg-white/30 dark:bg-gray-800/10 p-4 sm:p-5 rounded-[2rem] border border-white/50 dark:border-white/5 backdrop-blur-sm shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-violet-600 shadow-lg shadow-violet-600/30 flex items-center justify-center text-xl animate-bounce-slow shrink-0">
+                            📊
+                        </div>
+                        <div>
+                            <h2 class="text-lg sm:text-xl font-black text-gray-900 dark:text-gray-100 leading-none">Análisis de Rendimiento</h2>
+                            <p class="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Métricas y progresos</p>
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="charts-grid">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <!-- Volumen Semanal Chart -->
-                    <div class="chart-card">
-                        <h3 class="chart-title">Volumen Semanal (kg)</h3>
-                        <canvas ref="weeklyVolumeChart"></canvas>
+                    <div class="bg-white dark:bg-gray-800/50 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm transition-all">
+                        <h3 class="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                           <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                           Volumen Semanal (kg)
+                        </h3>
+                        <div class="h-64">
+                            <canvas ref="weeklyVolumeChart"></canvas>
+                        </div>
                     </div>
                     
                     <!-- Frecuencia Mensual Chart -->
-                    <div class="chart-card">
-                        <h3 class="chart-title">Frecuencia Mensual</h3>
-                        <canvas ref="monthlyFrequencyChart"></canvas>
+                    <div class="bg-white dark:bg-gray-800/50 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm transition-all">
+                        <h3 class="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                           <span class="w-2 h-2 bg-purple-500 rounded-full"></span>
+                           Frecuencia Mensual
+                        </h3>
+                        <div class="h-64">
+                            <canvas ref="monthlyFrequencyChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Distribución por Categoría -->
+                    <div v-if="progressCharts?.categories?.length" class="lg:col-span-2 bg-white dark:bg-gray-800/50 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm transition-all">
+                        <h3 class="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                           <span class="w-2 h-2 bg-pink-500 rounded-full"></span>
+                           Disciplinas {{ isViewingOther ? 'de ' + user.name.split(' ')[0] : 'propias' }}
+                        </h3>
+                        <div class="flex flex-col md:flex-row items-center justify-around gap-8">
+                            <div class="w-48 h-48 relative">
+                                <canvas ref="categoryDistributionChart"></canvas>
+                            </div>
+                            <div class="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                <div v-for="cat in progressCharts.categories" :key="cat.category_name" class="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-900/50">
+                                    <div class="w-3 h-3 rounded-full flex-shrink-0" :style="{ backgroundColor: cat.color }"></div>
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-black text-gray-700 dark:text-gray-200 truncate">{{ cat.icon }} {{ cat.category_name }}</p>
+                                        <p class="text-[10px] text-gray-400 font-bold">{{ cat.count }} sesiones</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         
         <Modal :show="showGoalModal" @close="closeGoalModal">
-            <div class="p-6">
-                <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6">Nuevo Objetivo</h2>
+            <div class="p-6 bg-white dark:bg-gray-800 transition-colors">
+                <h2 class="text-xl font-black text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
+                    <span>🎯</span> Nuevo Objetivo
+                </h2>
                 
                 <div class="mb-6">
-                    <InputLabel value="Tipo de Objetivo" class="mb-2" />
+                    <InputLabel value="Tipo de Objetivo" class="mb-3 text-xs uppercase tracking-widest font-bold opacity-70" />
                     <div class="grid grid-cols-2 gap-3">
                         <button 
                             v-for="type in goalTypes" 
                             :key="type.id"
                             type="button"
                             @click="goalForm.type = type.id"
-                            class="flex flex-col items-center justify-center p-3 border rounded-xl transition-all"
+                            class="flex flex-col items-center justify-center p-4 border-2 rounded-2xl transition-all duration-300 transform active:scale-95"
                             :class="goalForm.type === type.id 
-                                ? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-400 ring-1 ring-blue-600' 
-                                : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'"
+                                ? 'border-indigo-600 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-400 shadow-md shadow-indigo-200/50 dark:shadow-none' 
+                                : 'border-gray-100 hover:border-indigo-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 text-gray-500 dark:text-gray-400'"
                         >
-                            <span class="text-2xl mb-1">{{ type.icon }}</span>
-                            <span class="font-bold text-sm">{{ type.label }}</span>
-                            <span class="text-xs opacity-75 text-center leading-tight mt-1">{{ type.hint }}</span>
+                            <span class="text-3xl mb-2">{{ type.icon }}</span>
+                            <span class="font-black text-sm">{{ type.label }}</span>
+                            <span class="text-[10px] opacity-75 text-center leading-tight mt-1 font-medium">{{ type.hint }}</span>
                         </button>
                     </div>
                 </div>
 
                 <div class="mb-6">
-                    <InputLabel for="target" value="Meta a alcanzar" />
+                    <InputLabel for="target" value="Meta a alcanzar" class="mb-2 text-xs uppercase tracking-widest font-bold opacity-70" />
                     <div class="flex items-center gap-3 mt-1">
                         <TextInput 
                             id="target" 
                             type="number" 
                             v-model="goalForm.target_value"
-                            class="block w-full text-lg font-bold"
+                            class="block w-full text-lg font-black border-none bg-gray-50 dark:bg-gray-700/50 focus:ring-2 focus:ring-indigo-500 rounded-xl"
                             min="1"
                             placeholder="Ej: 3"
                         />
-                        <span class="text-gray-500 font-medium whitespace-nowrap" v-if="goalForm.type === 'weekly_minutes'">minutos</span>
-                        <span class="text-gray-500 font-medium whitespace-nowrap" v-else-if="goalForm.type === 'weekly_workouts'">días</span>
-                        <span class="text-gray-500 font-medium whitespace-nowrap" v-else-if="goalForm.type === 'early_bird'">sesiones</span>
-                        <span class="text-gray-500 font-medium whitespace-nowrap" v-else>días seguidos</span>
+                        <span class="text-gray-500 dark:text-gray-400 font-bold whitespace-nowrap text-sm" v-if="goalForm.type === 'weekly_minutes'">minutos</span>
+                        <span class="text-gray-500 dark:text-gray-400 font-bold whitespace-nowrap text-sm" v-else-if="goalForm.type === 'weekly_workouts'">días</span>
+                        <span class="text-gray-500 dark:text-gray-400 font-bold whitespace-nowrap text-sm" v-else-if="goalForm.type === 'early_bird'">sesiones</span>
+                        <span class="text-gray-500 dark:text-gray-400 font-bold whitespace-nowrap text-sm" v-else-if="['monthly_volume', 'max_weight'].includes(goalForm.type)">kg</span>
+                        <span class="text-gray-500 dark:text-gray-400 font-bold whitespace-nowrap text-sm" v-else>días seguidos</span>
                     </div>
 
-                    <p class="text-xs text-gray-500 mt-2 bg-gray-50 dark:bg-gray-800/50 p-2 rounded border border-gray-100 dark:border-gray-700">
-                        <span v-if="goalForm.type === 'weekly_workouts'">Ejemplo: 3 entrenamientos (Lunes a Domingo).</span>
-                        <span v-if="goalForm.type === 'weekly_minutes'">Ejemplo: 150 minutos de actividad total esta semana.</span>
-                        <span v-if="goalForm.type === 'streak'">Ejemplo: Mantener la racha durante 7 días consecutivos.</span>
-                        <span v-if="goalForm.type === 'early_bird'">Ejemplo: Entrenar 3 veces antes de las 9:00 AM esta semana.</span>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-4 bg-gray-50 dark:bg-gray-900/30 p-3 rounded-xl border border-gray-100 dark:border-gray-700/50 italic leading-relaxed">
+                        💡 <span v-if="goalForm.type === 'weekly_workouts'">Ejemplo: 3 entrenamientos (Lunes a Domingo).</span>
+                        <span v-else-if="goalForm.type === 'weekly_minutes'">Ejemplo: 150 minutos de actividad total esta semana.</span>
+                        <span v-else-if="goalForm.type === 'streak'">Ejemplo: Mantener la racha durante 7 días consecutivos.</span>
+                        <span v-else-if="goalForm.type === 'early_bird'">Ejemplo: Entrenar 3 veces antes de las 9:00 AM esta semana.</span>
+                        <span v-else-if="goalForm.type === 'monthly_volume'">Ejemplo: Levantar 50,000 kg acumulados en el mes.</span>
+                        <span v-else-if="goalForm.type === 'max_weight'">Ejemplo: Superar tu PR actual levantando 100kg.</span>
                     </p>
-                    <p v-if="goalForm.errors.target_value" class="text-red-500 text-xs mt-1">{{ goalForm.errors.target_value }}</p>
+                    <p v-if="goalForm.errors.target_value" class="text-red-500 text-xs mt-2 font-bold">{{ goalForm.errors.target_value }}</p>
                 </div>
 
-                <div class="flex justify-end gap-3 mt-6">
-                    <SecondaryButton @click="closeGoalModal">Cancelar</SecondaryButton>
-                    <PrimaryButton @click="submitGoal" :class="{ 'opacity-25': goalForm.processing }" :disabled="goalForm.processing">
-                        Crear Objetivo
-                    </PrimaryButton>
+                <div class="flex justify-end gap-3 mt-8">
+                    <SecondaryButton @click="closeGoalModal" class="rounded-xl font-bold">Cancelar</SecondaryButton>
+                    <button 
+                        @click="submitGoal" 
+                        :disabled="goalForm.processing"
+                        class="px-6 py-2 bg-indigo-600 text-white rounded-xl font-black hover:bg-indigo-700 transition active:scale-95 shadow-lg shadow-indigo-600/20 disabled:opacity-50"
+                    >
+                        {{ goalForm.processing ? 'Creando...' : 'Crear Objetivo 🚀' }}
+                    </button>
                 </div>
             </div>
         </Modal>
@@ -557,6 +701,122 @@
                  </div>
             </div>
         </Modal>
+
+        <!-- Historial de Objetivos Completados Modal -->
+        <Modal :show="showCompletedGoalsModal" @close="showCompletedGoalsModal = false">
+            <div class="p-6 bg-white dark:bg-gray-800 transition-colors">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-black text-gray-900 dark:text-gray-100 flex items-center gap-3">
+                        <span>📜</span> Historial de Logros
+                    </h2>
+                    <button @click="showCompletedGoalsModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                
+                <div class="space-y-3 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar">
+                    <div v-for="goal in goals.filter(g => g.completed)" :key="goal.id" class="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-2xl border border-gray-100 dark:border-gray-700/50 flex items-center justify-between group">
+                        <div class="flex items-center gap-4">
+                            <div class="text-3xl p-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+                                <span v-if="goal.type === 'weekly_workouts'">📅</span>
+                                <span v-else-if="goal.type === 'weekly_minutes'">⏱️</span>
+                                <span v-else-if="goal.type === 'early_bird'">🌅</span>
+                                <span v-else-if="goal.type === 'monthly_volume'">🚜</span>
+                                <span v-else-if="goal.type === 'max_weight'">🏋️</span>
+                                <span v-else>🔥</span>
+                            </div>
+                            <div>
+                                <h4 class="font-black text-gray-900 dark:text-gray-100 text-sm">
+                                    <span v-if="goal.type === 'weekly_workouts'">{{ goal.target_value }} Entrenos Semanales</span>
+                                    <span v-else-if="goal.type === 'weekly_minutes'">{{ goal.target_value }} Minutos Semanales</span>
+                                    <span v-else-if="goal.type === 'early_bird'">{{ goal.target_value }} Madrugones</span>
+                                    <span v-else-if="goal.type === 'monthly_volume'">{{ safe_formatVolume(goal.target_value) }} kg Mensuales</span>
+                                    <span v-else-if="goal.type === 'max_weight'">Meta: {{ goal.target_value }}kg</span>
+                                    <span v-else>Racha de {{ goal.target_value }} días</span>
+                                </h4>
+                                <p class="text-[10px] text-green-600 font-bold uppercase tracking-wider flex items-center gap-1 mt-1">
+                                    <span>✓</span> Finalizado con éxito
+                                </p>
+                            </div>
+                        </div>
+                        <p v-if="goal.end_date" class="text-[10px] text-gray-400 font-medium italic">{{ new Date(goal.end_date).toLocaleDateString() }}</p>
+                    </div>
+                </div>
+
+                <div class="mt-8">
+                    <button 
+                        @click="showCompletedGoalsModal = false"
+                        class="w-full py-3 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl font-black text-sm active:scale-95 transition-all"
+                    >
+                        Cerrar Historial
+                    </button>
+                </div>
+            </div>
+        </Modal>
+
+        <!-- Confirmación de Borrado Premium -->
+        <ConfirmModal
+            :show="!!goalToDelete"
+            title="¿Eliminar este objetivo?"
+            :message="'¿Estás seguro de que quieres eliminar esta meta? Perderás todo el progreso acumulado y no se puede deshacer.'"
+            confirmText="Sí, eliminar meta"
+            cancelText="Cancelar"
+            type="danger"
+            @confirm="confirmDeleteGoal"
+            @cancel="goalToDelete = null"
+        />
+
+        <!-- Modal de Ranking Completo -->
+        <Modal :show="showLeaderboardModal" @close="showLeaderboardModal = false" max-width="lg">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-black text-gray-900 dark:text-gray-100 flex items-center gap-3">
+                        <span>🏆</span> Ranking de {{ isViewingOther ? user.name.split(' ')[0] : 'GymPals' }}
+                    </h2>
+                    <button @click="showLeaderboardModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                <div class="leaderboard-list max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                    <div 
+                        v-for="(entry, index) in leaderboard" 
+                        :key="'full-'+entry.id"
+                        :class="['leaderboard-item mb-3', { 'is-me': entry.is_me, 'clickable': true }]"
+                        @click="safe_visitUserStats(entry.username)"
+                    >
+                        <div class="rank-position">
+                            <span v-if="index === 0" class="medal gold">🥇</span>
+                            <span v-else-if="index === 1" class="medal silver">🥈</span>
+                            <span v-else-if="index === 2" class="medal bronze">🥉</span>
+                            <span v-else class="rank-number">#{{ index + 1 }}</span>
+                        </div>
+                        
+                        <div class="user-info">
+                            <div class="user-details">
+                                <span class="user-name flex items-center gap-2 font-bold text-gray-900 dark:text-gray-100">
+                                    {{ entry.name }}
+                                    <span v-if="entry.is_me" class="me-badge">Tú</span>
+                                    <span v-if="entry.is_target" class="gympal-badge">GymPal</span>
+                                </span>
+                                <span class="user-username text-xs text-gray-400">@{{ entry.username }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="workout-count">
+                            <span class="count">{{ entry.workouts }}</span>
+                            <span class="label">workouts</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8">
+                    <PrimaryButton @click="showLeaderboardModal = false" class="w-full justify-center py-4">
+                        Cerrar Ranking
+                    </PrimaryButton>
+                </div>
+            </div>
+        </Modal>
     </AuthenticatedLayout>
 </template>
 
@@ -574,6 +834,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import SelectInput from '@/Components/SelectInput.vue'; // Asumo que existe o uso select HTML normal
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 
 const props = defineProps({
     stats: Object,
@@ -597,6 +858,8 @@ const goalTypes = [
     { id: 'weekly_minutes', label: 'Minutos Activos', icon: '⏱️', hint: 'Tiempo total semanal' },
     { id: 'streak', label: 'Racha', icon: '🔥', hint: 'Días seguidos' },
     { id: 'early_bird', label: 'Club 7 AM', icon: '🌅', hint: 'Madrugar (Antes de 9:00)' },
+    { id: 'monthly_volume', label: 'Volumen Mensual', icon: '🚜', hint: 'Kilos totales/mes' },
+    { id: 'max_weight', label: 'Récord Peso', icon: '🏋️', hint: 'Superar un peso (kg)' },
 ];
 
 // Control de giro de medallas (Click to Flip)
@@ -611,6 +874,8 @@ const toggleBadge = (id) => {
 
 // Estado del Modal
 const showGoalModal = ref(false);
+const showLeaderboardModal = ref(false);
+const showCompletedGoalsModal = ref(false);
 const goalForm = useForm({
     type: 'weekly_workouts',
     target_value: '3',
@@ -632,14 +897,27 @@ const submitGoal = () => {
     });
 };
 
+const goalToDelete = ref(null);
+
 const deleteGoal = (goalId) => {
-    if (confirm('¿Estás seguro de eliminar este objetivo?')) {
-        router.delete(route('goals.destroy', goalId));
-    }
+    goalToDelete.value = goalId;
+};
+
+const confirmDeleteGoal = () => {
+    if (!goalToDelete.value) return;
+    router.delete(route('goals.destroy', { id: goalToDelete.value }), {
+        preserveScroll: true,
+        onSuccess: () => {
+            goalToDelete.value = null;
+        }
+    });
 };
 
 const weeklyVolumeChart = ref(null);
 const monthlyFrequencyChart = ref(null);
+const categoryDistributionChart = ref(null);
+
+
 
 // Selector de Año
 const selectedYear = ref(props.filters?.year || new Date().getFullYear());
@@ -687,7 +965,13 @@ const safe_formatBadgeProgress = (val) => {
 };
 
 const safe_visitUserStats = (username) => {
-    router.visit(route('stats.show', username));
+    // Si ya estamos viendo a ese usuario, no hacemos nada para evitar recargas
+    if (username === props.user.username) return;
+    
+    router.visit(route('stats.show', username), {
+        preserveScroll: true,
+        preserveState: false // Queremos que resetee el estado para el nuevo usuario
+    });
 };
 
 const safe_goBack = () => {
@@ -701,9 +985,10 @@ const newBadges = ref([]);
 const isSharing = ref(false);
 
 watch(() => page.props.flash.new_badges, (val) => {
-    if (val && val.length > 0) {
+    // Solo mostramos el POPUP de logros propios si estamos en nuestro perfil
+    // para evitar confusiones al visitar a otros.
+    if (val && val.length > 0 && !props.isViewingOther) {
         newBadges.value = val;
-        // Pequeño delay para asegurar que el componente Modal se monte y detecte el cambio de prop
         setTimeout(() => {
             showAchievementModal.value = true;
         }, 200);
@@ -782,97 +1067,111 @@ onMounted(() => {
     const textColor = isDark ? '#f9fafb' : '#1f2937';
     const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
     
-    // Crear gráfica de volumen semanal
+    // Gráfica de volumen semanal (Estilo Premium)
     if (weeklyVolumeChart.value) {
+        const ctx = weeklyVolumeChart.value.getContext('2d');
+        const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+        gradient.addColorStop(0, 'rgba(99, 102, 241, 0.4)');
+        gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
+
         new Chart(weeklyVolumeChart.value, {
             type: 'line',
             data: {
                 labels: props.progressCharts.weeklyVolume.map(w => w.week),
                 datasets: [{
-                    label: 'Volumen (kg)',
+                    label: 'Volumen',
                     data: props.progressCharts.weeklyVolume.map(w => w.volume),
                     borderColor: '#6366f1',
-                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    backgroundColor: gradient,
+                    borderWidth: 3,
                     tension: 0.4,
                     fill: true,
-                    pointRadius: 4,
+                    pointRadius: 0,
                     pointHoverRadius: 6,
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderWidth: 3,
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        display: false,
-                    },
-                },
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
                 scales: {
                     y: {
                         beginAtZero: true,
-                        ticks: {
-                            color: textColor,
-                        },
-                        grid: {
-                            color: gridColor,
-                        },
+                        ticks: { color: textColor, font: { size: 10 } },
+                        grid: { color: gridColor }
                     },
                     x: {
-                        ticks: {
-                            color: textColor,
-                        },
-                        grid: {
-                            display: false,
-                        },
-                    },
-                },
-            },
+                        ticks: { color: textColor, font: { size: 10, weight: '700' } },
+                        grid: { display: false }
+                    }
+                }
+            }
         });
     }
     
-    // Crear gráfica de frecuencia mensual
+    // Gráfica de frecuencia mensual (Estilo Premium)
     if (monthlyFrequencyChart.value) {
         new Chart(monthlyFrequencyChart.value, {
             type: 'bar',
             data: {
                 labels: props.progressCharts.monthlyFrequency.map(m => m.month),
                 datasets: [{
-                    label: 'Workouts',
+                    label: 'Sesiones',
                     data: props.progressCharts.monthlyFrequency.map(m => m.count),
                     backgroundColor: 'rgba(168, 85, 247, 0.8)',
-                    borderRadius: 8,
-                    borderSkipped: false,
+                    borderRadius: 6,
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        display: false,
-                    },
-                },
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
                 scales: {
                     y: {
                         beginAtZero: true,
-                        ticks: {
-                            stepSize: 1,
-                            color: textColor,
-                        },
-                        grid: {
-                            color: gridColor,
-                        },
+                        ticks: { stepSize: 1, color: textColor },
+                        grid: { color: gridColor }
                     },
                     x: {
-                        ticks: {
-                            color: textColor,
-                        },
-                        grid: {
-                            display: false,
-                        },
-                    },
-                },
+                        ticks: { color: textColor, font: { weight: '700' } },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+
+    // Gráfica de Categorías (Donut)
+    if (categoryDistributionChart.value && props.progressCharts.categories?.length) {
+        new Chart(categoryDistributionChart.value, {
+            type: 'doughnut',
+            data: {
+                labels: props.progressCharts.categories.map(c => c.category_name),
+                datasets: [{
+                    data: props.progressCharts.categories.map(c => c.count),
+                    backgroundColor: props.progressCharts.categories.map(c => c.color),
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
             },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '75%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        padding: 12,
+                        backgroundColor: isDark ? '#1f2937' : '#fff',
+                        titleColor: isDark ? '#fff' : '#1f2937',
+                        bodyColor: isDark ? '#9ca3af' : '#6b7280',
+                        borderColor: isDark ? '#374151' : '#e5e7eb',
+                        borderWidth: 1,
+                    }
+                }
+            }
         });
     }
 });
@@ -948,17 +1247,20 @@ onMounted(() => {
 }
 
 .xp-current {
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-size: 1.25rem;
+    font-weight: 800;
 }
 
 .xp-separator {
-    opacity: 0.7;
+    opacity: 0.5;
+    font-size: 1.25rem;
+    font-weight: 300;
 }
 
 .xp-required {
-    font-size: 1.125rem;
-    opacity: 0.9;
+    font-size: 1.25rem;
+    opacity: 0.7;
+    font-weight: 600;
 }
 
 .xp-bar {
@@ -982,6 +1284,26 @@ onMounted(() => {
 .my-name { color: #6366f1; }
 .their-name { color: #f97316; }
 
+.me-badge {
+    background: #6366f1;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.gympal-badge {
+    background: #f97316;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
 .vs-badge {
     background: #ef4444;
     color: white;
@@ -990,6 +1312,11 @@ onMounted(() => {
     border-radius: 8px;
     font-weight: 900;
     transform: skew(-10deg);
+}
+
+.xp-subtitle {
+    font-size: 0.875rem;
+    opacity: 0.8;
 }
 
 .comparison-row {
@@ -1147,12 +1474,13 @@ onMounted(() => {
 }
 
 .me-badge {
-    font-size: 0.75rem;
-    color: #6366f1;
-    background: rgba(99, 102, 241, 0.1);
+    background: #6366f1;
+    color: white;
     padding: 2px 6px;
-    border-radius: 4px;
-    margin-left: 4px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
 }
 
 .user-username {
@@ -1207,6 +1535,53 @@ onMounted(() => {
     background: linear-gradient(90deg, #fbbf24, #f59e0b);
     border-radius: 6px;
     transition: width 0.5s ease;
+}
+
+.dark .xp-subtitle {
+    color: #94a3b8;
+}
+
+/* Leaderboard Premium Styles */
+.leaderboard-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.leaderboard-item {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    background: white;
+    border-radius: 20px;
+    border: 1px solid #f1f5f9;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .leaderboard-item {
+    background: rgba(30, 41, 59, 0.4);
+    border-color: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+}
+
+.leaderboard-item:hover {
+    transform: translateX(8px);
+    border-color: #6366f1;
+    background: #f8fafc;
+}
+
+.dark .leaderboard-item:hover {
+    background: rgba(30, 41, 59, 0.6);
+}
+
+.leaderboard-item.is-me {
+    background: linear-gradient(to right, #eef2ff, white);
+    border-left: 4px solid #6366f1;
+}
+
+.dark .leaderboard-item.is-me {
+    background: linear-gradient(to right, rgba(99, 102, 241, 0.1), rgba(30, 41, 59, 0.4));
+    border-left-color: #6366f1;
 }
 
 .xp-subtitle {
@@ -1527,12 +1902,46 @@ onMounted(() => {
     
     .level-container {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: stretch;
+        gap: 20px;
+    }
+
+    .level-badge {
+        width: 100%;
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.15);
+        padding: 12px 20px;
+        border-radius: 18px;
+    }
+
+    .level-icon {
+        font-size: 2.2rem;
+    }
+
+    .level-info {
+        text-align: left;
+    }
+
+    .level-number {
+        font-size: 1.8rem;
     }
     
     .xp-info {
         width: 100%;
         min-width: 0;
+    }
+
+    .xp-text {
+        justify-content: space-between;
+        font-size: 0.8rem;
+    }
+
+    .xp-subtitle {
+        text-align: left;
+        margin-top: 4px;
+        font-size: 0.75rem;
     }
     
     .stats-grid {
@@ -1552,6 +1961,41 @@ onMounted(() => {
         align-items: flex-start;
         gap: 12px;
     }
+
+    /* Goal Mobile Optimization */
+    .goals-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* New Goal Card Premium Styles */
+.goal-card {
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.goal-card:hover .goal-icon {
+    transform: scale(1.1) rotate(5deg);
+    transition: transform 0.3s ease;
+}
+
+.dark .goal-card {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%);
+}
+
+@keyframes bounce-slow {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+.animate-bounce-slow {
+    animation: bounce-slow 3s ease-in-out infinite;
 }
 
 /* Flip Card Styles */

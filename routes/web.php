@@ -83,6 +83,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/gyms/{gym}/join', [\App\Http\Controllers\GymController::class, 'join'])->name('gyms.join');
     Route::post('/gyms/{gym}/leave', [\App\Http\Controllers\GymController::class, 'leave'])->name('gyms.leave');
     Route::get('/gyms/{gym}', [\App\Http\Controllers\GymController::class, 'show'])->name('gyms.show');
+    Route::get('/gyms/{gym}/members', [\App\Http\Controllers\GymController::class, 'members'])->name('gyms.members');
 
     // RUTA PARA GUARDAR MENSAJES EN UNA CONVERSACIÓN
     Route::post('/chat/conversations/{conversation}/messages', [ChatController::class, 'storeMessage'])
@@ -184,7 +185,7 @@ Route::middleware('auth')->group(function () {
     // Estadísticas
     Route::get('/stats', [StatsController::class, 'index'])->name('stats.index');
     Route::post('/goals', [StatsController::class, 'storeGoal'])->name('goals.store');
-    Route::delete('/goals/{goal}', [StatsController::class, 'destroyGoal'])->name('goals.destroy');
+    Route::delete('/goals/delete/{id}', [StatsController::class, 'destroyGoal'])->name('goals.destroy');
     Route::get('/stats/{user:username}', [StatsController::class, 'show'])->name('stats.show');
     Route::post('/stats/share-achievement', [StatsController::class, 'shareAchievement'])->name('stats.share');
     Route::get('/api/stats/day-details', [StatsController::class, 'dayDetails'])->name('stats.day_details');

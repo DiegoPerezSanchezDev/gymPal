@@ -38,6 +38,7 @@ class User extends Authenticatable
         'gym_id',
         'availability_general',
         'onboarding_completed',
+        'onboarding_skipped',
     ];
 
     /**
@@ -62,6 +63,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'availability_general' => 'array',
             'onboarding_completed' => 'boolean',
+            'onboarding_skipped' => 'boolean',
         ];
     }
 

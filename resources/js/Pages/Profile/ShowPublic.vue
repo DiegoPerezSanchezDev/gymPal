@@ -10,6 +10,7 @@ import Modal from '@/Components/Modal.vue';
 import ThemeSwitcher from '@/Components/ThemeSwitcher.vue';
 import ProfileStats from '@/Components/ProfileStats.vue';
 import GymDetailsModal from '@/Components/GymDetailsModal.vue';
+import GymMembersModal from '@/Components/GymMembersModal.vue';
 import { Head, Link, usePage, router } from '@inertiajs/vue3';
 import { computed, ref, onMounted, watch } from 'vue';
 import { useToast } from '@/composables/useToast';
@@ -36,6 +37,7 @@ const props = defineProps({
         type: Array,
         default: () => []
     }, // Rutinas del usuario
+    progressCharts: Object, // Gráficas de progreso (V2)
 });
 
 const processingConnection = ref(false);
@@ -50,12 +52,20 @@ const showDisconnectModal = ref(false);
 const showColorModal = ref(false); // Estado para el modal de colores
 const showGymModal = ref(false);
 const selectedGymId = ref(null);
+const showGymMembersModal = ref(false);
+const selectedGymForMembers = ref(null);
 
 // Open Gym Modal
 const openGymModal = (gymId) => {
     selectedGymId.value = gymId;
     showGymModal.value = true;
     showAllGymsModal.value = false; // Cerrar lista si estaba abierta
+};
+
+// Open Gym Members Modal
+const openGymMembersModal = (gym) => {
+    selectedGymForMembers.value = gym;
+    showGymMembersModal.value = true;
 };
 
 const showLogoutModal = ref(false);
@@ -101,7 +111,10 @@ const bannerColors = [
 // Detectar tab desde URL
 const urlParams = new URLSearchParams(window.location.search);
 const tabParam = urlParams.get('tab');
-const activeContentTab = ref(tabParam === 'rutinas' ? 'rutinas' : 'publicaciones');
+const activeContentTab = ref(
+    tabParam === 'rutinas' ? 'rutinas' : 
+    (tabParam === 'stats' ? 'estadisticas' : 'publicaciones')
+);
 
 // Lógica para mostrar rutinas limitadas
 const showAllWorkouts = ref(false);
@@ -406,7 +419,10 @@ const getExperienceLevelColor = (level) => {
                         </div>
                     </div>
                     
-                    <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white mt-4 mb-1 tracking-tight text-center transition-colors">{{ profileUser.display_name || profileUser.name }}</h1>
+                    <div class="flex items-center gap-3 mt-4 mb-1">
+                        <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight transition-colors">{{ profileUser.display_name || profileUser.name }}</h1>
+                        <span v-if="is_following_me" class="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-wider h-fit">Te sigue</span>
+                    </div>
                     <p v-if="profileUser.username" class="text-md text-indigo-600 dark:text-indigo-400 font-medium mb-4 transition-colors">@{{ profileUser.username }}</p>
                     
                     <!-- Ubicación -->
@@ -575,6 +591,16 @@ const getExperienceLevelColor = (level) => {
                                 <span v-if="posts.length" class="px-2 py-0.5 rounded-full text-[10px] font-black" :class="activeContentTab === 'publicaciones' ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300' : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400'">
                                     {{ posts.length }}
                                 </span>
+                            </span>
+                        </button>
+
+                        <button
+                            @click="activeContentTab = 'estadisticas'"
+                            class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2 relative overflow-hidden"
+                            :class="activeContentTab === 'estadisticas' ? 'bg-white dark:bg-gray-600 text-indigo-600 dark:text-indigo-300 shadow-sm ring-1 ring-black/5 dark:ring-white/10' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
+                        >
+                            <span class="relative z-10 flex items-center gap-2">
+                                📊 Stats
                             </span>
                         </button>
                     </div>
@@ -757,6 +783,15 @@ const getExperienceLevelColor = (level) => {
                             </button>
                         </div>
                     </div>
+
+                    <!-- Stats Tab -->
+                    <div v-else-if="activeContentTab === 'estadisticas'" key="estadisticas">
+                        <ProfileStats 
+                            :stats="stats" 
+                            :show-chart="true"
+                            :progress-charts="progressCharts"
+                        />
+                    </div>
                 </Transition>
             </div>
                     
@@ -885,7 +920,10 @@ const getExperienceLevelColor = (level) => {
                             >
                                 <img :src="getProfilePictureUrl(user)" :alt="user.name" class="w-12 h-12 rounded-full object-cover" />
                                 <div class="flex-1 min-w-0">
-                                    <p class="font-bold text-gray-900 dark:text-white truncate transition-colors">{{ user.name }}</p>
+                                    <div class="flex items-center gap-2">
+                                        <p class="font-bold text-gray-900 dark:text-white truncate transition-colors">{{ user.name }}</p>
+                                        <span v-if="user.is_following_me" class="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-tighter">Te sigue</span>
+                                    </div>
                                     <p class="text-sm text-gray-500 dark:text-gray-400 truncate transition-colors">@{{ user.username }}</p>
                                 </div>
                                 <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -909,7 +947,10 @@ const getExperienceLevelColor = (level) => {
                             >
                                 <img :src="getProfilePictureUrl(user)" :alt="user.name" class="w-12 h-12 rounded-full object-cover" />
                                 <div class="flex-1 min-w-0">
-                                    <p class="font-bold text-gray-900 dark:text-white truncate transition-colors">{{ user.name }}</p>
+                                    <div class="flex items-center gap-2">
+                                        <p class="font-bold text-gray-900 dark:text-white truncate transition-colors">{{ user.name }}</p>
+                                        <span v-if="user.is_following_me" class="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-tighter">Te sigue</span>
+                                    </div>
                                     <p class="text-sm text-gray-500 dark:text-gray-400 truncate transition-colors">@{{ user.username }}</p>
                                 </div>
                                 <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -933,7 +974,10 @@ const getExperienceLevelColor = (level) => {
                             >
                                 <img :src="getProfilePictureUrl(user)" :alt="user.name" class="w-12 h-12 rounded-full object-cover" />
                                 <div class="flex-1 min-w-0">
-                                    <p class="font-bold text-gray-900 dark:text-white truncate transition-colors">{{ user.name }}</p>
+                                    <div class="flex items-center gap-2">
+                                        <p class="font-bold text-gray-900 dark:text-white truncate transition-colors">{{ user.name }}</p>
+                                        <span v-if="user.is_following_me" class="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-tighter">Te sigue</span>
+                                    </div>
                                     <p class="text-sm text-gray-500 dark:text-gray-400 truncate transition-colors">@{{ user.username }}</p>
                                 </div>
                                 <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -990,7 +1034,8 @@ const getExperienceLevelColor = (level) => {
         <GymDetailsModal 
             :show="showGymModal" 
             :gym-id="selectedGymId" 
-            @close="showGymModal = false" 
+            @close="showGymModal = false"
+            @view-all-members="openGymMembersModal"
         />
 
         <!-- Logout Confirmation Modal -->
@@ -1041,6 +1086,13 @@ const getExperienceLevelColor = (level) => {
                 </div>
             </div>
         </Modal>
+
+        <!-- Gym Members Modal -->
+        <GymMembersModal
+            :show="showGymMembersModal"
+            :gym="selectedGymForMembers"
+            @close="showGymMembersModal = false"
+        />
 
     </AuthenticatedLayout>
 </template>

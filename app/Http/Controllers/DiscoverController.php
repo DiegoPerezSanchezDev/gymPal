@@ -26,11 +26,18 @@ class DiscoverController extends Controller
         $usuarioActual = Auth::user() ? User::with('fitnessInterests')->findOrFail(Auth::id()) : null;
 
         $myConnections = collect();
+        $iFollowIds = collect(); // IDs de usuarios que YO sigo
+        
         if ($usuarioActual) {
             // Obtenemos TODAS las conexiones relevantes (enviadas y recibidas) y las indexamos por el ID del OTRO usuario
             $sent = \App\Models\Connection::where('sender_id', $usuarioActual->id)->get()->keyBy('receiver_id');
             $received = \App\Models\Connection::where('receiver_id', $usuarioActual->id)->get()->keyBy('sender_id');
             $myConnections = $sent->union($received);
+            
+            // IDs de personas que YO sigo (conexiones que YO envié y fueron aceptadas)
+            $iFollowIds = \App\Models\Connection::where('sender_id', $usuarioActual->id)
+                ->where('status', 'accepted')
+                ->pluck('receiver_id');
         }
 
         // 2. QUERY BUILDER PRINCIPAL - INICIAMOS LA CONSULTA
@@ -39,15 +46,52 @@ class DiscoverController extends Controller
 
         if ($usuarioActual) {
             $usersQuery->where('users.id', '!=', $usuarioActual->id);
+            
+            // EXCLUIR usuarios que YO ya sigo (pero permitir los que ME siguen)
+            if ($iFollowIds->isNotEmpty()) {
+                $usersQuery->whereNotIn('users.id', $iFollowIds);
+            }
         }
         
         // Variable para controlar el estado de los filtros
         $appliedSpecificFilter = false;
-        $searchedInterestId = $request->input('interest_id', null);
+        $searchedInterestId = $request->input('interest_id');
+        $interests = $request->input('interests', []);
+        
+        // 3. APLICAR FILTROS MANUALES (GLOBALES)
+        if ($request->filled('search')) {
+            $searchTerm = $request->input('search');
+            $usersQuery->where(fn($q) => $q->where('name', 'like', "%{$searchTerm}%")->orWhere('username', 'like', "%{$searchTerm}%"));
+        }
+        
+        if ($request->filled('city')) {
+            $usersQuery->where('location_city', 'like', "%{$request->input('city')}%");
+        }
+        
+        if ($request->filled('experience_level')) {
+            $usersQuery->where('experience_level', $request->input('experience_level'));
+        }
+        
+        if (!empty($interests)) {
+            $usersQuery->whereHas('fitnessInterests', fn($q) => $q->whereIn('fitness_interests.id', $interests));
+        }
 
-        // 3. LÓGICA DE FILTROS
+        if ($request->filled('availability_general')) {
+            $availability = $request->input('availability_general', []);
+            $usersQuery->where(function ($query) use ($availability) {
+                foreach ($availability as $slot) {
+                    $query->orWhereJsonContains('availability_general', $slot);
+                }
+            });
+        }
+
+        if ($request->filled('gym_id')) {
+            $usersQuery->whereHas('gyms', fn($q) => $q->where('gyms.id', $request->input('gym_id')));
+        }
+
+        // 4. LÓGICA DE ORDENACIÓN Y FILTROS RÁPIDOS
         if ($request->filled('lat') && $request->filled('lon')) {
-            // Prioridad 1: Búsqueda por Geolocalización
+            // Caso: Ubicación por GPS
             $lat = $request->input('lat');
             $lon = $request->input('lon');
 
@@ -57,12 +101,16 @@ class DiscoverController extends Controller
                                     ) + sin( radians(?) ) *
                                 sin( radians( latitude ) ) )
                                 ) AS distance", [$lat, $lon, $lat])
-                        ->whereNotNull(['latitude', 'longitude'])
+                        ->whereNotNull('latitude')
+                        ->whereNotNull('longitude')
+                        ->where('latitude', '!=', 0)
+                        ->where('longitude', '!=', 0)
+                        ->whereRaw("( 6371 * acos( cos( radians(?) ) * cos( radians( latitude ) ) * cos( radians( longitude ) - radians(?) ) + sin( radians(?) ) * sin( radians( latitude ) ) ) ) <= 20", [$lat, $lon, $lat])
                         ->orderBy("distance", 'asc');
             $appliedSpecificFilter = true;
 
         } elseif ($request->filled('filtro_rapido')) {
-            // Prioridad 2: Filtros Rápidos
+            // Caso: Filtros Rápidos
             $filtroRapido = $request->input('filtro_rapido');
 
             switch ($filtroRapido) {
@@ -70,146 +118,75 @@ class DiscoverController extends Controller
                     $usersQuery->whereNotNull('last_activity_at')->orderBy('last_activity_at', 'desc');
                     break;
                 
-                    case 'nuevos_en_ciudad':
-                        // Este filtro SÓLO tiene sentido si el usuario actual tiene una ciudad definida.
-                        if ($usuarioActual && $usuarioActual->location_city) {
-                            $ciudad = strtolower(trim($usuarioActual->location_city));
-                            
-                            $usersQuery->whereNotNull('location_city')
-                                    ->whereRaw('LOWER(location_city) = ?', [$ciudad])
-                                    ->where('created_at', '>=', now()->subDays(30));
-    
-                            // Paso 2: Si además tenemos coordenadas, calculamos distancia y la usamos para ordenar.
-                            if ($usuarioActual->latitude && $usuarioActual->longitude) {
-                                $lat = $usuarioActual->latitude;
-                                $lon = $usuarioActual->longitude;
-                                
-                                $usersQuery->selectRaw("users.*, ( 6371 * acos( cos( radians(?) ) *
+                case 'nuevos_en_ciudad':
+                    if ($usuarioActual && $usuarioActual->location_city) {
+                        $ciudad = strtolower(trim($usuarioActual->location_city));
+                        $usersQuery->whereNotNull('location_city')
+                                ->whereRaw('LOWER(location_city) = ?', [$ciudad])
+                                ->where('created_at', '>=', now()->subDays(15)); // Rango de 15 días
+                        
+                        if ($usuarioActual->latitude && $usuarioActual->longitude && $usuarioActual->latitude != 0) {
+                            $usersQuery->selectRaw("users.*, ( 6371 * acos( cos( radians(?) ) *
                                                             cos( radians( latitude ) ) *
                                                             cos( radians( longitude ) - radians(?) ) +
                                                             sin( radians(?) ) * sin( radians( latitude ) ) )
-                                                        ) AS distance", [$lat, $lon, $lat])
-                                        ->whereNotNull(['latitude', 'longitude'])
-                                        ->orderBy('distance', 'asc');
-                            } else {
-                                $usersQuery->orderBy('created_at', 'desc');
-                            }
+                                                        ) AS distance", [$usuarioActual->latitude, $usuarioActual->longitude, $usuarioActual->latitude])
+                                    ->whereNotNull('latitude')
+                                    ->whereNotNull('longitude')
+                                    ->where('latitude', '!=', 0)
+                                    ->where('longitude', '!=', 0)
+                                    ->whereRaw("( 6371 * acos( cos( radians(?) ) * cos( radians( latitude ) ) * cos( radians( longitude ) - radians(?) ) + sin( radians(?) ) * sin( radians( latitude ) ) ) ) <= 20", [$usuarioActual->latitude, $usuarioActual->longitude, $usuarioActual->latitude])
+                                    ->orderBy('distance', 'asc');
                         } else {
-                            $usersQuery->whereRaw('1 = 0');
+                            $usersQuery->orderBy('created_at', 'desc');
                         }
-                        break;
+                    }
+                    break;
                 
                 case 'buscando_companero':
                     $usersQuery->whereNotNull('looking_for_interest_id');
-                    
-                    if ($usuarioActual) {
-                        $ciudad = $usuarioActual->location_city ? strtolower(trim($usuarioActual->location_city)) : null;
-                        
-                        if ($usuarioActual->latitude && $usuarioActual->longitude) {
-                            $usersQuery->selectRaw("users.*,
-                                    CASE WHEN looking_for_interest_id = ? THEN 1 ELSE 0 END AS is_matching_interest,
-                                    CASE WHEN LOWER(location_city) = ? THEN 1 ELSE 0 END AS is_in_my_city,
-                                    ( 6371 * acos( cos( radians(?) ) *
-                                        cos( radians( latitude ) ) *
-                                        cos( radians( longitude ) - radians(?) ) +
-                                        sin( radians(?) ) * sin( radians( latitude ) )
-                                    ) ) AS distance", [$searchedInterestId, $ciudad, $usuarioActual->latitude, $usuarioActual->longitude, $usuarioActual->latitude])
-                                    ->whereNotNull(['latitude', 'longitude'])
-                                    ->orderBy('is_in_my_city', 'desc')
-                                    ->orderBy('is_matching_interest', 'desc')
-                                    ->orderBy('distance', 'asc');
-                        } else {
-                            // Fallback: ordenar por coincidencia de interés y ciudad sin geolocalización
-                            $usersQuery->selectRaw("users.*,
-                                    CASE WHEN looking_for_interest_id = ? THEN 1 ELSE 0 END AS is_matching_interest,
-                                    CASE WHEN LOWER(location_city) = ? THEN 1 ELSE 0 END AS is_in_my_city", 
-                                    [$searchedInterestId, $ciudad])
-                                    ->orderBy('is_in_my_city', 'desc')
-                                    ->orderBy('is_matching_interest', 'desc')
-                                    ->orderBy('created_at', 'desc');
-                        }
-                    } else {
-                        $usersQuery->orderBy('created_at', 'desc');
+                    if ($searchedInterestId) {
+                        $usersQuery->where('looking_for_interest_id', $searchedInterestId);
                     }
+                    $usersQuery->orderBy('created_at', 'desc');
                     break;
             }
             $appliedSpecificFilter = true;
 
         } else {
-            // Prioridad 3: Filtros Manuales o vista por defecto
-            $filtrosManualesAplicados = false;
-            
-            if ($request->filled('search')) {
-                $filtrosManualesAplicados = true;
-                $searchTerm = $request->input('search');
-                $usersQuery->where(fn($q) => $q->where('name', 'like', "%{$searchTerm}%")->orWhere('username', 'like', "%{$searchTerm}%"));
-            }
-            if ($request->filled('city')) {
-                $filtrosManualesAplicados = true;
-                $usersQuery->where('location_city', 'like', "%{$request->input('city')}%");
-            }
-            if ($request->filled('experience_level')) {
-                $filtrosManualesAplicados = true;
-                $usersQuery->where('experience_level', $request->input('experience_level'));
-            }
-            if ($request->filled('interests')) {
-                $filtrosManualesAplicados = true;
-                $usersQuery->whereHas('fitnessInterests', fn($q) => $q->whereIn('fitness_interests.id', $request->input('interests')));
-            }
-            if ($request->filled('availability_general')) {
-                $filtrosManualesAplicados = true;
-                $availability = $request->input('availability_general', []);
-                $usersQuery->where(function ($query) use ($availability) {
-                    foreach ($availability as $slot) {
-                        $query->orWhereJsonContains('availability_general', $slot);
-                    }
-                });
-            }
-            if ($request->filled('gym_id')) {
-                $filtrosManualesAplicados = true;
-                $usersQuery->whereHas('gyms', fn($q) => $q->where('gyms.id', $request->input('gym_id')));
-            }
-
-            // Si no se aplicó ningún filtro, usamos el ALGORITMO DE RECOMENDACIÓN
-            if (!$appliedSpecificFilter && !$filtrosManualesAplicados && $usuarioActual) {
-                
-                // 1. Preparar datos de intereses para el cálculo
+            // Caso: Algoritmo de recomendación por defecto
+            if ($usuarioActual) {
                 $myInterestIds = $usuarioActual->fitnessInterests->pluck('id')->toArray();
                 $idsString = !empty($myInterestIds) ? implode(',', $myInterestIds) : '0';
 
-                // 2. Calcular coincidencias de intereses en SQL
-                if (!empty($myInterestIds)) {
-                    $usersQuery->selectRaw("users.*, 
-                        (SELECT COUNT(*) FROM fitness_interest_user WHERE fitness_interest_user.user_id = users.id AND fitness_interest_user.fitness_interest_id IN ($idsString)) as interest_matches
-                    ");
-                } else {
-                    $usersQuery->selectRaw("users.*, 0 as interest_matches");
-                }
+                $usersQuery->selectRaw("users.*, 
+                    (SELECT COUNT(*) FROM fitness_interest_user WHERE fitness_interest_user.user_id = users.id AND fitness_interest_user.fitness_interest_id IN ($idsString)) as interest_matches
+                ");
 
-                // 3. ORDENACIÓN JERÁRQUICA
-                // Nivel 1: Mi Ciudad (Prioridad Absoluta)
                 if ($usuarioActual->location_city) {
                     $city = strtolower(trim($usuarioActual->location_city));
                     $usersQuery->orderByRaw("CASE WHEN LOWER(location_city) = ? THEN 1 ELSE 0 END DESC", [$city]);
                 }
-
-                // Nivel 2: Afinidad (Más intereses en común primero)
                 $usersQuery->orderBy('interest_matches', 'desc');
-
-                // Nivel 3: Actividad reciente
                 $usersQuery->orderBy('last_activity_at', 'desc');
-
-            } elseif (!$appliedSpecificFilter && !$filtrosManualesAplicados) {
-                // Fallback para usuarios sin sesión
+            } else {
                 $usersQuery->orderBy('last_activity_at', 'desc');
             }
         }
 
+        // IDs de las personas que siguen al usuario autenticado para la etiqueta "Te sigue"
+        $followingMeIds = $usuarioActual ? \App\Models\Connection::where('receiver_id', $usuarioActual->id)
+            ->where('status', 'accepted')
+            ->pluck('sender_id')
+            ->toArray() : [];
+
         // 4. PAGINACIÓN Y POST-PROCESAMIENTO: CÁLCULO DE AFINIDAD
-        $users = $usersQuery->paginate(15)->through(function ($user) use ($usuarioActual, $myConnections) {
+        $users = $usersQuery->paginate(15)->through(function ($user) use ($usuarioActual, $myConnections, $followingMeIds) {
             // Carga explícita de la relación para evitar problemas de serialización en Inertia.
             $user->load('fitnessInterests', 'lookingForInterest');
             
+            $user->is_following_me = in_array($user->id, $followingMeIds);
+
             if (!$usuarioActual) {
                 $user->affinity_score = 0;
                 $user->common_interests_ids = [];
@@ -294,25 +271,23 @@ class DiscoverController extends Controller
                             $lat = $usuarioActual->latitude;
                             $lon = $usuarioActual->longitude;
                             
-                            // PostgreSQL no permite usar alias en HAVING, usamos subconsulta
-                            return Gym::fromRaw("(
-                                SELECT *, ( 6371 * acos( cos( radians({$lat}) ) *
-                                    cos( radians( latitude ) )
-                                    * cos( radians( longitude ) - radians({$lon})
-                                    ) + sin( radians({$lat}) ) *
-                                    sin( radians( latitude ) ) )
-                                ) AS distance
-                                FROM gyms
-                                WHERE latitude IS NOT NULL AND longitude IS NOT NULL
-                            ) AS gyms_with_distance")
-                            ->where('distance', '<', 50)
-                            ->orderBy('distance')
-                            ->select('id', 'name', 'address', 'latitude', 'longitude')
-                            ->limit(50)
-                            ->get();
+                            $queryLat = (float) $lat;
+                            $queryLon = (float) $lon;
+                            
+                            $subQuery = \DB::table('gyms')
+                                ->select('*')
+                                ->selectRaw("(6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))) AS distance", [$queryLat, $queryLon, $queryLat])
+                                ->whereNotNull(['latitude', 'longitude']);
+
+                            return Gym::fromSub($subQuery, 'gyms_with_distance')
+                                ->where('distance', '<', 50)
+                                ->orderBy('distance')
+                                ->select('id', 'name', 'address', 'latitude', 'longitude')
+                                ->limit(50)
+                                ->get();
                         }
                         return $collection;
-                  })
+                   })
                 : [],
         ]);
     }
@@ -323,18 +298,19 @@ class DiscoverController extends Controller
         $lon = $request->input('lon');
 
         if (!$lat || !$lon) {
-           // Si no hay ubicación, y el usuario tiene ciudad, intentar buscar gyms en su ciudad (simple)
-           // O simplemente devolver vacio si no hay lat/lon explícito
            return []; 
         }
 
-        return Gym::selectRaw("*, ( 6371 * acos( cos( radians(?) ) *
-                                cos( radians( latitude ) )
-                                * cos( radians( longitude ) - radians(?)
-                                ) + sin( radians(?) ) *
-                            sin( radians( latitude ) ) )
-                            ) AS distance", [$lat, $lon, $lat])
-            ->having('distance', '<', 15) // 15km
+        $queryLat = (float) $lat;
+        $queryLon = (float) $lon;
+
+        $subQuery = \DB::table('gyms')
+            ->select('*')
+            ->selectRaw("(6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))) AS distance", [$queryLat, $queryLon, $queryLat])
+            ->whereNotNull(['latitude', 'longitude']);
+
+        return Gym::fromSub($subQuery, 'gyms_with_distance')
+            ->where('distance', '<', 15)
             ->orderBy('distance')
             ->limit(100)
             ->get();

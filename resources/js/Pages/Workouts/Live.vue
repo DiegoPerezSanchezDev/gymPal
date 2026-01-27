@@ -155,6 +155,7 @@ function confirmFinish() {
     // Guardar el log
     router.post(route('workout-logs.store'), {
         workout_id: props.workout.id,
+        category_id: props.workout.category_id,
         workout_name: props.workout.name,
         exercises_data: exercisesData,
         duration_minutes: duration,

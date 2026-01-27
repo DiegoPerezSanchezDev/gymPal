@@ -28,54 +28,77 @@ class FeedController extends Controller
         ])
         ->withCount(['likers','comments']);
     
-        $gymPalIds = $user->gym_pals->pluck('id');
         $userId = $user->id;
+        
+        // IDs de personas que YO sigo (conexiones que YO envié y fueron aceptadas)
+        $iFollowIds = \App\Models\Connection::where('sender_id', $userId)
+            ->where('status', 'accepted')
+            ->pluck('receiver_id');
+        
+        // IDs de personas que ME siguen (conexiones que ME enviaron y acepté)
+        $followingMeIds = \App\Models\Connection::where('receiver_id', $userId)
+            ->where('status', 'accepted')
+            ->pluck('sender_id');
+        
+        // GymPals = Conexiones mutuas (yo los sigo Y ellos me siguen)
+        $gymPalIds = $iFollowIds->intersect($followingMeIds);
 
         switch ($activeTab) {
             case 'populares':
-                // Excluir conexiones y propio usuario para fomentar descubrimiento
-                $postsQuery->whereNotIn('user_id', $gymPalIds->merge([$userId]));
-                // Ordenar por likes y luego por fecha
-                $postsQuery->orderByDesc('likers_count')->orderByDesc('created_at');
+                // Populares: Gente que YO NO sigo (para que aparezcan los "Te sigue")
+                // Excluimos solo a los que YO sigo (iFollowIds) y a mí mismo
+                $postsQuery->whereNotIn('posts.user_id', $iFollowIds->push($userId))
+                           ->orderByDesc('likers_count')
+                           ->orderByDesc('posts.created_at');
                 break;
     
             case 'cerca':
-                // Excluir conexiones y propio usuario para fomentar descubrimiento
-                $postsQuery->whereNotIn('user_id', $gymPalIds->merge([$userId]));
+                // Cerca: Gente cercana que YO NO sigo (consistente con Populares)
+                $postsQuery->whereNotIn('posts.user_id', $iFollowIds->push($userId));
                 
                 if ($user->latitude && $user->longitude) {
                     $lat = $user->latitude;
                     $lon = $user->longitude;
                     
+                    // Join y select específico para evitar colisiones y mantener withCount
                     $postsQuery->join('users', 'posts.user_id', '=', 'users.id')
-                        ->select('posts.*')
+                        ->addSelect('posts.*') // addSelect mantiene los counts
                         ->selectRaw("
                             (6371 * acos(
                                 cos(radians(?)) * cos(radians(users.latitude)) * cos(radians(users.longitude) - radians(?)) + 
                                 sin(radians(?)) * sin(radians(users.latitude))
-                            )) AS distance
-                        ", [$lat, $lon, $lat])
+                            )) AS distance", [$lat, $lon, $lat])
                         ->whereNotNull('users.latitude')
-                        ->whereNotNull('users.longitude')
-                        ->orderBy('distance');
+                        ->whereNotNull('users.longitude');
+
+                    // Ordenamos por el alias 'distance' que ahora está en el SELECT
+                    $postsQuery->whereRaw("(6371 * acos(cos(radians(?)) * cos(radians(users.latitude)) * cos(radians(users.longitude) - radians(?)) + sin(radians(?)) * sin(radians(users.latitude)))) <= 20", [$lat, $lon, $lat])
+                               ->orderBy('distance', 'asc')
+                               ->orderByDesc('posts.created_at');
                 } else {
-                    $postsQuery->latest();
+                    $postsQuery->whereRaw('1=0');
                 }
                 break;
     
             case 'siguiendo':
             default:
-                // mostrar posts de GymPals y del propio usuario.
-                $postsQuery->whereIn('user_id', $gymPalIds->merge([$userId]))->latest();
+                // Siguiendo: Posts de gente que YO sigo + MIS PROPIOS posts
+                $postsQuery->where(function($q) use ($iFollowIds, $userId) {
+                    $q->whereIn('posts.user_id', $iFollowIds)
+                      ->orWhere('posts.user_id', $userId); // Incluir mis propios posts
+                })->orderByDesc('posts.created_at');
                 break;
         }
     
         $posts = $postsQuery->paginate(10)->withQueryString();
-        
-        // Añadir is_liked e is_saved a cada post
-        $posts->getCollection()->transform(function ($post) use ($user) {
+
+        // Añadir meta y atributos a cada post
+        $posts->getCollection()->transform(function ($post) use ($user, $followingMeIds, $gymPalIds, $iFollowIds) {
             $post->is_liked = $post->likers()->where('user_id', $user->id)->exists();
             $post->is_saved = $user->savedPosts()->where('post_id', $post->id)->exists();
+            $post->user->is_following_me = $followingMeIds->contains($post->user_id); // Me sigue
+            $post->user->is_gym_pal = $gymPalIds->contains($post->user_id); // Conexión mutual
+            $post->user->is_following = $iFollowIds->contains($post->user_id); // Yo lo sigo
             return $post;
         });
     

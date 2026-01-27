@@ -61,7 +61,7 @@ const features = [
                     <template v-else>
                         <Link
                             :href="route('login')"
-                            class="hidden sm:block font-bold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition"
+                            class="font-bold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition px-2"
                         >
                             Log in
                         </Link>
@@ -201,13 +201,11 @@ const features = [
             </section>
         </div>
         
-        <footer class="bg-gray-50 dark:bg-black py-12 border-t border-gray-100 dark:border-gray-800">
+        <footer class="bg-gray-50 dark:bg-gray-900 py-12 border-t border-gray-100 dark:border-gray-800 transition-colors">
              <div class="max-w-7xl mx-auto px-4 text-center">
-                 <!-- <div class="flex items-center justify-center gap-2 mb-4">
-                    <Link href="/" class="block h-10 w-10">
-                        <ApplicationLogo class="w-full h-full" />
-                     </Link>
-                 </div> -->
+                 <div class="flex items-center justify-center gap-2 mb-4">
+                    <span class="font-black text-xl tracking-tighter text-gray-900 dark:text-white">GymPal</span>
+                 </div>
                  <p class="text-sm text-gray-400 mt-2">&copy; {{ new Date().getFullYear() }} GymPal Inc.</p>
              </div>
         </footer>

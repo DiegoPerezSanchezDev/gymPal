@@ -1,86 +1,49 @@
-# 📋 TAREAS PENDIENTES - GymPal
+📋 ESTADO ACTUAL DE TAREAS (Actualizado 18/01/2026)
 
-## 🔴 PRIORIDAD ALTA
+✅ FINALIZADO HOY (UI Polish & Modals)
+------------------------------------------
+🎨 Feed y Contenido
+✅ GPS Icon: Rediseñado con estilo premium (fondo indigo, animación pulse, más destacado).
+✅ "Te sigue" Badge: Implementado en Discover, perfiles públicos y listas de conexiones.
 
-### 1. Completar Listas de Conexiones en Modal
-- [ ] Enviar lista de `followers` desde backend (ProfileController)
-- [ ] Enviar lista de `following` desde backend (ProfileController)
-- [ ] Actualizar modal para mostrar listas de Seguidores y Siguiendo
-- [ ] Añadir avatares y links a perfiles en las listas
+🏋️‍♂️ Rutinas
+✅ Selectores de Series: Reemplazados `<select>` por `SetTypeDropdown` premium con colores e iconos.
+✅ Identidad de Series: Las filas de series ahora tienen colores (Caranja para Warmup, Rojo para Fallo, Púrpura para Drop Set).
+✅ Lógica Drop Set: Añadido icono ⬇️ y sangría visual para drops.
+✅ Confirmación Borrado: Implementado `ConfirmModal` para eliminar ejercicios.
+✅ Botones Cancelar/Guardar: Ahora tienen ancho fijo en desktop (no se estiran).
 
-### 2. Testing de Lógica de Conexiones
-- [ ] Probar flujo completo de enviar solicitud
-- [ ] Probar auto-aceptación cuando ambos se envían solicitud
-- [ ] Probar aceptar/rechazar solicitudes manualmente
-- [ ] Verificar que estados se actualizan correctamente en UI
-- [ ] Probar desconectar y reconectar
+🏢 Gimnasios
+✅ GymController Fix: Corregido error 500 al cargar detalles de gimnasios.
+✅ GymMembersModal: Integrado en `ShowPublic.vue` y `Discover.vue` para ver todos los asistentes.
+✅ "Te sigue" en Gyms: Añadido flag is_following_me en respuestas de gimnasios.
 
-### 3. Verificar Notificaciones
-- [ ] Probar scroll infinito en notificaciones
-- [ ] Verificar que carga correctamente al hacer scroll
-- [ ] Probar filtros (Todas/No leídas)
-- [ ] Verificar que notificaciones de conexión funcionan
+⏳ PENDIENTE (Próximos Pasos)
+-----------------------------
+🏢 Gimnasios
+- [ ] Limpieza DB: Verificar si hay datos de gimnasios falsos para eliminar.
 
-## 🟡 PRIORIDAD MEDIA
-
-### 4. Optimizaciones de Performance
-- [ ] Revisar queries N+1 en conexiones
-- [ ] Añadir índices en tabla connections si es necesario
-- [ ] Optimizar carga de avatares (lazy loading)
-- [ ] Implementar caché para contadores de conexiones
-
-### 5. Mejoras de UX
-- [ ] Añadir animaciones de transición en modal de conexiones
-- [ ] Mejorar feedback visual al aceptar/rechazar solicitudes
-- [ ] Añadir toast notifications para acciones de conexión
-- [ ] Mejorar estados de carga (skeletons)
-
-### 6. Funcionalidades de Posts Guardados
-- [ ] Verificar que posts guardados se muestran correctamente
-- [ ] Probar guardar/desguardar posts
-- [ ] Verificar notificaciones de posts guardados
-- [ ] Revisar página de guardados (posts + rutinas)
-
-## 🟢 PRIORIDAD BAJA
-
-### 7. Agrupar Notificaciones por Tipo
-- [ ] Diseñar UI para notificaciones agrupadas
-- [ ] Implementar lógica de agrupación en backend
-- [ ] Actualizar frontend para mostrar grupos
-- [ ] Añadir opción de expandir/colapsar grupos
-
-### 8. Mejoras Visuales
-- [ ] Revisar consistencia de colores en dark mode
-- [ ] Optimizar espaciados en mobile
-- [ ] Añadir más micro-animaciones
-- [ ] Mejorar accesibilidad (ARIA labels)
-
-### 9. Documentación
-- [ ] Documentar lógica de conexiones en código
-- [ ] Crear diagrama de estados de conexión
-- [ ] Documentar API de notificaciones
-- [ ] Actualizar README con nuevas features
-
-## 🐛 BUGS CONOCIDOS
-
-- Ninguno reportado actualmente
-
-## 📝 NOTAS
-
-### Cambios Recientes Completados ✅
-- Sistema de conexiones refinado (GymPals/Seguidores/Siguiendo)
-- Scroll infinito en notificaciones
-- Modal de conexiones clickeable
-- Contadores en perfil público
-- Auto-aceptación de solicitudes mutuas
-- Icono de guardar rutina en dorado
-- Diseño mobile-first en página de conexiones
-
-### Próximos Pasos Sugeridos
-1. Completar listas de Seguidores/Siguiendo en modal
-2. Testing exhaustivo del flujo de conexiones
-3. Optimizaciones de performance
-4. Agrupar notificaciones por tipo
+🗺️ Discover
+- [x] ~~Buscador de Compañero (Modo Oscuro): Mejorado contraste y coloreadas esferas.~~
 
 ---
-**Última actualización**: 2025-12-05
+
+✅ COMPLETADO ANTERIORMENTE (Blindaje y Estabilidad)
+------------------------------------------
+🐛 Bugs Críticos
+✅ SQL Error (BigInt): Corregido el fallo al filtrar por categorías como "Crossfit" en PostgreSQL.
+✅ Live Workout: Blindado el error "Undefined array key name" al iniciar entrenamientos con datos corruptos.
+✅ Notificación Guardado: Se eliminó el tick verde redundante al guardar posts.
+✅ Calendario Historial: Filtro corregido para mostrar solo el día seleccionado.
+
+🗺️ Discover y Mapa
+✅ Error 0.0 km: Corregido. Ahora muestra "Muy cerca" e ignora coordenadas 0,0 en el backend.
+✅ Flujo GPS Premium: Modal explicativo solo si falta ubicación + memoria de intención (Mapa/Lista).
+✅ Skeletons: Implementados en todos los cambios de filtros y búsquedas.
+
+🏋️‍♂️ Rutinas y UI
+✅ Colores Pública/Privada: Cambiados a Esmeralda/Rose para total claridad.
+✅ Mejora Modo Dark: Etiquetas con mejor contraste y visibilidad.
+✅ Navegación Inteligente: El botón "Atrás" te devuelve al Chat si vienes de allí.
+✅ SelectInput Fix: Ahora muestra "Seleccionar..." correctamente si no hay valor.
+✅ Filtros Neutros: Botones "Todas" y ordenamiento en Slate (gris) para no saturar.

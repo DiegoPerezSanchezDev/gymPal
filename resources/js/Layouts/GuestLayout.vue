@@ -24,7 +24,7 @@ import { Link } from '@inertiajs/vue3';
             <slot />
         </div>
         
-        <div class="mt-8 text-center text-xs text-gray-400 dark:text-gray-500 z-10">
+        <div class="mt-12 mb-12 text-center text-xs text-gray-400 dark:text-gray-500 z-10">
             &copy; {{ new Date().getFullYear() }} GymPal. Todos los derechos reservados.
         </div>
     </div>

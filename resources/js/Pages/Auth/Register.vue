@@ -4,7 +4,11 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
+import GoogleButton from '@/Components/GoogleButton.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
+
+
 
 const form = useForm({
     name: '',
@@ -14,9 +18,13 @@ const form = useForm({
     password_confirmation: '',
 });
 
+const showPassword = ref(false);
+const showPasswordConfirmation = ref(false);
+
 const submit = () => {
     form.post(route('register'), {
-        onFinish: () => form.reset('password', 'password_confirmation'),
+        // Quitamos el reset para que la contraseña persista si hay error, como pidió el usuario
+        // onFinish: () => form.reset('password', 'password_confirmation'),
     });
 };
 </script>
@@ -66,11 +74,12 @@ const submit = () => {
                         type="text"
                         class="pl-10 block w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 focus:border-indigo-500 focus:ring-indigo-500 shadow-sm py-3"
                         v-model="form.username"
-                        placeholder="Nombre de usuario (@usuario)"
+                        placeholder="Usuario"
                         required
                         autocomplete="username"
                     />
                 </div>
+                <p class="mt-1 text-[10px] text-gray-400 dark:text-gray-500 px-1 italic">Ejemplo: diego10 (sin espacios ni signos)</p>
                 <InputError class="mt-2 text-center" :message="form.errors.username" />
             </div>
 
@@ -88,7 +97,7 @@ const submit = () => {
                         type="email"
                         class="pl-10 block w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 focus:border-indigo-500 focus:ring-indigo-500 shadow-sm py-3"
                         v-model="form.email"
-                        placeholder="tucorreo@ejemplo.com"
+                        placeholder="Correo electrónico"
                         required
                         autocomplete="email"
                     />
@@ -106,14 +115,24 @@ const submit = () => {
                     </div>
                     <TextInput
                         id="password"
-                        type="password"
-                        class="pl-10 block w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 focus:border-indigo-500 focus:ring-indigo-500 shadow-sm py-3"
+                        :type="showPassword ? 'text' : 'password'"
+                        class="pl-10 pr-10 block w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 focus:border-indigo-500 focus:ring-indigo-500 shadow-sm py-3"
                         v-model="form.password"
-                        placeholder="Contraseña (mín. 8 caracteres)"
+                        placeholder="Contraseña"
                         required
                         autocomplete="new-password"
                     />
+                    <button 
+                        v-if="form.password.length > 0"
+                        type="button"
+                        @click="showPassword = !showPassword"
+                        class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-indigo-500 transition-colors"
+                    >
+                        <svg v-if="!showPassword" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                        <svg v-else class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" /></svg>
+                    </button>
                 </div>
+                <p class="mt-1 text-[10px] text-gray-400 dark:text-gray-500 px-1 italic">Mín. 8 caracteres (Ej: Gym2024!)</p>
                 <InputError class="mt-2 text-center" :message="form.errors.password" />
             </div>
 
@@ -127,13 +146,22 @@ const submit = () => {
                     </div>
                     <TextInput
                         id="password_confirmation"
-                        type="password"
-                        class="pl-10 block w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 focus:border-indigo-500 focus:ring-indigo-500 shadow-sm py-3"
+                        :type="showPasswordConfirmation ? 'text' : 'password'"
+                        class="pl-10 pr-10 block w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 focus:border-indigo-500 focus:ring-indigo-500 shadow-sm py-3"
                         v-model="form.password_confirmation"
-                        placeholder="Repite la contraseña"
+                        placeholder="Confirmar Contraseña"
                         required
                         autocomplete="new-password"
                     />
+                    <button 
+                        v-if="form.password_confirmation.length > 0"
+                        type="button"
+                        @click="showPasswordConfirmation = !showPasswordConfirmation"
+                        class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-indigo-500 transition-colors"
+                    >
+                        <svg v-if="!showPasswordConfirmation" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                        <svg v-else class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" /></svg>
+                    </button>
                 </div>
                 <InputError class="mt-2 text-center" :message="form.errors.password_confirmation" />
             </div>
@@ -160,12 +188,7 @@ const submit = () => {
                     <div class="flex-grow border-t border-gray-200 dark:border-gray-700"></div>
                 </div>
 
-                <a :href="route('auth.google')" class="w-full flex items-center justify-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all shadow-sm font-semibold text-sm">
-                    <svg class="h-5 w-5" aria-hidden="true" viewBox="0 0 24 24">
-                        <path d="M12.0003 20.45c4.653 0 8.5523-3.2355 9.7716-7.6041H12.0003v-4.1818h13.2954c.1455.7779.2272 1.5833.2272 2.4172 0 7.4299-5.1126 12.9189-12.7226 12.9189-7.237 0-13.1091-5.8721-13.1091-13.1091s5.8721-13.1091 13.1091-13.1091c3.5182 0 6.6136 1.3418 8.9455 3.5182l-3.3273 3.3273c-1.2545-1.2-3.1418-2.0727-5.6182-2.0727-4.9964 0-9.0545 4.0582-9.0545 9.0545s4.0581 9.0545 9.0545 9.0545z" fill="currentColor" />
-                    </svg>
-                    Google
-                </a>
+                <GoogleButton :href="route('auth.google')" text="Registrarse con Google" />
             </div>
 
             <div class="mt-8 text-center">

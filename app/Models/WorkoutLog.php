@@ -12,6 +12,7 @@ class WorkoutLog extends Model
     protected $fillable = [
         'user_id',
         'workout_id',
+        'category_id',
         'workout_name',
         'exercises_data',
         'duration_minutes',
@@ -34,6 +35,11 @@ class WorkoutLog extends Model
     public function workout()
     {
         return $this->belongsTo(Workout::class);
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
     }
 
     /**

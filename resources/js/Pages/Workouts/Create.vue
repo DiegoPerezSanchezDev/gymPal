@@ -1,27 +1,32 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import SelectInput from '@/Components/SelectInput.vue';
+import SetTypeDropdown from '@/Components/SetTypeDropdown.vue';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { useToast } from '@/composables/useToast';
 
 const { success, error } = useToast();
 
-defineProps({
-    title: String
+const props = defineProps({
+    title: String,
+    categories: Array
 });
+
+const setCounter = ref(1);
 
 const form = ref({
     name: '',
     description: '',
     difficulty: 'Intermedio',
     duration_minutes: null,
-    category: 'Gym',
+    category_id: null,
     is_public: true,
     exercises: [
         { 
             exercise_name: '', 
-            sets_data: [{ reps: 10, weight: 0, type: 'normal' }], // Inicializamos con 1 serie
+            sets_data: [{ id: setCounter.value++, reps: 10, weight: 0, type: 'normal' }], // Inicializamos con 1 serie
             rest_seconds: 60, 
             notes: '' 
         }
@@ -30,19 +35,19 @@ const form = ref({
 
 const isSubmitting = ref(false);
 
-const categories = [
-    '🏋️ Gym', 
-    '🤸 Calistenia', 
-    '🏃 Running', 
-    '🚴 Ciclismo', 
-    '🧘 Yoga',
-    '⚽ Deportes de equipo',
-    '🥊 Artes Marciales',
-    '🏊 Natación',
-    '💪 Otro'
-];
+const categoryOptions = computed(() => {
+    return props.categories?.map(cat => ({ 
+        value: cat.id, 
+        label: `${cat.icon} ${cat.name}` 
+    })) || [];
+});
 
-const categoryOptions = categories.map(cat => ({ value: cat, label: cat }));
+// Set default category if none
+onMounted(() => {
+    if (!form.value.category_id && props.categories?.length > 0) {
+        form.value.category_id = props.categories[0].id;
+    }
+});
 
 const difficultyOptions = [
     { value: 'Principiante', label: 'Principiante' },
@@ -53,28 +58,63 @@ const difficultyOptions = [
 const setTypes = [
     { value: 'normal', label: 'Normal' },
     { value: 'warmup', label: 'Calentamiento' },
-    { value: 'failure', label: 'Al fallo' },
+    { value: 'failure', label: 'Al Fallo' },
     { value: 'drop', label: 'Drop Set' }
 ];
 
 const addExercise = () => {
     form.value.exercises.push({
         exercise_name: '',
-        sets_data: [{ reps: 10, weight: 0, type: 'normal' }],
+        sets_data: [{ id: setCounter.value++, reps: 10, weight: 0, type: 'normal' }],
         rest_seconds: 60,
         notes: ''
     });
 };
 
-const removeExercise = (index) => {
+const addDropSet = (exerciseIndex, setIndex) => {
+    const parentSet = form.value.exercises[exerciseIndex].sets_data[setIndex];
+    // Insertar justo debajo de la serie actual
+    form.value.exercises[exerciseIndex].sets_data.splice(setIndex + 1, 0, {
+        id: setCounter.value++,
+        reps: parentSet.reps != null ? Number(parentSet.reps) : 10,
+        weight: parentSet.weight != null ? Math.round(Number(parentSet.weight) * 0.7) : 0,
+        type: 'drop'
+    });
+};
+
+const handleTypeChange = (val, exerciseIndex, setIndex) => {
+    if (val === 'drop') {
+        addDropSet(exerciseIndex, setIndex);
+    }
+};
+
+const isSubsequentDrop = (exercise, setIndex) => {
+    return setIndex > 0 && exercise.sets_data[setIndex].type === 'drop' && exercise.sets_data[setIndex - 1].type === 'drop';
+};
+
+const showDeleteConfirm = ref(false);
+const exerciseToDeleteIndex = ref(null);
+
+const confirmRemoveExercise = (index) => {
     if (form.value.exercises.length > 1) {
-        form.value.exercises.splice(index, 1);
+        exerciseToDeleteIndex.value = index;
+        showDeleteConfirm.value = true;
+    }
+};
+
+const handleRemoveExercise = () => {
+    if (exerciseToDeleteIndex.value !== null) {
+        form.value.exercises.splice(exerciseToDeleteIndex.value, 1);
+        showDeleteConfirm.value = false;
+        exerciseToDeleteIndex.value = null;
+        success('Ejercicio eliminado');
     }
 };
 
 const addSet = (exerciseIndex) => {
     const previousSet = form.value.exercises[exerciseIndex].sets_data[form.value.exercises[exerciseIndex].sets_data.length - 1];
     form.value.exercises[exerciseIndex].sets_data.push({
+        id: setCounter.value++,
         reps: previousSet ? previousSet.reps : 10,
         weight: previousSet ? previousSet.weight : 0,
         type: 'normal'
@@ -184,7 +224,7 @@ const submit = () => {
                                 <SelectInput
                                     id="category"
                                     label="Categoría *"
-                                    v-model="form.category"
+                                    v-model="form.category_id"
                                     :options="categoryOptions"
                                     required
                                 />
@@ -265,7 +305,7 @@ const submit = () => {
                                     <button
                                         v-if="form.exercises.length > 1"
                                         type="button"
-                                        @click="removeExercise(index)"
+                                        @click="confirmRemoveExercise(index)"
                                         class="text-red-500 hover:text-red-700 text-sm font-semibold ml-3"
                                     >
                                         Eliminar
@@ -288,48 +328,67 @@ const submit = () => {
                                     <div class="space-y-2">
                                         <div 
                                             v-for="(set, setIndex) in exercise.sets_data" 
-                                            :key="setIndex"
-                                            class="flex items-center gap-2"
+                                            :key="set.id"
+                                            class="flex items-center gap-2 p-1 rounded-lg transition-all border shadow-sm group/row"
+                                            :class="{
+                                                'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700': set.type === 'normal' || !set.type,
+                                                'bg-orange-50/50 dark:bg-orange-900/10 border-orange-100 dark:border-orange-900/30': set.type === 'warmup',
+                                                'bg-red-50/50 dark:bg-red-900/10 border-red-100 dark:border-red-900/30': set.type === 'failure',
+                                                'bg-purple-50/50 dark:bg-purple-900/10 border-purple-100 dark:border-purple-900/30 ml-2': set.type === 'drop',
+                                            }"
                                         >
-                                            <span class="text-xs text-gray-400 w-4 text-center">{{ setIndex + 1 }}</span>
+                                            <div class="flex items-center justify-center w-5 flex-shrink-0">
+                                                <span class="text-[10px] text-gray-400 font-black">{{ setIndex + 1 }}</span>
+                                            </div>
                                             
-                                            <div class="flex-1 grid grid-cols-3 gap-2">
+                                            <div class="flex-1 grid gap-2" :class="isSubsequentDrop(exercise, setIndex) ? 'grid-cols-2' : 'grid-cols-3'">
                                                 <div class="relative">
                                                     <input
                                                         v-model.number="set.reps"
                                                         type="number"
-                                                        placeholder="Reps"
-                                                        class="w-full px-2 py-1 text-sm rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-indigo-500 dark:focus:border-indigo-500 outline-none transition-colors"
+                                                        :placeholder="set.type === 'failure' ? 'MAX' : 'Reps'"
+                                                        class="w-full px-2 py-1.5 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-indigo-500 dark:focus:border-indigo-500 outline-none transition-all"
                                                     />
-                                                    <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">reps</span>
+                                                    <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-gray-400 pointer-events-none uppercase font-bold">reps</span>
                                                 </div>
                                                 <div class="relative">
                                                     <input
                                                         v-model.number="set.weight"
                                                         type="number"
                                                         placeholder="Kg"
-                                                        class="w-full px-2 py-1 text-sm rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-indigo-500 dark:focus:border-indigo-500 outline-none transition-colors"
+                                                        class="w-full px-2 py-1.5 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-indigo-500 dark:focus:border-indigo-500 outline-none transition-all"
                                                     />
-                                                    <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">kg</span>
+                                                    <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-gray-400 pointer-events-none uppercase font-bold">kg</span>
                                                 </div>
-                                                <select
+                                                <SetTypeDropdown
+                                                    v-if="!isSubsequentDrop(exercise, setIndex)"
                                                     v-model="set.type"
-                                                    class="w-full px-2 py-1.5 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-indigo-500 dark:focus:border-indigo-500 outline-none transition-colors"
-                                                >
-                                                    <option v-for="type in setTypes" :key="type.value" :value="type.value">
-                                                        {{ type.label }}
-                                                    </option>
-                                                </select>
+                                                    :options="setTypes"
+                                                    @update:model-value="(val) => handleTypeChange(val, index, setIndex)"
+                                                />
                                             </div>
+                                            
+                                            <div class="flex items-center gap-1 flex-shrink-0">
+                                                <button 
+                                                    v-if="isSubsequentDrop(exercise, setIndex)"
+                                                    type="button"
+                                                    @click="addDropSet(index, setIndex)"
+                                                    class="w-7 h-7 flex items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 hover:bg-purple-200 dark:hover:bg-purple-800/50 transition-all border border-purple-200 dark:border-purple-800"
+                                                    title="Agregar otra bajada"
+                                                >
+                                                    <span class="text-[10px]">⬇️</span>
+                                                </button>
 
-                                            <button 
-                                                v-if="exercise.sets_data.length > 1"
-                                                type="button"
-                                                @click="removeSet(index, setIndex)"
-                                                class="text-gray-400 hover:text-red-500"
-                                            >
-                                                &times;
-                                            </button>
+                                                <button 
+                                                    v-if="exercise.sets_data.length > 1"
+                                                    type="button"
+                                                    @click="removeSet(index, setIndex)"
+                                                    class="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/20 text-gray-400 hover:text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 transition-all border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                                                >
+                                                    &times;
+                                                </button>
+                                                <div v-else class="w-7 h-7"></div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -360,26 +419,40 @@ const submit = () => {
                         </div>
                     </div>
 
-                    <!-- Botones -->
-                    <div class="flex gap-3 pb-8">
+                     <!-- Botones -->
+                    <div class="flex flex-col sm:flex-row gap-4 pb-12 sm:justify-center">
                         <button
                             type="button"
                             @click="router.visit(route('workouts.my-workouts'))"
-                            class="flex-1 px-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-xl font-bold transition-colors"
+                            class="w-full sm:w-48 px-8 py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-2xl font-bold hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-sm"
                         >
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                             Cancelar
                         </button>
                         <button
                             type="submit"
                             :disabled="isSubmitting"
-                            class="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 transition shadow-lg"
+                            class="w-full sm:w-64 group relative px-8 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed"
                         >
-                            {{ isSubmitting ? 'Creando...' : '✨ Crear Rutina' }}
+                            <svg v-if="isSubmitting" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>{{ isSubmitting ? 'Creando...' : '✨ Crear Rutina' }}</span>
                         </button>
                     </div>
 
                 </form>
             </div>
         </div>
+        <ConfirmModal
+            :show="showDeleteConfirm"
+            title="¿Eliminar ejercicio?"
+            message="Esta acción no se puede deshacer. Se eliminarán todas las series configuradas para este ejercicio."
+            confirmText="Eliminar Ejercicio"
+            type="danger"
+            @close="showDeleteConfirm = false"
+            @confirm="handleRemoveExercise"
+        />
     </AuthenticatedLayout>
 </template>

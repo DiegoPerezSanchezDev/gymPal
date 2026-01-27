@@ -19,6 +19,7 @@ class Workout extends Model
         'difficulty',
         'duration_minutes',
         'category',
+        'category_id',
         'is_public',
         'times_saved',
         'original_workout_id',
@@ -33,6 +34,11 @@ class Workout extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
     }
 
     public function exercises(): HasMany

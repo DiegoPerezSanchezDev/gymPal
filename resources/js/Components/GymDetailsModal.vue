@@ -104,7 +104,7 @@ const close = () => {
                 <!-- Content -->
                 <div class="p-6">
                     <div class="text-center -mt-16 mb-4 relative z-10">
-                        <h2 class="text-2xl font-black text-gray-900 dark:text-white leading-tight mb-4">{{ gym.name }}</h2>
+                        <h2 class="text-2xl font-black text-white leading-tight mb-4 drop-shadow-md transition-colors">{{ gym.name }}</h2>
                         <span class="inline-block px-3 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
                             {{ gym.type.toUpperCase() }}
                         </span>
@@ -137,6 +137,19 @@ const close = () => {
                         <div v-else class="text-center py-6 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-dashed border-gray-200 dark:border-gray-600">
                             <p class="text-sm text-gray-500">Aún no hay gymrats visibles aquí.</p>
                             <p class="text-xs text-indigo-500 font-bold mt-1">¡Sé el primero!</p>
+                        </div>
+
+                        <!-- Ver Todos Button -->
+                        <div v-if="members && members.length > 0" class="mt-4 text-center">
+                            <button 
+                                @click="$emit('view-all-members', gym)"
+                                class="text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center justify-center gap-1 mx-auto"
+                            >
+                                <span>Ver todos los miembros</span>
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
                         </div>
                     </div>
 

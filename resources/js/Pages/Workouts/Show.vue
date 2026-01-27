@@ -61,6 +61,11 @@ const backRoute = computed(() => {
         return route('notifications.index');
     }
     
+    // Si viene de un chat (comprobamos referrer)
+    if (document.referrer.includes('/chat')) {
+        return document.referrer;
+    }
+
     // Si viene de "Mis Rutinas"
     if (params.get('from') === 'my-workouts' || document.referrer.includes('my-workouts')) {
         return route('workouts.my-workouts');
@@ -406,12 +411,12 @@ const closeShareModal = () => {
                 <div class="max-w-4xl mx-auto">
                     <div class="flex items-center justify-between mb-6">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
-                                <span class="text-xl">📊</span>
+                            <div class="w-12 h-12 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center shadow-lg border border-indigo-100 dark:border-indigo-900/50 transition-colors">
+                                <span class="text-2xl">📊</span>
                             </div>
                             <div>
-                                <h3 class="text-2xl font-bold text-gray-800 dark:text-white transition-colors">Tu Historial</h3>
-                                <p class="text-sm text-gray-500 dark:text-gray-400 transition-colors">Has completado esta rutina {{ logsCount }} {{ logsCount === 1 ? 'vez' : 'veces' }}</p>
+                                <h3 class="text-2xl font-black text-gray-900 dark:text-white transition-colors">Tu Historial</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 font-medium transition-colors">Has completado esta rutina {{ logsCount }} {{ logsCount === 1 ? 'vez' : 'veces' }}</p>
                             </div>
                         </div>
                         <Link 

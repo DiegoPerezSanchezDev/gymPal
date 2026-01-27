@@ -102,7 +102,11 @@ class StatsController extends Controller
             'streak' => $streak,
             'personalRecords' => $personalRecords,
             'badges' => $badges,
-            'progressCharts' => $progressCharts,
+            'progressCharts' => [
+                'weeklyVolume' => $progressCharts['weeklyVolume'],
+                'monthlyFrequency' => $progressCharts['monthlyFrequency'],
+                'categories' => $this->getCategoryDistribution($user)
+            ],
             'insights' => $insights,
             'goals' => $this->getGoals($user), // <--- NUEVO
             'leaderboard' => $this->getLeaderboard($user),
@@ -144,9 +148,10 @@ class StatsController extends Controller
                     'id' => $friend->id,
                     'name' => $friend->name,
                     'username' => $friend->username,
-                    'avatar' => $friend->profile_picture_url,
+                    'profile_picture_url' => $friend->profile_picture_url,
                     'workouts' => $friend->weekly_workouts,
-                    'is_me' => $friend->id === $user->id
+                    'is_me' => $friend->id === Auth::id(),
+                    'is_target' => $friend->id === $user->id && $friend->id !== Auth::id()
                 ];
             })
             ->sortByDesc('workouts')
@@ -671,6 +676,18 @@ class StatsController extends Controller
             'monthlyFrequency' => $monthlyFrequency,
         ];
     }
+
+    /**
+     * Obtener distribución por categorías con normalización (Igual que en Perfil)
+     */
+    private function getCategoryDistribution(User $user)
+    {
+        return \App\Models\WorkoutLog::where('workout_logs.user_id', $user->id)
+            ->join('categories', 'workout_logs.category_id', '=', 'categories.id')
+            ->select('categories.name as category_name', 'categories.icon', 'categories.color', \DB::raw('count(*) as count'))
+            ->groupBy('categories.id', 'categories.name', 'categories.icon', 'categories.color')
+            ->get();
+    }
     
     private function generateInsights($user, $stats, $streak)
     {
@@ -763,8 +780,11 @@ class StatsController extends Controller
         return redirect()->back()->with('success', 'Objetivo creado correctamente.');
     }
 
-    public function destroyGoal(Goal $goal)
+    public function destroyGoal($id)
     {
+        \Log::info('Tentando eliminar objetivo ID: ' . $id);
+        $goal = Goal::findOrFail($id);
+        
         if ($goal->user_id !== auth()->id()) {
             abort(403);
         }
@@ -777,7 +797,6 @@ class StatsController extends Controller
     private function getGoals($user)
     {
         $goals = Goal::where('user_id', $user->id)
-            ->where('status', 'active')
             ->get();
             
         $goalsData = [];
@@ -809,6 +828,32 @@ class StatsController extends Controller
                     $progress += $estimated;
                 }
 
+            } else if ($goal->type === 'monthly_volume') {
+                $logsThisMonth = WorkoutLog::where('user_id', $user->id)
+                    ->whereMonth('created_at', Carbon::now()->month)
+                    ->whereYear('created_at', Carbon::now()->year)
+                    ->get();
+                
+                $totalVolumeFound = 0;
+                foreach ($logsThisMonth as $log) {
+                    if (isset($log->exercises_data) && is_array($log->exercises_data)) {
+                        foreach ($log->exercises_data as $exercise) {
+                            if (isset($exercise['sets']) && is_array($exercise['sets'])) {
+                                foreach ($exercise['sets'] as $set) {
+                                    if (isset($set['completed']) && $set['completed']) {
+                                        $totalVolumeFound += (float)($set['weight'] ?? 0) * (int)($set['reps'] ?? 0);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                $progress = $totalVolumeFound;
+
+            } else if ($goal->type === 'max_weight') {
+                $prRecord = $this->getPersonalRecords($user);
+                $progress = !empty($prRecord) ? $prRecord[0]['maxWeight'] : 0;
+                
             } else if ($goal->type === 'streak') {
                 $streakData = $this->calculateStreak($user);
                 $progress = $streakData['current'];
@@ -821,13 +866,13 @@ class StatsController extends Controller
                     ->count();
             }
             
-            $isCompleted = $progress >= $goal->target_value;
+            $isCompleted = ($goal->status === 'completed') || ($progress >= $goal->target_value);
 
             $goalsData[] = [
                 'id' => $goal->id,
                 'type' => $goal->type,
                 'target_value' => $goal->target_value,
-                'current_value' => $progress,
+                'current_value' => round($progress),
                 'completed' => $isCompleted,
                 'end_date' => $goal->end_date,
             ];
