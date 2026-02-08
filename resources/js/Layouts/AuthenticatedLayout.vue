@@ -67,6 +67,13 @@ watch(() => page.props.unreadMessagesCount, (newVal) => {
     unreadMessagesCount.value = newVal || 0;
 });
 
+// Actualizar al navegar
+watch(() => route().current(), (routeName) => {
+    if (routeName === 'chat.show' || routeName === 'chat.index') {
+        fetchUnreadMessagesCount();
+    }
+});
+
 </script>
 
 <template>

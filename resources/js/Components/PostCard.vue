@@ -75,12 +75,14 @@ function handleDeleteModalClose() {
     emit('post-deleted', props.post.id);
 }
 
+
+
 const emit = defineEmits(['delete-post']);
 // Función para inicializar valores
 const initializeValues = () => {
-    isLiked.value = props.post.is_liked || false;
-    localLikesCount.value = props.post.likes_count || props.post.likers_count || 0;
-    isSaved.value = props.post.is_saved || false;
+    isLiked.value = props.post.is_liked ?? false;
+    localLikesCount.value = props.post.likes_count ?? props.post.likers_count ?? 0;
+    isSaved.value = props.post.is_saved ?? false;
 };
 
 // Inicializar valores cuando el componente se monta
@@ -118,6 +120,7 @@ const toggleLike = async () => {
             props.post.latest_likers = response.data.latest_likers;
         }
         if (response.data.likes_count !== undefined) {
+            props.post.likes_count = response.data.likes_count;
             props.post.likers_count = response.data.likes_count;
         }
         if (response.data.is_liked !== undefined) {
@@ -305,7 +308,10 @@ const submitComment = async () => {
             <WorkoutPreviewCard :workout="post.workout" />
         </div>
 
-        <div v-if="postImageUrl" class="overflow-hidden mb-6 flex items-center justify-center" :class="isDetailView ? 'max-h-[250px] bg-transparent' : 'max-h-[400px] bg-gray-100 dark:bg-gray-700 transition-colors'">
+        <div v-if="postImageUrl" 
+            class="relative overflow-hidden mb-6 flex items-center justify-center select-none" 
+            :class="isDetailView ? 'max-h-[250px] bg-transparent' : 'max-h-[400px] bg-gray-100 dark:bg-gray-700 transition-colors'"
+        >
             <img :src="postImageUrl" alt="Imagen de la publicación" class="w-full object-contain" :class="isDetailView ? 'max-h-[250px]' : 'max-h-[400px]'"/>
         </div>
 

@@ -2,8 +2,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { Head, router } from '@inertiajs/vue3';
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useToast } from '@/composables/useToast';
+import axios from 'axios';
 
 const props = defineProps({
     workout: Object,
@@ -196,13 +197,24 @@ watch(() => {}, () => {
         clearInterval(restInterval.value);
     }
 });
+
+const isFocusMode = ref(false);
+
+onMounted(() => {
+    // Si necesitas inicializar algo al montar
+});
 </script>
 
 <template>
     <Head :title="title" />
 
     <AuthenticatedLayout>
-        <div class="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-gray-900 dark:to-gray-800 pb-24 transition-colors">
+        <div :class="[
+            'min-h-screen pb-24 transition-all duration-500',
+            isFocusMode 
+                ? 'bg-black text-white' 
+                : 'bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-gray-900 dark:to-gray-800'
+        ]">
             
             <!-- Header fijo -->
             <div class="sticky top-16 z-20 bg-white dark:bg-gray-800 shadow-md border-b border-gray-200 dark:border-gray-700 transition-colors">
@@ -212,14 +224,31 @@ watch(() => {}, () => {
                             <h1 class="text-xl font-bold text-gray-900 dark:text-white transition-colors">{{ workout.name }}</h1>
                             <p class="text-sm text-gray-500 dark:text-gray-400 transition-colors">Ejercicio {{ currentExerciseIndex + 1 }} de {{ workout.exercises.length }}</p>
                         </div>
-                        <button 
-                            @click="openExitModal"
-                            class="p-2 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition"
-                        >
+                        <div class="flex items-center gap-3">
+                            <button 
+                                @click="isFocusMode = !isFocusMode"
+                                :class="[
+                                    'hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-black transition-all border shadow-sm',
+                                    isFocusMode 
+                                        ? 'bg-indigo-600 border-indigo-500 text-white shadow-indigo-500/20' 
+                                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'
+                                ]"
+                            >
+                                <svg class="w-4 h-4" :fill="isFocusMode ? 'currentColor' : 'none'" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                                {{ isFocusMode ? 'ENFOQUE ON' : 'ENFOQUE' }}
+                            </button>
+                            <button 
+                                @click="openExitModal"
+                                class="p-2 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition"
+                            >
                             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
+                    </div>
                     </div>
                     
                     <!-- Barra de progreso -->
@@ -272,6 +301,8 @@ watch(() => {}, () => {
                     <p v-if="currentExercise.notes" class="text-gray-600 dark:text-gray-300 mb-4 italic transition-colors">
                         📝 {{ currentExercise.notes }}
                     </p>
+
+
 
                     <!-- Mostrar PR actual -->
                     <div 
@@ -444,7 +475,6 @@ watch(() => {}, () => {
             </div>
         </div>
 
-        <!-- Modal de confirmación de salida -->
         <ConfirmModal
             :show="showExitModal"
             type="warning"
