@@ -59,7 +59,7 @@ const setTypes = [
     { value: 'normal', label: 'Normal' },
     { value: 'warmup', label: 'Calentamiento' },
     { value: 'failure', label: 'Al Fallo' },
-    { value: 'drop', label: 'Drop Set' }
+    { value: 'drop_set', label: 'Drop Set' }
 ];
 
 const addExercise = () => {
@@ -78,18 +78,18 @@ const addDropSet = (exerciseIndex, setIndex) => {
         id: setCounter.value++,
         reps: parentSet.reps != null ? Number(parentSet.reps) : 10,
         weight: parentSet.weight != null ? Math.round(Number(parentSet.weight) * 0.7) : 0,
-        type: 'drop'
+        type: 'drop_set'
     });
 };
 
 const handleTypeChange = (val, exerciseIndex, setIndex) => {
-    if (val === 'drop') {
+    if (val === 'drop_set') {
         addDropSet(exerciseIndex, setIndex);
     }
 };
 
 const isSubsequentDrop = (exercise, setIndex) => {
-    return setIndex > 0 && exercise.sets_data[setIndex].type === 'drop' && exercise.sets_data[setIndex - 1].type === 'drop';
+    return setIndex > 0 && exercise.sets_data[setIndex].type === 'drop_set' && exercise.sets_data[setIndex - 1].type === 'drop_set';
 };
 
 const showDeleteConfirm = ref(false);
@@ -334,7 +334,7 @@ const submit = () => {
                                                 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700': set.type === 'normal' || !set.type,
                                                 'bg-orange-50/50 dark:bg-orange-900/10 border-orange-100 dark:border-orange-900/30': set.type === 'warmup',
                                                 'bg-red-50/50 dark:bg-red-900/10 border-red-100 dark:border-red-900/30': set.type === 'failure',
-                                                'bg-purple-50/50 dark:bg-purple-900/10 border-purple-100 dark:border-purple-900/30 ml-2': set.type === 'drop',
+                                                'bg-purple-50/50 dark:bg-purple-900/10 border-purple-100 dark:border-purple-900/30 ml-2': set.type === 'drop_set',
                                             }"
                                         >
                                             <div class="flex items-center justify-center w-5 flex-shrink-0">

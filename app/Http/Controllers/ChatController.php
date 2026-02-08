@@ -72,6 +72,25 @@ class ChatController extends Controller
         ]);
     }
 
+    /**
+     * Obtiene el total de mensajes no leídos para el usuario autenticado.
+     */
+    public function unreadCount()
+    {
+        $user = Auth::user();
+        
+        $count = \App\Models\Message::whereHas('conversation', function ($query) use ($user) {
+            $query->whereHas('users', function ($q) use ($user) {
+                $q->where('users.id', $user->id);
+            });
+        })
+        ->where('user_id', '!=', $user->id)
+        ->whereNull('read_at')
+        ->count();
+
+        return response()->json(['count' => $count]);
+    }
+
     public function show(User $user) // $otherUser es el perfil que se visita/con quien se quiere chatear
 {
     if (!$user->exists) {

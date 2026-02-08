@@ -3,15 +3,13 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import UserCardSkeleton from '@/Components/Skeletons/UserCardSkeleton.vue';
 import GymDetailsModal from '@/Components/GymDetailsModal.vue';
 import GymMembersModal from '@/Components/GymMembersModal.vue';
-import CityAutocomplete from '@/Components/CityAutocomplete.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { Head, useForm, router, Link } from '@inertiajs/vue3';
 import { ref, watch, onMounted, computed } from 'vue';
-import SelectInput from '@/Components/SelectInput.vue';
-import MultiSelectInput from '@/Components/MultiSelectInput.vue';
+import DiscoverFilters from '@/Components/DiscoverFilters.vue';
+import DiscoverMap from '@/Components/DiscoverMap.vue';
 import _ from 'lodash';
-import "leaflet/dist/leaflet.css";
-import { LMap, LTileLayer, LMarker, LPopup, LIcon, LCircle } from "@vue-leaflet/vue-leaflet";
+import axios from 'axios';
 
 // Mapping colors for sport interests
 const getInterestColorClass = (name) => {
@@ -59,34 +57,6 @@ const form = useForm({
     lat: props.filters.lat || null,
     lon: props.filters.lon || null,
     gym_id: props.filters.gym_id || '',
-});
-
-// Options
-const experienceOptions = [
-    { value: '', label: '✨ Todos los niveles' },
-    { value: 'Principiante', label: '🌱 Principiante' },
-    { value: 'Intermedio', label: '⚡ Intermedio' },
-    { value: 'Avanzado', label: '🔥 Avanzado' }
-];
-
-const interestOptions = computed(() => {
-    const opts = props.interests.map(i => ({ value: i.id, label: i.name }));
-    return [{ value: '', label: 'Todos los deportes' }, ...opts];
-});
-
-const interestsMultiOptions = computed(() => {
-    return props.interests.map(i => ({ value: i.id, label: i.name }));
-});
-
-const gymsInCityOptions = computed(() => {
-    if (!props.gymsInCity || props.gymsInCity.length === 0) return [];
-    return [
-        { value: '', label: 'Cualquier gimnasio' }, 
-        ...props.gymsInCity.map(g => ({ 
-            value: g.id, 
-            label: g.address ? `${g.name} - ${g.address}` : g.name 
-        }))
-    ];
 });
 
 const availabilityOptions = [
@@ -227,12 +197,11 @@ onMounted(() => {
 });
 
 watch(() => props.users, (newUsers) => {
+    // Si la página es 1, es una búsqueda nueva o reset de filtros
     if (newUsers.current_page === 1) {
         allUsers.value = newUsers.data;
-    } else {
-        // En caso de navegación directa a páginas > 1 (poco común aquí)
-        allUsers.value = newUsers.data;
     }
+    // No añadimos aquí para el resto de páginas porque loadMoreUsers ya lo hace en onSuccess
     nextPageUrl.value = newUsers.next_page_url;
 });
 
@@ -410,149 +379,20 @@ const handleCitySelected = (cityData) => {
         <div class="py-6 md:py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 
-                <!-- Barra de Herramientas y Filtros -->
-                <div class="bg-white dark:bg-gray-800 shadow-lg sm:rounded-xl p-6 mb-8 border border-gray-100 dark:border-gray-700 transition-colors">
-                    <!-- Buscador Principal -->
-                    <div class="relative mb-6">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="h-5 w-5 text-gray-400 dark:text-gray-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                        </div>
-                        <input 
-                            v-model="form.search" 
-                            type="text" 
-                            placeholder="Buscar por nombre o usuario" 
-                            class="pl-10 block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
-                        >
-                    </div>
+                <DiscoverFilters 
+                    :form="form"
+                    :interests="interests"
+                    :gymsInCity="gymsInCity"
+                    :geoapify_key="geoapify_key"
+                    :user="user"
+                    v-model:showFilters="showFilters"
+                    @aplicarFiltroRapido="aplicarFiltroRapido"
+                    @buscarPorUbicacion="buscarPorUbicacion"
+                    @limpiarFiltros="limpiarFiltros"
+                    @handleCitySelected="handleCitySelected"
+                />
 
-                    <!-- Filtros Rápidos (Chips) -->
-                    <div class="flex flex-wrap gap-3 mb-6">
-                        <button 
-                            @click="aplicarFiltroRapido('mas_activos')"
-                            class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border"
-                            :class="form.filtro_rapido === 'mas_activos' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700 shadow-sm' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'"
-                        >
-                            🔥 Más activos
-                        </button>
-                        <button 
-                            @click="aplicarFiltroRapido('nuevos_en_ciudad')"
-                            class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border"
-                            :class="form.filtro_rapido === 'nuevos_en_ciudad' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700 shadow-sm' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'"
-                        >
-                            🏙️ Nuevos en mi ciudad
-                        </button>
-                        <button 
-                            @click="aplicarFiltroRapido('buscando_companero')"
-                            class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border"
-                            :class="form.filtro_rapido === 'buscando_companero' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700 shadow-sm' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'"
-                        >
-                            🤝 Buscar compañero
-                        </button>
-                        <button 
-                            @click="buscarPorUbicacion"
-                            class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border"
-                            :class="form.lat ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700 shadow-sm' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'"
-                        >
-                            📍 Cerca de mí
-                        </button>
-                        
-                        <button 
-                            @click="showFilters = !showFilters"
-                            class="ml-auto text-sm text-indigo-600 dark:text-indigo-400 font-semibold hover:text-indigo-800 dark:hover:text-indigo-300 flex items-center gap-1 transition-colors"
-                        >
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
-                            {{ showFilters ? 'Ocultar Filtros' : 'Más Filtros' }}
-                        </button>
-                    </div>
-
-                    <!-- Filtros Avanzados (Collapsible) -->
-                    <div class="pt-6 border-t border-gray-100 dark:border-gray-700 animate-fade-in-down space-y-6 transition-colors" v-show="showFilters">
-                        
-                        <!-- Fila 1: Nivel y Ciudad -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <SelectInput
-                                    id="experience_level"
-                                    label="💪 Nivel de Experiencia"
-                                    v-model="form.experience_level"
-                                    :options="experienceOptions"
-                                />
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2 transition-colors">
-                                    <span class="text-base">📍</span>
-                                    <span>Ciudad</span>
-                                </label>
-                                <CityAutocomplete 
-                                    v-model="form.city" 
-                                    :api-key="geoapify_key" 
-                                    @city-selected="handleCitySelected" 
-                                    class="mt-1"
-                                />
-                            </div>
-                        </div>
-
-                         <!-- Fila 1.5: Gimnasio (Nuevo) -->
-                         <div v-if="gymsInCityOptions.length > 0">
-                                <SelectInput
-                                    id="gym_id"
-                                    label="🏋️ Filtrar por Gimnasio"
-                                    v-model="form.gym_id"
-                                    :options="gymsInCityOptions"
-                                />
-                        </div>
-                        
-                        <!-- Intereses (MultiSelect) -->
-                        <div>
-                            <MultiSelectInput
-                                id="interests"
-                                label="🏃 Deportes que practican"
-                                v-model="form.interests"
-                                :options="interestsMultiOptions"
-                                placeholder="Seleccionar deportes..."
-                            />
-                        </div>
-
-                        <!-- Disponibilidad (MultiSelect) -->
-                        <div>
-                            <MultiSelectInput
-                                id="availability"
-                                label="⏰ Disponibilidad"
-                                v-model="form.availability_general"
-                                :options="availabilityOptions"
-                                placeholder="Seleccionar horarios..."
-                            />
-                        </div>
-
-                        <div class="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-700 transition-colors">
-                            <button @click="limpiarFiltros" class="text-sm text-red-500 hover:text-red-700 font-bold flex items-center gap-1 hover:gap-2 transition-all">
-                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                                Limpiar filtros
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Filtro Específico para "Buscan Compañero" -->
-                    <div v-if="form.filtro_rapido === 'buscando_companero'" class="mt-6 pt-6 border-t border-indigo-100 dark:border-indigo-800 bg-indigo-50/30 dark:bg-indigo-900/20 -mx-6 px-6 pb-6 rounded-b-xl transition-colors">
-                        <label class="block text-sm font-bold text-indigo-700 dark:text-indigo-400 mb-3 flex items-center gap-2">
-                            <span class="text-lg">🤝</span>
-                            <span>Buscar compañero para</span>
-                        </label>
-                        <SelectInput
-                            id="interest_id"
-                            v-model="form.interest_id"
-                            :options="interestOptions"
-                        />
-                        <p class="text-xs text-indigo-600 dark:text-indigo-400 mt-2 flex items-center gap-1">
-                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
-                            Las tarjetas que coincidan se resaltarán automáticamente
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Botón Alternar Mapa/Lista (Ubicado debajo de filtros) -->
+                <!-- Botón Alternar Mapa/Lista -->
                 <div v-if="!form.filtro_rapido && !form.lat" class="flex justify-end mb-6">
                     <button 
                         @click="toggleMapa"
@@ -572,105 +412,19 @@ const handleCitySelected = (cityData) => {
                     </button>
                 </div>
 
-                <!-- VISTA MAPA (Inmersiva) -->
-                <div v-if="viewMode === 'map'" class="relative h-[500px] md:h-[650px] w-full rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-700 mb-8 z-0 transition-all duration-500">
-                    
-                    <!-- Controles Flotantes (Glassmorphism) -->
-                    <div class="absolute top-4 right-4 z-[400] flex flex-col gap-2">
-                        <button @click="viewMode = 'grid'" class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md p-3 rounded-full shadow-lg hover:scale-110 transition-transform text-gray-700 dark:text-gray-200" title="Volver a lista">
-                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
-                        </button>
-                        <button v-if="form.lat" @click="$refs.map.leafletObject.flyTo([form.lat, form.lon], 14)" class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md p-3 rounded-full shadow-lg hover:scale-110 transition-transform text-indigo-600 dark:text-indigo-400" title="Mi ubicación">
-                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                        </button>
-                    </div>
-
-                    <l-map 
-                        ref="map" 
-                        v-model:zoom="zoom" 
-                        :center="mapCenter" 
-                        :use-global-leaflet="false" 
-                        :options="{zoomControl: false}"
-                        @ready="onMapReady"
-                        @moveend="onMapMoveEnd"
-                    >
-                        <l-tile-layer
-                            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-                            layer-type="base"
-                            name="CartoDB Voyager"
-                        ></l-tile-layer>
-
-                        <!-- Radio de Búsqueda (Radar) -->
-                        <l-circle 
-                            v-if="form.lat && form.lon"
-                            :lat-lng="[form.lat, form.lon]"
-                            :radius="3000"
-                            color="#6366f1"
-                            :weight="1"
-                            fill-color="#6366f1"
-                            :fill-opacity="0.08"
-                            class-name="radar-animation"
-                        />
-
-                        <!-- Marcador Usuario Actual (Tú) -->
-                        <l-marker v-if="form.lat && form.lon" :lat-lng="[form.lat, form.lon]">
-                             <l-icon class-name="custom-me-icon" :icon-anchor="[10, 10]">
-                                 <div class="w-5 h-5 bg-indigo-600 rounded-full border-2 border-white shadow-xl pulse-ring relative z-50"></div>
-                             </l-icon>
-                            <l-popup :options="{ closeButton: false, offset: [0, -5], className: 'me-popup' }">
-                                <div class="text-center font-bold text-xs px-2 py-1">📍 Tú estás aquí</div>
-                            </l-popup>
-                        </l-marker>
-
-                        <!-- AQUI IRÁN LOS GIMNASIOS (OSM) -->
-                        <l-marker 
-                            v-for="gym in gyms" 
-                            :key="'gym-'+gym.id" 
-                            :lat-lng="[parseFloat(gym.lat), parseFloat(gym.lon)]"
-                        >
-                            <l-icon class-name="custom-gym-icon" :icon-anchor="[16, 16]">
-                                <div class="w-8 h-8 flex items-center justify-center bg-gray-900 dark:bg-black border-2 rounded-lg shadow-xl text-lg hover:scale-110 transition-transform cursor-pointer" :class="gym.colorClass || 'border-indigo-500'">
-                                    {{ gym.icon || '🏋️' }}
-                                </div>
-                            </l-icon>
-                            
-                            <l-popup :options="{ closeButton: false, offset: [0, -10], className: 'premium-popup' }">
-                                <div class="text-center p-1 w-48 font-sans">
-                                    <h4 class="font-bold text-gray-900 text-sm leading-tight mb-0.5">{{ gym.name }}</h4>
-                                    <p class="text-[10px] text-gray-500 font-bold tracking-wide mb-2">{{ gym.type }}</p>
-                                    
-                                    <div v-if="gym.address" class="text-[10px] text-gray-500 mb-1 flex items-start justify-center gap-1">
-                                        <span>📍</span> <span class="text-left line-clamp-2 leading-tight">{{ gym.address }}</span>
-                                    </div>
-                                    <a v-if="gym.website" :href="gym.website" target="_blank" class="block text-[10px] text-indigo-500 mb-3 truncate hover:underline">🌐 Sitio Web Oficial</a>
-
-                                    <div class="flex items-center justify-center gap-1 mb-3 bg-indigo-50 rounded-lg py-1">
-                                        <div class="flex -space-x-1">
-                                            <div class="w-3 h-3 rounded-full bg-indigo-200 border border-white"></div>
-                                            <div class="w-3 h-3 rounded-full bg-indigo-300 border border-white"></div>
-                                        </div>
-                                        <p class="text-[10px] text-indigo-700 font-bold"> {{ gym.users_count }} GymPals</p>
-                                    </div>
-
-                                    <div class="grid grid-cols-2 gap-2">
-                                        <button 
-                                            @click="openGymModal(gym.id)"
-                                            class="bg-white border border-gray-200 text-gray-700 text-[10px] font-bold py-2 rounded-lg hover:bg-gray-50 transition-colors"
-                                        >
-                                            Ver GymPals
-                                        </button>
-                                        <button 
-                                            @click="openGymModal(gym.id)"
-                                            class="bg-indigo-600 border border-transparent text-white text-[10px] font-bold py-2 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm active:scale-95 transform"
-                                        >
-                                            ¡Es mi Gym!
-                                        </button>
-                                    </div>
-                                </div>
-                            </l-popup>
-                        </l-marker>
-                    </l-map>
-                </div>
+                <!-- VISTA MAPA -->
+                <DiscoverMap 
+                    v-if="viewMode === 'map'"
+                    v-model:zoom="zoom"
+                    :gyms="gyms"
+                    :mapCenter="mapCenter"
+                    :formLat="form.lat"
+                    :formLon="form.lon"
+                    @map-ready="onMapReady"
+                    @map-moveend="onMapMoveEnd"
+                    @open-gym-modal="openGymModal"
+                    @open-gym-members-modal="openGymMembersModal"
+                />
 
                 <!-- Grid de Resultados -->
                 <div v-show="viewMode === 'grid'">

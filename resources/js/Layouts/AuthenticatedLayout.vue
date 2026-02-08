@@ -8,6 +8,7 @@ import NotificationBell from '@/Components/NotificationBell.vue';
 import ToastContainer from '@/Components/ToastContainer.vue';
 import { useToast } from '@/composables/useToast';
 import { useAutoPrefetch } from '@/composables/usePrefetch';
+import axios from 'axios';
 
 // Activar auto-prefetch de rutas importantes
 useAutoPrefetch();
@@ -43,6 +44,28 @@ watch(() => page.props, (newProps) => {
 }, { deep: true });
 
 const showMobileMenu = ref(false);
+
+const unreadMessagesCount = ref(page.props.unreadMessagesCount || 0);
+
+// Polling for unread messages
+const fetchUnreadMessagesCount = async () => {
+    try {
+        const response = await axios.get(route('chat.unread-count'));
+        unreadMessagesCount.value = response.data.count;
+    } catch (err) {
+        console.error('Error fetching unread messages count:', err);
+    }
+};
+
+let messagePollingInterval = null;
+
+onMounted(() => {
+    messagePollingInterval = setInterval(fetchUnreadMessagesCount, 30000); // Cada 30 segundos
+});
+
+watch(() => page.props.unreadMessagesCount, (newVal) => {
+    unreadMessagesCount.value = newVal || 0;
+});
 
 </script>
 
@@ -93,12 +116,15 @@ const showMobileMenu = ref(false);
                     <div class="flex flex-1 items-center justify-end">
                     <div class="hidden sm:flex sm:items-center sm:ml-6 space-x-4">
                         <!-- Chat -->
-                        <Link :href="route('chat.index')" title="Chat" class="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-2 rounded-full transition-colors">
+                        <Link :href="route('chat.index')" title="Chat" class="relative text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-2 rounded-full transition-colors">
                             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3.68-3.091a1.256 1.256 0 00-.86-.317H7.812a2.25 2.25 0 01-2.25-2.25V6.982c0-1.242 1.008-2.25 2.25-2.25h8.574a2.25 2.25 0 012.25 2.25v1.529z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
                             </svg>
+                            <span v-if="unreadMessagesCount > 0" class="absolute top-0 right-0 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-white dark:border-gray-800 shadow-sm">
+                                {{ unreadMessagesCount > 9 ? '9+' : unreadMessagesCount }}
+                            </span>
                         </Link>
-                        
+
                         <!-- Notificaciones - SIEMPRE VISIBLE PARA DEBUG -->
                         <div class="flex items-center">
                             <NotificationBell />
@@ -127,8 +153,13 @@ const showMobileMenu = ref(false);
                         <!-- Notificaciones Móvil -->
                         <NotificationBell />
                         
-                        <Link :href="route('chat.index')" title="Chat" class="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-1 rounded-full transition-colors">
-                            <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3.68-3.091a1.256 1.256 0 00-.86-.317H7.812a2.25 2.25 0 01-2.25-2.25V6.982c0-1.242 1.008-2.25 2.25-2.25h8.574a2.25 2.25 0 012.25 2.25v1.529z" /></svg>
+                        <Link :href="route('chat.index')" title="Chat" class="relative text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-1 rounded-full transition-colors">
+                            <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                            </svg>
+                            <span v-if="unreadMessagesCount > 0" class="absolute top-0 right-0 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-white dark:border-gray-800 shadow-sm leading-none">
+                                {{ unreadMessagesCount > 9 ? '9+' : unreadMessagesCount }}
+                            </span>
                         </Link>
                     </div>
                 </div>

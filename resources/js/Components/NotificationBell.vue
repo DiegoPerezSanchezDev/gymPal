@@ -44,7 +44,7 @@ onUnmounted(() => {
         <!-- Badge de notificaciones no leídas -->
         <span
             v-if="unreadCount > 0"
-            class="absolute top-0 right-0 block h-5 w-5 text-xs font-semibold text-white bg-red-500 rounded-full flex items-center justify-center"
+            class="absolute top-0 right-0 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-white dark:border-gray-800 shadow-sm"
         >
             {{ unreadCount > 99 ? '99+' : unreadCount }}
         </span>
