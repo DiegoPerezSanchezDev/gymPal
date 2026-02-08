@@ -2,7 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { Head, router } from '@inertiajs/vue3';
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useToast } from '@/composables/useToast';
 import axios from 'axios';
 
@@ -28,14 +28,68 @@ const isResting = ref(false);
 const restTimeRemaining = ref(0);
 const restInterval = ref(null);
 const startTime = ref(Date.now());
+const workoutNotes = ref('');
+const isSubmitting = ref(false);
+const showFinishModal = ref(false);
+const showExitModal = ref(false);
 
-// Inicializar completedSets
+// Estructura base inmediata para evitar errores de renderizado
 props.workout.exercises.forEach((exercise, exIndex) => {
     completedSets.value[exIndex] = {};
     exercise.sets_data.forEach((set, setIndex) => {
         completedSets.value[exIndex][setIndex] = false;
     });
 });
+
+// Inicializar completedSets (solo si no hay datos en localStorage)
+const STORAGE_KEY = computed(() => `workout_session_${props.workout.id}`);
+
+function initializeState() {
+    const savedSession = localStorage.getItem(STORAGE_KEY.value);
+    
+    if (savedSession) {
+        try {
+            const data = JSON.parse(savedSession);
+            currentExerciseIndex.value = data.currentExerciseIndex ?? 0;
+            // Mezclar con los datos cargados
+            if (data.completedSets) {
+                Object.keys(data.completedSets).forEach(exIdx => {
+                    if (completedSets.value[exIdx]) {
+                        Object.keys(data.completedSets[exIdx]).forEach(setIdx => {
+                            completedSets.value[exIdx][setIdx] = data.completedSets[exIdx][setIdx];
+                        });
+                    }
+                });
+            }
+            startTime.value = data.startTime ?? Date.now();
+            workoutNotes.value = data.workoutNotes ?? '';
+            
+            info('¡Sesión restaurada automáticamente!');
+        } catch (e) {
+            console.error('Error restoring session:', e);
+            clearSavedSession();
+        }
+    }
+}
+
+function saveSession() {
+    const data = {
+        currentExerciseIndex: currentExerciseIndex.value,
+        completedSets: completedSets.value,
+        startTime: startTime.value,
+        workoutNotes: workoutNotes.value
+    };
+    localStorage.setItem(STORAGE_KEY.value, JSON.stringify(data));
+}
+
+function clearSavedSession() {
+    localStorage.removeItem(STORAGE_KEY.value);
+}
+
+// Watchers para persistencia
+watch([currentExerciseIndex, completedSets, workoutNotes], () => {
+    saveSession();
+}, { deep: true });
 
 const currentExercise = computed(() => props.workout.exercises[currentExerciseIndex.value]);
 
@@ -104,7 +158,6 @@ function startRest(seconds) {
         if (restTimeRemaining.value <= 0) {
             clearInterval(restInterval.value);
             isResting.value = false;
-            // Reproducir sonido o vibración (opcional)
         }
     }, 1000);
 }
@@ -128,11 +181,6 @@ function previousExercise() {
         currentExerciseIndex.value--;
     }
 }
-
-const showFinishModal = ref(false);
-const workoutNotes = ref('');
-const isSubmitting = ref(false);
-const showExitModal = ref(false);
 
 function openFinishModal() {
     showFinishModal.value = true;
@@ -166,14 +214,12 @@ function confirmFinish() {
     }, {
         onSuccess: () => {
             success(`¡Entrenamiento completado! Duración: ${duration} minutos.`);
+            clearSavedSession(); // Limpiar al terminar con éxito
             showFinishModal.value = false;
         },
         onError: () => {
             error('Error al guardar el registro del entrenamiento');
             isSubmitting.value = false;
-        },
-        onFinish: () => {
-            // No reseteamos isSubmitting aquí si es exitoso porque redirige
         }
     });
 }
@@ -184,6 +230,7 @@ function openExitModal() {
 
 function confirmExit() {
     showExitModal.value = false;
+    clearSavedSession(); // Limpiar al salir explícitamente
     router.visit(route('workouts.show', props.workout.id));
 }
 
@@ -192,7 +239,7 @@ function cancelExit() {
 }
 
 // Limpiar intervalo al desmontar
-watch(() => {}, () => {
+onUnmounted(() => {
     if (restInterval.value) {
         clearInterval(restInterval.value);
     }
@@ -201,8 +248,9 @@ watch(() => {}, () => {
 const isFocusMode = ref(false);
 
 onMounted(() => {
-    // Si necesitas inicializar algo al montar
+    initializeState();
 });
+
 </script>
 
 <template>

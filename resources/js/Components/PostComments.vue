@@ -1,5 +1,6 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
+import { useTimeAgo } from '@/composables/useTimeAgo';
 
 const props = defineProps({
     post: {
@@ -15,6 +16,8 @@ const props = defineProps({
         default: false
     }
 });
+
+const { timeAgo } = useTimeAgo();
 
 const emit = defineEmits(['submit-comment']);
 const model = defineModel('newCommentBody');
@@ -36,6 +39,7 @@ const model = defineModel('newCommentBody');
                 <div class="flex-1 bg-gray-50 dark:bg-gray-700 rounded-2xl rounded-tl-none px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
                     <div class="flex justify-between items-baseline">
                         <span class="font-bold text-gray-900 dark:text-white mr-2 transition-colors">{{ comment.user ? comment.user.name : 'Anon' }}</span>
+                        <span class="text-[10px] text-gray-400 dark:text-gray-500 font-medium uppercase transition-colors">{{ timeAgo(comment.created_at) }}</span>
                     </div>
                     <p class="text-gray-700 dark:text-gray-300 leading-relaxed mt-0.5 transition-colors">{{ comment.body }}</p>
                 </div>
@@ -49,6 +53,7 @@ const model = defineModel('newCommentBody');
                 Ver los {{ post.comments_count }} comentarios
             </Link>
         </div>
+
 
         <!-- Formulario para nuevo comentario -->
         <form v-if="!isDetailView" @submit.prevent="$emit('submit-comment')" class="px-5 pb-4">

@@ -1,7 +1,7 @@
-<!-- Componente dropdown para mostrar notificaciones -->
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import { Link } from '@inertiajs/vue3';
+import { useTimeAgo } from '@/composables/useTimeAgo';
 import axios from 'axios';
 
 const props = defineProps({
@@ -14,6 +14,8 @@ const props = defineProps({
         default: 0,
     },
 });
+
+const { timeAgo } = useTimeAgo();
 
 const emit = defineEmits(['close', 'mark-all-read', 'notification-clicked']);
 
@@ -48,21 +50,6 @@ const loadNotifications = async () => {
     } finally {
         isLoading.value = false;
     }
-};
-
-const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'Ahora';
-    if (diffMins < 60) return `Hace ${diffMins} min`;
-    if (diffHours < 24) return `Hace ${diffHours} h`;
-    if (diffDays < 7) return `Hace ${diffDays} d`;
-    return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 };
 
 const markAsRead = async (notification) => {
@@ -131,30 +118,30 @@ const getNotificationIcon = (type) => {
 
 const getNotificationColor = (type) => {
     const colors = {
-        post_shared: 'text-blue-500 bg-blue-50',
-        new_message: 'text-indigo-500 bg-indigo-50',
-        connection_accepted: 'text-green-500 bg-green-50',
-        post_liked: 'text-red-500 bg-red-50',
-        post_commented: 'text-purple-500 bg-purple-50',
+        post_shared: 'text-blue-500 bg-blue-50 dark:bg-blue-900/20',
+        new_message: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-900/20',
+        connection_accepted: 'text-green-500 bg-green-50 dark:bg-green-900/20',
+        post_liked: 'text-red-500 bg-red-50 dark:bg-red-900/20',
+        post_commented: 'text-purple-500 bg-purple-50 dark:bg-purple-900/20',
     };
     return colors[type] || colors.new_message;
 };
 </script>
 
 <template>
-    <div class="w-full flex flex-col max-h-[500px]">
+    <div class="w-full flex flex-col max-h-[500px] bg-white dark:bg-gray-800 transition-colors">
         <!-- Header -->
-        <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-gray-900">Notificaciones</h3>
+        <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between transition-colors">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white transition-colors">Notificaciones</h3>
             <div class="flex items-center gap-2">
                 <button
                     v-if="unreadCount > 0"
                     @click="markAllAsRead"
-                    class="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                    class="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-black transition-colors"
                 >
-                    Marcar todas como leídas
+                    Marcar todo como leído
                 </button>
-                <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600">
+                <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -164,29 +151,32 @@ const getNotificationColor = (type) => {
 
         <!-- Lista de notificaciones -->
         <div class="overflow-y-auto flex-1">
-            <div v-if="isLoading" class="p-8 text-center text-gray-500">
-                Cargando notificaciones...
+            <div v-if="isLoading" class="p-8 text-center text-gray-500 dark:text-gray-400">
+                <div class="flex justify-center mb-2">
+                    <div class="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+                Cargando...
             </div>
-            <div v-else-if="localNotifications.length === 0" class="p-8 text-center text-gray-500">
-                <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div v-else-if="localNotifications.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">
+                <svg class="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
-                <p class="font-medium">No tienes notificaciones</p>
-                <p class="text-sm">Las notificaciones aparecerán aquí</p>
+                <p class="font-bold text-gray-900 dark:text-white mb-1">No hay nada por aquí</p>
+                <p class="text-sm">Te avisaremos cuando pase algo interesante</p>
             </div>
-            <div v-else class="divide-y divide-gray-100">
+            <div v-else class="divide-y divide-gray-100 dark:divide-gray-700">
                 <button
                     v-for="notification in localNotifications"
                     :key="notification.id"
                     @click="handleNotificationClick(notification)"
                     :class="[
-                        'w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors',
-                        !notification.read_at ? 'bg-indigo-50/50' : ''
+                        'w-full px-4 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all border-l-4',
+                        !notification.read_at ? 'bg-indigo-50/30 dark:bg-indigo-900/10 border-indigo-600' : 'border-transparent'
                     ]"
                 >
                     <div class="flex items-start gap-3">
                         <!-- Icono -->
-                        <div :class="['flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center', getNotificationColor(notification.type)]">
+                        <div :class="['flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm', getNotificationColor(notification.type)]">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="getNotificationIcon(notification.type)" />
                             </svg>
@@ -194,14 +184,11 @@ const getNotificationColor = (type) => {
                         
                         <!-- Contenido -->
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-semibold text-gray-900">{{ notification.title }}</p>
-                            <p class="text-sm text-gray-600 mt-1">{{ notification.message }}</p>
-                            <p class="text-xs text-gray-400 mt-1">{{ formatDate(notification.created_at) }}</p>
-                        </div>
-                        
-                        <!-- Indicador de no leída -->
-                        <div v-if="!notification.read_at" class="flex-shrink-0">
-                            <div class="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                            <div class="flex justify-between items-start">
+                                <p class="text-sm font-black text-gray-900 dark:text-white truncate pr-2">{{ notification.title }}</p>
+                                <p class="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase whitespace-nowrap">{{ timeAgo(notification.created_at) }}</p>
+                            </div>
+                            <p class="text-sm text-gray-600 dark:text-gray-300 mt-0.5 line-clamp-2">{{ notification.message }}</p>
                         </div>
                     </div>
                 </button>
@@ -209,9 +196,9 @@ const getNotificationColor = (type) => {
         </div>
 
         <!-- Footer -->
-        <div v-if="localNotifications.length > 0" class="px-4 py-3 border-t border-gray-200 text-center">
-            <Link :href="route('notifications.index')" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-                Ver todas las notificaciones
+        <div v-if="localNotifications.length > 0" class="px-4 py-3 border-t border-gray-200 dark:border-gray-700 text-center transition-colors">
+            <Link :href="route('notifications.index')" class="text-xs font-black text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 uppercase tracking-widest transition-colors">
+                Ver todo
             </Link>
         </div>
     </div>
