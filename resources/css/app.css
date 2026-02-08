@@ -7,10 +7,78 @@ input::-ms-reveal,
 input::-ms-clear {
   display: none;
 }
+
 input::-webkit-contacts-auto-fill-button,
 input::-webkit-credentials-auto-fill-button {
   display: none !important;
 }
+
 input::-webkit-password-toggle-button {
   display: none !important;
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-4 py-3 bg-indigo-600 border border-transparent rounded-xl font-bold text-sm text-white uppercase tracking-widest hover:bg-indigo-700 transition disabled:opacity-50;
+  }
+
+  .btn-primary-gradient {
+    @apply inline-flex items-center px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:from-indigo-700 hover:to-purple-700 active:bg-indigo-900 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150 shadow-md hover:shadow-lg transform hover:-translate-y-0.5;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl font-bold text-sm text-gray-700 dark:text-gray-200 uppercase tracking-widest shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition disabled:opacity-50;
+  }
+
+  .btn-secondary-gradient {
+    @apply inline-flex items-center px-6 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-full font-semibold text-xs text-gray-700 dark:text-gray-200 uppercase tracking-widest shadow-sm hover:text-gray-500 dark:hover:text-gray-400 focus:outline-none focus:border-blue-300 focus:ring ring-blue-200 active:text-gray-800 active:bg-gray-50 disabled:opacity-25 transition ease-in-out duration-150 hover:shadow-md transform hover:-translate-y-0.5;
+  }
+
+  .btn-danger-gradient {
+    @apply inline-flex items-center px-6 py-2.5 bg-gradient-to-r from-red-500 to-pink-600 border border-transparent rounded-full font-semibold text-xs text-white uppercase tracking-widest hover:from-red-600 hover:to-pink-700 active:bg-red-900 focus:outline-none focus:border-red-900 focus:ring ring-red-300 disabled:opacity-25 transition ease-in-out duration-150 shadow-md hover:shadow-lg transform hover:-translate-y-0.5;
+  }
+
+  .btn-disabled {
+    @apply inline-flex items-center px-6 py-2.5 bg-gray-300 dark:bg-gray-700 border border-transparent rounded-full font-semibold text-xs text-white dark:text-gray-400 uppercase tracking-widest cursor-not-allowed transition-colors;
+  }
+
+  .action-button {
+    @apply flex items-center justify-center w-full px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none hover:bg-gray-100;
+  }
+
+  .nav-link {
+    @apply inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 focus:outline-none focus:text-gray-700 dark:focus:text-gray-100 focus:border-gray-300 transition;
+  }
+
+  .nav-link.active {
+    @apply border-indigo-400 text-gray-900 dark:text-white focus:border-indigo-700;
+  }
+
+  .sidebar-link {
+    @apply block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-800 dark:focus:text-white focus:bg-gray-50 dark:focus:bg-gray-700 focus:border-gray-300 transition;
+  }
+
+  .sidebar-link.active {
+    @apply border-indigo-400 text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30;
+  }
+
+  .bottom-nav-link {
+    @apply flex-grow flex flex-col items-center justify-center text-center px-1 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors;
+  }
+
+  .bottom-nav-link.active {
+    @apply text-indigo-600 dark:text-indigo-400;
+  }
+
+  .notification-dot-desktop {
+    @apply absolute top-1/2 right-0 block h-2 w-2 -mt-2 -mr-1 transform translate-x-1/2 -translate-y-1/2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-800;
+  }
+
+  .notification-dot-mobile {
+    @apply absolute top-1 right-1/2 mr-[-20px] block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-800;
+  }
+
+  .notification-badge {
+    @apply px-2 py-0.5 bg-indigo-600 text-white text-xs font-semibold rounded-full;
+  }
 }

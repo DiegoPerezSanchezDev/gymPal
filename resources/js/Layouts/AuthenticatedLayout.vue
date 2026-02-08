@@ -67,6 +67,12 @@ watch(() => page.props.unreadMessagesCount, (newVal) => {
     unreadMessagesCount.value = newVal || 0;
 });
 
+// Actualizar al navegar
+watch(() => route().current(), (routeName) => {
+    if (routeName === 'chat.show' || routeName === 'chat.index') {
+        fetchUnreadMessagesCount();
+    }
+});
 </script>
 
 <template>
@@ -233,15 +239,3 @@ watch(() => page.props.unreadMessagesCount, (newVal) => {
     <ToastContainer />
     </div>
 </template>
-
-<style scoped>
-.nav-link { @apply inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-700 focus:border-gray-300 transition; }
-.nav-link.active { @apply border-indigo-400 text-gray-900 focus:border-indigo-700; }
-.sidebar-link { @apply block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:text-gray-800 focus:bg-gray-50 focus:border-gray-300 transition; }
-.sidebar-link.active { @apply border-indigo-400 text-indigo-700 bg-indigo-50; }
-.bottom-nav-link { @apply flex-grow flex flex-col items-center justify-center text-center px-1 text-gray-500 hover:text-indigo-600 transition-colors; }
-.bottom-nav-link.active { @apply text-indigo-600; }
-.notification-dot-desktop { @apply absolute top-1/2 right-0 block h-2 w-2 -mt-2 -mr-1 transform translate-x-1/2 -translate-y-1/2 rounded-full bg-red-500 ring-2 ring-white; }
-.notification-dot-mobile { @apply absolute top-1 right-1/2 mr-[-20px] block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white; }
-.notification-badge { @apply px-2 py-0.5 bg-indigo-600 text-white text-xs font-semibold rounded-full; }
-</style>
