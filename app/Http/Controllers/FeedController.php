@@ -47,14 +47,14 @@ class FeedController extends Controller
             case 'populares':
                 // Populares: Gente que YO NO sigo (para que aparezcan los "Te sigue")
                 // Excluimos solo a los que YO sigo (iFollowIds) y a mí mismo
-                $postsQuery->whereNotIn('posts.user_id', $iFollowIds->push($userId))
+                $postsQuery->whereNotIn('posts.user_id', $iFollowIds->concat([$userId]))
                            ->orderByDesc('likers_count')
                            ->orderByDesc('posts.created_at');
                 break;
     
             case 'cerca':
                 // Cerca: Gente cercana que YO NO sigo (consistente con Populares)
-                $postsQuery->whereNotIn('posts.user_id', $iFollowIds->push($userId));
+                $postsQuery->whereNotIn('posts.user_id', $iFollowIds->concat([$userId]));
                 
                 if ($user->latitude && $user->longitude) {
                     $lat = $user->latitude;

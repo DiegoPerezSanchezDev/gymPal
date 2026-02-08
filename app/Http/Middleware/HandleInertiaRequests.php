@@ -60,8 +60,15 @@ class HandleInertiaRequests extends Middleware
                 'new_badges' => fn () => $request->session()->get('new_badges'), // <-- AÑADIDO
             ],
             'geoapify_key' => config('services.geoapify.key'),
-            'pendingRequestsCount' => 0, // Sistema de followers activo, sin solicitudes pendientes
-
+            'pendingRequestsCount' => 0,
+            'unreadMessagesCount' => $user ? \App\Models\Message::whereHas('conversation', function ($query) use ($user) {
+                $query->whereHas('users', function ($q) use ($user) {
+                    $q->where('users.id', $user->id);
+                });
+            })
+            ->where('user_id', '!=', $user->id)
+            ->whereNull('read_at')
+            ->count() : 0,
         ]);
     }
 }

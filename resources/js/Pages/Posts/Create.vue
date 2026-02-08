@@ -205,19 +205,6 @@ const submit = () => {
                                     </svg>
                                     <span class="text-sm font-bold hidden sm:inline">Rutina</span>
                                 </button>
-                                
-                                <!-- Ubicación (Próximamente) -->
-                                <button 
-                                    type="button"
-                                    class="p-2.5 text-gray-400 hover:text-purple-400 hover:bg-purple-50 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-purple-100 cursor-not-allowed opacity-60" 
-                                    title="Añadir ubicación (Próximamente)" 
-                                    disabled
-                                >
-                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    </svg>
-                                    <span class="text-sm font-bold hidden sm:inline">Ubicación</span>
-                                </button>
                             </div>
 
                             <div class="text-xs text-gray-400 font-medium">

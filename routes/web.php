@@ -77,6 +77,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/users/{user}/toggle-follow', [FollowController::class, 'toggleFollow'])->name('profile.toggleFollow');
 
     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+    Route::get('/chat/unread-count', [ChatController::class, 'unreadCount'])->name('chat.unread-count');
     Route::get('/chat/{user:username}', [ChatController::class, 'show'])->name('chat.show');
 
     // GYMS

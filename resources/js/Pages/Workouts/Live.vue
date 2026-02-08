@@ -296,9 +296,14 @@ watch(() => {}, () => {
                             :key="setIndex"
                             @click="toggleSet(currentExerciseIndex, setIndex)"
                             class="flex items-center gap-4 p-4 rounded-2xl border-2 transition-all cursor-pointer"
-                            :class="completedSets[currentExerciseIndex][setIndex] 
-                                ? 'bg-green-50 dark:bg-green-900/20 border-green-400 dark:border-green-600' 
-                                : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-500'"
+                            :class="[
+                                completedSets[currentExerciseIndex][setIndex] 
+                                    ? 'bg-green-50 dark:bg-green-900/20 border-green-400 dark:border-green-600' 
+                                    : (set.type === 'warmup' ? 'bg-orange-50/40 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800' :
+                                       set.type === 'failure' ? 'bg-red-50/40 dark:bg-red-900/10 border-red-200 dark:border-red-800' :
+                                       set.type === 'drop_set' ? 'bg-purple-50/40 dark:bg-purple-900/10 border-purple-200 dark:border-purple-800 ml-4' :
+                                       'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-500')
+                            ]"
                         >
                             <!-- Checkbox -->
                             <div class="flex-shrink-0">
@@ -306,7 +311,10 @@ watch(() => {}, () => {
                                     class="w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all"
                                     :class="completedSets[currentExerciseIndex][setIndex] 
                                         ? 'bg-green-500 border-green-500' 
-                                        : 'border-gray-300 dark:border-gray-600'"
+                                        : (set.type === 'warmup' ? 'border-orange-300 dark:border-orange-700' :
+                                           set.type === 'failure' ? 'border-red-300 dark:border-red-700' :
+                                           set.type === 'drop_set' ? 'border-purple-300 dark:border-purple-700' :
+                                           'border-gray-300 dark:border-gray-600')"
                                 >
                                     <svg v-if="completedSets[currentExerciseIndex][setIndex]" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
@@ -320,7 +328,13 @@ watch(() => {}, () => {
                                     <span class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors">Serie {{ setIndex + 1 }}</span>
                                     <span 
                                         v-if="set.type && set.type !== 'normal'"
-                                        class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 transition-colors"
+                                        class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded transition-colors"
+                                        :class="[
+                                            set.type === 'warmup' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400' :
+                                            set.type === 'failure' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
+                                            set.type === 'drop_set' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' :
+                                            'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-400'
+                                        ]"
                                     >
                                         {{ setTypeLabels[set.type] || set.type }}
                                     </span>
