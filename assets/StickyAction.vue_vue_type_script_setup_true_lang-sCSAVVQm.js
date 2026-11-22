@@ -1,0 +1,1 @@
+import{d as o,c as t,V as l,o as s}from"./index-D-E3pPEJ.js";const r=["aria-label"],i=o({__name:"StickyAction",props:{label:{}},setup(e){return(a,c)=>(s(),t("div",{class:"sticky-action",role:"group","aria-label":e.label},[l(a.$slots,"default")],8,r))}});export{i as _};
